@@ -11,6 +11,12 @@ export const DeclFieldSchema = z.object({
   label: z.string().optional(),
   // basic validation rules (minLength, required, etc)
   validators: z.record(z.any()).optional(),
+  // Expanded
+  placeholder: z.string().optional(),
+  description: z.string().optional(),
+  icon: z.string().optional(),
+  options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
+  dataSource: z.object({ url: z.string(), labelKey: z.string(), valueKey: z.string() }).optional(),
 });
 
 export const DeclFormSchema = z.object({
@@ -47,9 +53,27 @@ export type DeclPage = z.infer<typeof DeclPageSchema>;
 export type DeclFrontendApp = z.infer<typeof DeclFrontendAppSchema>;
 
 // FrontendIR (lowered)
+export interface FrontendField {
+  name: string;
+  type: string;
+  label?: string;
+  validators?: Record<string, any>;
+  // Expanded properties
+  placeholder?: string;
+  description?: string;
+  icon?: string;
+  options?: { label: string; value: string }[];
+  dataSource?: { url: string; labelKey: string; valueKey: string };
+}
+
+export interface FrontendForm {
+  fields: FrontendField[];
+}
+
 export interface FrontendComponent {
   name: string;
   props?: Record<string, string>;
+  form?: FrontendForm;
   entityRef?: string;
 }
 

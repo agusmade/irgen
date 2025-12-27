@@ -1,52 +1,66 @@
-# IR Codegen (DSL → IR → Lowering → AST Emit)
+# IR Codegen (Robust Fullstack Generator)
 
 [![pipeline status](https://gitlab.com/agusmade/ir-codegen/-/badges/main/pipeline.svg)](https://gitlab.com/agusmade/ir-codegen/-/pipelines)
 
-Proyek kecil untuk memulai tooling seperti yang kita bahas:
+An advanced Domain Specific Language (DSL) to Intermediate Representation (IR) codegen framework. It transforms concise declarative code into production-ready, maintainable fullstack applications.
 
-## CI (GitLab)
+Unlike typical scaffolders, **source code is owned by the tool**, while **user code is preserved** via the [Generation Gap Pattern](https://martinfowler.com/dslwip/GenerationGap.html).
 
-This repository uses GitLab CI to run a deterministic test suite and golden tests on push and merge requests. The pipeline will: check there are no tracked generated artifacts, install dependencies, run mapper & policy validation tests, and run the golden test suite (`npm run test:ci`). If the golden tests fail, update fixtures locally with `npm run update-golden` and open a new MR.
+## Key Features
 
-Note: If you host this repo on GitHub the existing `.github/workflows/ci.yml` will provide equivalent checks via GitHub Actions.
+### Backend (Node.js/TypeScript)
+- **Generation Gap Architecture**: Separates generated base classes from user implementation. Regenerate safely without losing manual changes.
+- **Repository Pattern**: Auto-generated repositories with Dependency Injection (DI) support.
+- **Prisma Integration**: Database schema and client management out-of-the-box.
+- **Extensibility Hooks**: `beforeCreate`, `afterCreate`, etc., in services for custom business logic.
+- **Automated Testing**: Auto-generated `vitest` unit tests for services.
 
-- Developer menulis DSL (JS/TS) yang pendek.
-- CLI mengeksekusi DSL → menghasilkan DeclIR.
-- DeclIR divalidasi → di-map ke DomainIR (contoh: BackendIR).
-- Lowering (sederhana dulu) → TargetIR.
-- Emitter berbasis AST (ts-morph) → generate source code nyata.
+### Frontend (React/Vite)
+- **Single Page Application (SPA)**: Generates a complete React Router based app.
+- **Rich UI Components**: Forms with Async Selects, Icons (`lucide-react`), and validation.
+- **Tailwind CSS**: Automated styling configuration (`tailwind.config.js`, `postcss.config.js`).
+- **Type Safety**: End-to-end type safety from DSL to UI.
 
-## Quick start
+## Quick Start
 
+### 1. Install Dependencies
 ```bash
-npm i
-npm run gen
+npm install
 ```
 
-Output akan muncul di folder `generated/`.
-CLI flags
-
-- `--emitters` — list registered emitters and exit.
-- `--emitter=<name>` — run a specific emitter (pass DSL entry and outDir as positional args). Example:
+### 2. Run Examples
+We provide a script to generate all example projects into `generated/` folders:
 
 ```bash
-npx tsx src/cli.ts examples/app.dsl.ts generated --emitter=backend-tsmorph
+./scripts/generate-examples.sh
 ```
-## Struktur
-- `src/dsl/` : DSL runtime + IR builder
-- `src/ir/`  : Decl IR (`decl.ts`) dan Backend IR (`backend.ts`) — terpisah untuk struktur dan tanggung jawab yang lebih jelas
-- DSL now supports `model(...)` on `entity(...)` to declare entity fields (used to generate TypeScript `interface`s), and gives hooks to customize operations; generators now also emit `controllers/`.
-- CRUD now includes `update` and `remove` operations; services/controllers generate typed methods for those operations.
-- Pluralization: the generator pluralizes entity names for list methods (e.g. `Category` -> `listCategories`). You can override plural form by adding `plural("...")` in the DSL (or by setting `plural` in the DeclEntity).
-- Frontend: add `a.meta("frontend", { react: true, tailwind: true })` to the app to enable generation of simple React components (optional Tailwind classes).
 
-- Separate frontend pipeline: You can create a frontend DSL using `frontend("Name", ...)` in `examples/frontend.dsl.ts` and run `npm run gen:frontend` to generate frontend-only artifacts into `generated/frontend/`.
-- `src/lowering/` : aturan lowering (minimal)
-- `src/emit/` : AST emitter (ts-morph)
-- `examples/app.dsl.ts` : contoh DSL
+### 3. Explore Outputs
+- **Backend Only**: `generated/backend-only/`
+- **Rich Frontend**: `generated/form-io/` (Run `npm install && npm run dev` inside to see the UI)
+- **Fullstack**: `generated/fullstack/`
 
-## Catatan
-- Tool ini sengaja minimal dan deterministik.
-- Untuk sekarang, generator hanya menghasilkan:
-  - `generated/lib/id.ts` (single point of truth untuk ID)
-  - `generated/services/<entity>.service.ts`
+## Manual Generation
+You can generate artifacts from a specific DSL file using the CLI:
+
+```bash
+# General Backend
+npx tsx src/cli.ts examples/app.dsl.ts generated/my-app --mode=backend
+
+# Frontend (FormIO style)
+npx tsx src/cli.ts examples/form-io.dsl.ts generated/my-frontend --mode=frontend
+```
+
+## Architecture
+See [docs/architecture.md](docs/architecture.md) for details on:
+- Generation Gap Pattern
+- Port & Adapters (Hexagonal)
+- Frontend Runtime & IR
+
+## Roadmap
+- [x] Separation of Concerns (Generated vs User space)
+- [x] Dependency Injection & Repositories
+- [x] Prisma ORM Adapter
+- [x] Extensibility Hooks
+- [x] Automated Testing
+- [x] Rich Frontend Components & Routing

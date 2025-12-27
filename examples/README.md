@@ -2,15 +2,37 @@
 
 This folder contains example DSLs to exercise the generator.
 
-- `app.dsl.ts` — full-stack demo that exercises backend generation and optional frontend generation via `a.meta("frontend", { react: true })`.
-- `frontend.dsl.ts` — minimal frontend-only DSL. Use:
+## Running All Examples
+We provide a helper script to generate all examples into distinct folders in `generated/`.
 
 ```bash
-npm run gen:frontend
+./scripts/generate-examples.sh
 ```
 
-or generate both infra with:
+## Included Examples
 
-```bash
-npm run gen:combined
-```
+### 1. Form IO (Rich Frontend) - `form-io.dsl.ts`
+Demonstrates advanced frontend capabilities:
+- **Async Selects**: Fetching data from APIs.
+- **Icons**: Lucide React integration.
+- **Validations**: Form input rules.
+- **Client-Side Routing**: SPA navigation.
+
+Output: `generated/form-io/`
+
+### 2. Backend Only - `backend-only.dsl.ts`
+Demonstrates a pure backend API with Prisma integration and complex entity relationships.
+
+Output: `generated/backend-only/`
+
+### 3. Frontend Only - `frontend-only.dsl.ts`
+Demonstrates generating simple React components.
+
+Output: `generated/frontend-only/`
+
+### 4. Fullstack - `fullstack.dsl.ts`
+Demonstrates a complete backend configuration (frontend part is currently mapped to backend entities).
+
+Output: `generated/fullstack/`
+
+

@@ -27,5 +27,13 @@ export interface BackendIR {
       react?: boolean;
       tailwind?: boolean;
     };
+    loggerImpl?: "console" | "pino" | "winston";
+    httpClient?: "fetch" | "axios" | "got";
+    generateId?: "uuid_v4" | "shortid";
+    formatter?: "prettier" | "biome";
+    db?: {
+      provider: "prisma"; // extensible later
+      url: string;
+    };
   };
 }

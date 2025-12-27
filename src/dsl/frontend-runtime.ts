@@ -8,7 +8,16 @@ function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
 }
 
-export function frontend(name: string, fn: (a: { page: (name: string, opts: { path: string }, cb?: (p: any) => void) => void; component: (name: string, cb?: (c: any) => void) => void; }) => void) {
+// Runtime types with helper methods
+export type RuntimeComponent = DeclComponent & {
+  field: (fieldName: string, type: string, label?: string, validators?: Record<string, any>, config?: any) => void;
+  prop: (key: string, value: string) => void;
+};
+
+export function frontend(name: string, fn: (a: {
+  page: (name: string, opts: { path: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
+  component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
+}) => void) {
   assert(typeof name === "string" && name.length > 0, "frontend(name) harus string");
   assert(typeof fn === "function", "frontend(..., fn) fn harus function");
 
@@ -19,28 +28,52 @@ export function frontend(name: string, fn: (a: { page: (name: string, opts: { pa
       assert(CURRENT_FRONTEND, "page() harus di dalam frontend()");
       const page: DeclPage = { type: "page", name: pName, path: opts.path, components: [] } as any;
       if (typeof cb === "function") {
-        cb({ component(cName, cCb) { const comp: DeclComponent = { type: "component", name: cName }; if (typeof cCb === "function") cCb(comp); page.components.push(comp); } });
+        cb({
+          component(cName, cCb) {
+            const comp = { type: "component", name: cName, props: {}, form: { fields: [] } } as unknown as RuntimeComponent;
+
+            // attach helpers
+            comp.field = function (fieldName: string, type: string, label?: string, validators?: Record<string, any>, config?: any) {
+              comp.form = comp.form ?? { fields: [] };
+              comp.form.fields.push({ name: fieldName, type, label, validators, ...config });
+            };
+            comp.prop = function (key: string, value: string) {
+              comp.props = comp.props ?? {};
+              comp.props[key] = value;
+            };
+
+            if (typeof cCb === "function") cCb(comp);
+            page.components.push(comp);
+            if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(comp);
+          }
+        });
       }
-      CURRENT_FRONTEND.pages.push(page);
+      if (CURRENT_FRONTEND) CURRENT_FRONTEND.pages.push(page);
     },
     component(name, cb) {
       assert(CURRENT_FRONTEND, "component() harus di dalam frontend()");
-      const comp: DeclComponent = { type: "component", name, props: {}, form: { fields: [] } } as any;
+      const comp = { type: "component", name: name, props: {}, form: { fields: [] } } as unknown as RuntimeComponent;
 
       // add convenience methods to the comp object for DSL users: field() and prop()
-      comp.field = function (fieldName: string, type: string, label?: string, validators?: Record<string, any>) {
+      comp.field = function (fieldName: string, type: string, label?: string, validators?: Record<string, any>, config?: any) {
         comp.form = comp.form ?? { fields: [] };
-        comp.form.fields.push({ name: fieldName, type, label, validators });
-      } as any;
+        comp.form.fields.push({
+          name: fieldName,
+          type,
+          label,
+          validators,
+          ...config
+        });
+      };
 
       comp.prop = function (key: string, value: string) {
         comp.props = comp.props ?? {};
         comp.props[key] = value;
-      } as any;
+      };
 
-      if (typeof cb === "function") cb(comp as any);
+      if (typeof cb === "function") cb(comp);
 
-      CURRENT_FRONTEND.components.push(comp);
+      if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(comp);
     },
   });
 
@@ -71,8 +104,8 @@ export async function loadFrontendDsl(entry: string): Promise<DeclFrontendApp> {
       await (await import("node:fs/promises")).writeFile(tmp, transpiled, "utf-8");
       await import(pathToFileURL(tmp).href);
       // best-effort cleanup
-      try { await (await import("node:fs/promises")).unlink(tmp); } catch (_) {}
-    } catch (err2) {
+      try { await (await import("node:fs/promises")).unlink(tmp); } catch (_) { }
+    } catch (err2: any) {
       throw new Error(`Failed to load frontend DSL (${entry}): ${err2?.message ?? err2}`);
     }
   }

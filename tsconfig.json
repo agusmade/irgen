@@ -4,11 +4,16 @@
     "module": "ES2022",
     "moduleResolution": "Bundler",
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": ".",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["src/**/*.ts", "examples/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "examples/**/*.ts"
+  ]
 }

@@ -5,6 +5,9 @@ app("DemoApp", (a) => {
   // enable frontend generation and opt into Tailwind
   a.meta("frontend", { react: true, tailwind: true });
 
+  // enable prisma
+  a.meta("db", { provider: "prisma", url: "file:./dev.db" });
+
   a.entity("Product", (e) => {
     e.model({ id: "string", name: "string", price: "number" });
     e.create();

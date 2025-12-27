@@ -49,10 +49,10 @@ export function declToBackendIR(app: DeclApp, policies?: LoweringPolicies): Back
         const K = opKind(op.kind);
         const base =
           K === "CREATE" ? "create" :
-          K === "GET" ? "get" :
-          K === "UPDATE" ? "update" :
-          K === "REMOVE" ? "remove" :
-          "list";
+            K === "GET" ? "get" :
+              K === "UPDATE" ? "update" :
+                K === "REMOVE" ? "remove" :
+                  "list";
         const methodName =
           K === "LIST"
             ? camel(`${base} ${pluralize(entityName)}`)
@@ -76,6 +76,7 @@ export function declToBackendIR(app: DeclApp, policies?: LoweringPolicies): Back
       loggerImpl: loggerProvider,
       httpClient: httpProvider,
       frontend: (app.meta["frontend"] as any) ?? undefined,
+      db: (app.meta["db"] as any) ?? undefined,
     },
   };
 }
