@@ -1,0 +1,40 @@
+# Ensure consistent line endings and text handling across platforms
+* text=auto eol=lf
+
+# Force LF for important source types
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.css text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
+
+# Treat lockfiles and binary artifacts as binary
+*.lock binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.tgz binary
+
+# Tests / golden fixtures should remain normal text (so diffs are meaningful)
+/test/golden/** text
+
+# Mark generated output/inspection artifacts as generated and exclude from archive exports
+/generated/** linguist-generated=true export-ignore
+/generated-inspect-*/ linguist-generated=true export-ignore
+
+# Editor folders
+.vscode/ export-ignore
+.idea/ export-ignore
+
+# Ensure package manifests are normalized
+package.json text eol=lf
+package-lock.json text eol=lf
+
+# End of file

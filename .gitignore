@@ -1,0 +1,53 @@
+# Node modules
+node_modules/
+
+# Build & generated output
+dist/
+build/
+out/
+generated/
+# generated-inspect-* contains ephemeral inspection outputs
+generated-inspect-*/
+
+# TypeScript
+*.tsbuildinfo
+
+# IDEs / Editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Logs and temp files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+.npm
+.tmp/
+
+# Coverage & test artifacts
+.nyc_output/
+coverage/
+coverage-final.json
+
+# Tooling caches
+.cache/
+.parcel-cache/
+.cache-loader/
+.eslintcache
+.prettiercache
+
+# Environment
+.env
+.env.*.local
+.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.tgz
+*.bak

@@ -1,0 +1,44 @@
+{
+  "name": "ir-codegen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/cli.ts examples/app.dsl.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/cli.js examples/app.dsl.ts",
+    "clean": "rimraf dist generated",
+    "gen": "tsx src/cli.ts examples/app.dsl.ts",
+    "gen:frontend": "tsx src/cli.ts --mode=frontend examples/frontend.dsl.ts",
+    "gen:combined": "npm run gen && npm run gen:frontend",
+    "test:poc": "node scripts/poc-smoke.js",
+    "test:golden": "node scripts/golden-test.js",
+    "update-golden": "node scripts/update-golden.js",
+    "test:decl": "tsx scripts/decl-validate.test.js",
+    "test:mappers": "tsx scripts/mappers.test.js",
+    "test:policy": "tsx scripts/policy.test.js",
+    "test:lowering": "tsx scripts/lowering.test.js",
+    "test:policy-zod": "tsx scripts/policy-zod.test.js",
+    "test:emitter": "tsx scripts/emitter.test.js",
+    "test:emitter-cli": "tsx scripts/emitter-cli.test.js",
+    "test:adapters": "tsx scripts/adapters.test.js",
+    "test:package-deps": "tsx scripts/package-deps.test.js",
+    "test:package-frontend": "tsx scripts/package-frontend.test.js",
+    "test:cli-build": "tsx scripts/cli-build.test.js",
+    "test:cli-inspect-decl": "tsx scripts/cli-inspect-decl.test.js",
+    "test:emitter-registry": "tsx scripts/emitter-registry.test.js",
+    "test:gen-frontend": "node scripts/gen-frontend.test.js",
+    "test:ci": "npm run test:golden"
+  },
+  "dependencies": {
+    "ts-morph": "^23.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "prettier": "^2.8.8"
+  }
+}
