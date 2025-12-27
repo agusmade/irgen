@@ -1,0 +1,46 @@
+stages:
+  - check
+  - test
+  - golden
+
+variables:
+  NODE_ENV: test
+
+check_tracked_generated:
+  stage: check
+  image: alpine:3.18
+  script:
+    - echo "Checking for tracked generated files..."
+    - if git ls-files | grep -E '(^generated/|^generated-|^examples/.+generated)'; then echo "Tracked generated files found. Remove them and add to .gitignore." && git ls-files | grep -E '(^generated/|^generated-|^examples/.+generated)' && exit 1; fi
+  rules:
+    - if: $CI_PIPELINE_SOURCE
+
+install_and_tests:
+  stage: test
+  image: node:18
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}"
+    paths:
+      - node_modules/
+  script:
+    - npm ci
+    - npm run test:mappers
+    - npm run test:policy-zod
+  rules:
+    - if: $CI_PIPELINE_SOURCE
+
+golden_tests:
+  stage: golden
+  image: node:18
+  needs:
+    - install_and_tests
+    - check_tracked_generated
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}"
+    paths:
+      - node_modules/
+  script:
+    - npm ci
+    - npm run test:ci
+  rules:
+    - if: $CI_PIPELINE_SOURCE

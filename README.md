@@ -1,6 +1,14 @@
 # IR Codegen (DSL → IR → Lowering → AST Emit)
 
+[![pipeline status](https://gitlab.com/agusmade/ir-codegen/-/badges/main/pipeline.svg)](https://gitlab.com/agusmade/ir-codegen/-/pipelines)
+
 Proyek kecil untuk memulai tooling seperti yang kita bahas:
+
+## CI (GitLab)
+
+This repository uses GitLab CI to run a deterministic test suite and golden tests on push and merge requests. The pipeline will: check there are no tracked generated artifacts, install dependencies, run mapper & policy validation tests, and run the golden test suite (`npm run test:ci`). If the golden tests fail, update fixtures locally with `npm run update-golden` and open a new MR.
+
+Note: If you host this repo on GitHub the existing `.github/workflows/ci.yml` will provide equivalent checks via GitHub Actions.
 
 - Developer menulis DSL (JS/TS) yang pendek.
 - CLI mengeksekusi DSL → menghasilkan DeclIR.
