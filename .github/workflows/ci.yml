@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  ci:
+    name: CI & Golden Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure no tracked generated artifacts
+        run: |
+          set -e
+          echo "Checking for tracked generated files..."
+          if git ls-files | grep -E '(^generated/|^generated-|^examples/.+generated)'; then
+            echo "::error ::Tracked generated files found. Remove them and add to .gitignore before pushing." >&2
+            git ls-files | grep -E '(^generated/|^generated-|^examples/.+generated)'
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run mapper & policy sanity tests
+        run: npm run test:mappers && npm run test:policy-zod
+
+      - name: Run full CI (golden tests)
+        run: npm run test:ci
