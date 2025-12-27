@@ -5,7 +5,9 @@ node_modules/
 dist/
 build/
 out/
+# generic generated outputs (ignore any generated or generated-* directories)
 generated/
+generated-*/
 # generated-inspect-* contains ephemeral inspection outputs
 generated-inspect-*/
 
