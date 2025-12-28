@@ -18,7 +18,7 @@ async function main() {
     const backendIR = await engine.runTransform("backend", decl, { generateId: "uuid_v4", loggerImpl: "pino", httpClient: "axios" });
 
     // ensure emitter registered
-    await import("../src/emit/backend-tsmorph.js");
+    await import("../src/emit/backend/backend-tsmorph.js");
 
     await emitterEngine.runEmitter("backend-tsmorph", backendIR, outDir);
 
@@ -27,9 +27,12 @@ async function main() {
 
     const pkg = JSON.parse(fs.readFileSync(pkgFile, "utf-8"));
     const deps = pkg.dependencies || {};
+    const devDeps = pkg.devDependencies || {};
     if (!deps.uuid) throw new Error("expected uuid dependency when generateId=uuid_v4");
     if (!deps.axios) throw new Error("expected axios dependency when httpClient=axios");
     if (!deps.pino) throw new Error("expected pino dependency when loggerImpl=pino");
+    if (deps.react || deps["react-dom"]) throw new Error("frontend deps should not be present in backend-only package");
+    if (devDeps.tailwindcss) throw new Error("tailwindcss should not be added to backend-only package");
 
     console.log("Package deps test passed");
     process.exit(0);

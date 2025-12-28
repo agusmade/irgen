@@ -1,13 +1,11 @@
 import { loadDsl } from "../dsl/runtime.js";
 import { loadFrontendDsl } from "../dsl/frontend-runtime.js";
-import type { DeclUnified } from "../ir/decl-unified.js";
-import { mergeIntoUnified } from "../ir/decl-unified.js";
+import { DeclUnified, mergeIntoUnified, validateAndNormalizeDeclUnified } from "../ir/decl";
 
 /**
  * Minimal aggregator for the POC: load one or two DSL entries and merge
  * them into a DeclUnified.
  */
-import { validateDeclUnified } from "../ir/decl-unified.schema.js";
 
 export async function aggregateDecls(entries: string[]): Promise<DeclUnified> {
   const loaded: any[] = [];
@@ -36,5 +34,5 @@ export async function aggregateDecls(entries: string[]): Promise<DeclUnified> {
 
   const unified = mergeIntoUnified(loaded as any);
   // validate + normalize
-  return validateDeclUnified(unified as any);
+  return validateAndNormalizeDeclUnified(unified as any);
 }

@@ -18,25 +18,26 @@ function copyIfExists(src, dst) {
 function main() {
   console.log("Updating golden fixtures: running generator (backend + frontend)...");
   // ensure both backend and frontend artifacts exist
-  execSync("npm run gen:combined", { stdio: "inherit" });
+  execSync("npm run gen", { stdio: "inherit" });
 
   ensureDir(path.join("test", "golden"));
 
   const mapping = [
-    ["generated/lib/models.ts", "test/golden/models.expected.ts"],
-    ["generated/services/product.service.ts", "test/golden/product.service.expected.ts"],
-    ["generated/controllers/product.controller.ts", "test/golden/product.controller.expected.ts"],
-    ["generated/lib/id.ts", "test/golden/id.expected.ts"],
-    ["generated/lib/logger.ts", "test/golden/logger.expected.ts"],
-    ["generated/lib/http.ts", "test/golden/http.expected.ts"],
-    ["generated/package.json", "test/golden/package.expected.json"],
-    ["generated/frontend/index.tsx", "test/golden/frontend/index.expected.tsx"],
-    ["generated/frontend/index.css", "test/golden/frontend/index.css.expected"],
-    ["generated/frontend/pages/home.tsx", "test/golden/frontend/pages/home.expected.tsx"],
-    ["generated/frontend/pages/product.tsx", "test/golden/frontend/pages/product.expected.tsx"],
-    ["generated/frontend/components/productcard.tsx", "test/golden/frontend/components/productcard.expected.tsx"],
-    ["generated/frontend/components/productdetail.tsx", "test/golden/frontend/components/productdetail.expected.tsx"],
-    ["generated/frontend/components/productform.tsx", "test/golden/frontend/components/productform.expected.tsx"],
+    ["generated/backend/lib/models.ts", "test/golden/models.expected.ts"],
+    ["generated/backend/services/user.service.ts", "test/golden/user.service.expected.ts"],
+    ["generated/backend/controllers/post.controller.ts", "test/golden/post.controller.expected.ts"],
+    ["generated/backend/controllers/comment.controller.ts", "test/golden/comment.controller.expected.ts"],
+    ["generated/backend/lib/id.ts", "test/golden/id.expected.ts"],
+    ["generated/backend/lib/logger.ts", "test/golden/logger.expected.ts"],
+    ["generated/backend/lib/http.ts", "test/golden/http.expected.ts"],
+    ["generated/backend/package.json", "test/golden/package.expected.json"],
+    ["generated/frontend/src/index.tsx", "test/golden/frontend/index.expected.tsx"],
+    ["generated/frontend/src/index.css", "test/golden/frontend/index.css.expected"],
+    ["generated/frontend/src/pages/home.tsx", "test/golden/frontend/pages/home.expected.tsx"],
+    ["generated/frontend/src/pages/product.tsx", "test/golden/frontend/pages/product.expected.tsx"],
+    ["generated/frontend/src/components/productcard.tsx", "test/golden/frontend/components/productcard.expected.tsx"],
+    ["generated/frontend/src/components/productdetail.tsx", "test/golden/frontend/components/productdetail.expected.tsx"],
+    ["generated/frontend/src/components/productform.tsx", "test/golden/frontend/components/productform.expected.tsx"],
   ];
 
   for (const [s, d] of mapping) copyIfExists(s, d);

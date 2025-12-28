@@ -41,11 +41,33 @@ export const DeclPageSchema = z.object({
   components: z.array(DeclComponentSchema).default([]),
 });
 
+const DeclPwaIconSchema = z.object({
+  src: z.string().min(1),
+  sizes: z.string().min(1),
+  type: z.string().min(1).default("image/png"),
+  purpose: z.string().optional(),
+});
+
+export const DeclPwaConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  name: z.string().optional(),
+  shortName: z.string().optional(),
+  description: z.string().optional(),
+  startUrl: z.string().optional(),
+  scope: z.string().optional(),
+  display: z.string().optional(),
+  backgroundColor: z.string().optional(),
+  themeColor: z.string().optional(),
+  orientation: z.string().optional(),
+  icons: z.array(DeclPwaIconSchema).optional(),
+});
+
 export const DeclFrontendAppSchema = z.object({
   type: z.literal("frontend"),
   name: z.string().min(1),
   pages: z.array(DeclPageSchema).default([]),
   components: z.array(DeclComponentSchema).default([]),
+  pwa: DeclPwaConfigSchema.optional(),
 });
 
 export type DeclComponent = z.infer<typeof DeclComponentSchema>;
@@ -83,9 +105,31 @@ export interface FrontendPage {
   components: FrontendComponent[];
 }
 
+export interface FrontendPwaIcon {
+  src: string;
+  sizes: string;
+  type: string;
+  purpose?: string;
+}
+
+export interface FrontendPwaConfig {
+  enabled: boolean;
+  name: string;
+  shortName: string;
+  description?: string;
+  startUrl: string;
+  scope: string;
+  display: string;
+  backgroundColor: string;
+  themeColor: string;
+  orientation?: string;
+  icons?: FrontendPwaIcon[];
+}
+
 export interface FrontendIR {
   domain: "frontend";
   appName: string;
   pages: FrontendPage[];
   components: FrontendComponent[];
+  pwa?: FrontendPwaConfig;
 }

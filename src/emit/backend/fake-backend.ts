@@ -1,5 +1,5 @@
-import { emitterEngine } from "./engine.js";
-import { registerTargetEmitter } from "./registry.js";
+import { emitterEngine } from "../engine.js";
+import { registerTargetEmitter } from "../registry.js";
 import fs from "node:fs";
 import path from "node:path";
 

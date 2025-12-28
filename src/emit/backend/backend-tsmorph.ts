@@ -1,10 +1,9 @@
 import path from "node:path";
 import fs from "node:fs";
 import { Project, QuoteKind, IndentationText, ScriptTarget, Scope } from "ts-morph";
-import type { BackendIR, BackendEntity } from "../ir/types.js";
-import { emitFrontend } from "./frontend-react.js";
-import { emitterEngine } from "./engine.js";
-import { formatDirectory } from "./format.js";
+import type { BackendIR, BackendEntity } from "../../ir/domain/types.js";
+import { emitterEngine } from "../engine.js";
+import { formatDirectory } from "../format.js";
 
 function ensureDir(p: string) {
   fs.mkdirSync(p, { recursive: true });
@@ -52,15 +51,6 @@ export function emitBackendToProject(project: Project, outDir: string, ir: Backe
   // package.json injection based on policies
   emitPackageJson(outDir, ir);
 
-  // frontend emitter (React) — optional features controlled by `ir.policies.frontend`
-  if (ir.policies?.frontend?.react) {
-    // call emitFrontend synchronously (module imported above)
-    try {
-      emitFrontend(project, outDir, ir as any);
-    } catch (err) {
-      // ignore frontend emit failures to keep generator resilient
-    }
-  }
 }
 
 export function emitBackend(ir: BackendIR, outDir: string) {
@@ -111,7 +101,7 @@ try {
 
   // register default target -> emitter mapping
   try {
-    const { registerTargetEmitter } = await import("./registry.js");
+    const { registerTargetEmitter } = await import("../registry.js");
     registerTargetEmitter("backend", "backend-tsmorph", { force: true });
   } catch (e) {
     // ignore
@@ -300,11 +290,11 @@ function emitInMemoryRepository(project: Project, outDir: string, entity: Backen
   const sf = project.createSourceFile(path.join(outDir, "base", "repositories", fileName), "", { overwrite: true });
 
   const modelType = entity.model ? entity.name : "Record<string, any>";
-  sf.addImportDeclaration({ moduleSpecifier: `../../../lib/repositories/${entity.name.toLowerCase()}.repository`, namedImports: [`I${entity.name}Repository`] });
+  sf.addImportDeclaration({ moduleSpecifier: `../../lib/repositories/${entity.name.toLowerCase()}.repository`, namedImports: [`I${entity.name}Repository`] });
   if (entity.model) {
-    sf.addImportDeclaration({ moduleSpecifier: `../../../lib/models`, namedImports: [entity.name] });
+    sf.addImportDeclaration({ moduleSpecifier: `../../lib/models`, namedImports: [entity.name] });
   }
-  sf.addImportDeclaration({ moduleSpecifier: `../../../lib/id`, namedImports: ["newId"] });
+  sf.addImportDeclaration({ moduleSpecifier: `../../lib/id`, namedImports: ["newId"] });
 
   const cls = sf.addClass({
     name: `InMemory${entity.name}Repository`,
@@ -432,9 +422,9 @@ function emitPrismaRepository(project: Project, outDir: string, entity: BackendE
   const sf = project.createSourceFile(path.join(outDir, "base", "repositories", fileName), "", { overwrite: true });
 
   const modelType = entity.model ? entity.name : "any";
-  sf.addImportDeclaration({ moduleSpecifier: `../../../lib/repositories/${entity.name.toLowerCase()}.repository`, namedImports: [`I${entity.name}Repository`] });
+  sf.addImportDeclaration({ moduleSpecifier: `../../lib/repositories/${entity.name.toLowerCase()}.repository`, namedImports: [`I${entity.name}Repository`] });
   if (entity.model) {
-    sf.addImportDeclaration({ moduleSpecifier: `../../../lib/models`, namedImports: [entity.name] });
+    sf.addImportDeclaration({ moduleSpecifier: `../../lib/models`, namedImports: [entity.name] });
   }
 
   // Import Prisma Client (usually from a singleton or instantiated here)
@@ -821,23 +811,6 @@ function emitPackageJson(outDir: string, ir?: any) {
     pkg.scripts["db:push"] = "prisma db push";
   }
 
-  // frontend deps if frontend enabled
-  const frontend = ir?.policies?.frontend;
-  if (frontend) { // Add lucide-react if any frontend is enabled
-    pkg.dependencies["lucide-react"] = "^0.263.1";
-    pkg.dependencies["react-router-dom"] = "^6.14.0";
-  }
-  if (frontend?.react) {
-    pkg.dependencies.react = "^18.2.0";
-    pkg.dependencies["react-dom"] = "^18.2.0";
-    pkg.devDependencies["@types/react"] = "^18.0.0";
-    pkg.devDependencies["@types/react-dom"] = "^18.0.0";
-  }
-  if (frontend?.tailwind) {
-    pkg.devDependencies.tailwindcss = "^3.5.0";
-    pkg.scripts["build:css"] = "tailwindcss -i src/index.css -o dist/index.css --minify";
-  }
-
   // dev toolchain
   pkg.devDependencies.prettier = "^2.8.8";
   pkg.devDependencies.typescript = "^5.6.3";
@@ -846,12 +819,6 @@ function emitPackageJson(outDir: string, ir?: any) {
   // testing
   pkg.devDependencies.vitest = "^0.34.0";
   pkg.scripts.test = "vitest run";
-
-  // tailwind
-  pkg.devDependencies.tailwindcss = "^3.3.0";
-  pkg.devDependencies.postcss = "^8.4.0";
-  pkg.devDependencies.autoprefixer = "^10.4.0";
-  pkg.devDependencies["@tailwindcss/forms"] = "^0.5.0";
 
   // use already-imported fs and path at top of file
   fs.mkdirSync(outDir, { recursive: true });

@@ -15,15 +15,15 @@ function run(cmd) {
 async function main() {
   try {
     console.log("Running generator (combined mode)...");
-    await run("npm run gen:combined");
+    await run("npm run gen");
 
-    const modelFile = "generated/lib/models.ts";
+    const modelFile = "generated/backend/lib/models.ts";
     if (!fs.existsSync(modelFile)) {
       console.error("FAIL: expected file not found:", modelFile);
       process.exit(2);
     }
 
-    const servicesDir = "generated/services";
+    const servicesDir = "generated/backend/services";
     if (!fs.existsSync(servicesDir)) {
       console.error("FAIL: expected directory not found:", servicesDir);
       process.exit(2);

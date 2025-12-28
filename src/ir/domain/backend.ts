@@ -22,11 +22,6 @@ export interface BackendIR {
   entities: BackendEntity[];
   policies: {
     idProvider: "newId";
-    // optional frontend generation configs
-    frontend?: {
-      react?: boolean;
-      tailwind?: boolean;
-    };
     loggerImpl?: "console" | "pino" | "winston";
     httpClient?: "fetch" | "axios" | "got";
     generateId?: "uuid_v4" | "shortid";

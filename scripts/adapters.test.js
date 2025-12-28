@@ -18,7 +18,7 @@ async function main() {
     const backendIR = await engine.runTransform("backend", decl, { generateId: "shortid", loggerImpl: "console", httpClient: "fetch" });
 
     // ensure emitters are registered
-    await import("../src/emit/backend-tsmorph.js");
+    await import("../src/emit/backend/backend-tsmorph.js");
 
     await emitterEngine.runEmitter("backend-tsmorph", backendIR, outDir);
 

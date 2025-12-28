@@ -1,11 +1,20 @@
 // Generated: model interfaces
-export interface Product {
-  id: string;
+export interface User {
+  email: string;
   name: string;
-  price: number;
+  isActive: boolean;
 }
 
-export interface Category {
-  id: string;
-  name: string;
+export interface Post {
+  title: string;
+  content: string;
+  published: boolean;
+  viewCount: number;
+  authorId: string;
+}
+
+export interface Comment {
+  text: string;
+  postId: string;
+  userId: string;
 }

@@ -1,10 +1,10 @@
 import path from "node:path";
 import { loadDsl } from "./dsl/runtime.js";
 import { declToBackendIR } from "./lowering/backend.js";
-import { emitBackend } from "./emit/backend-tsmorph.js";
+import { emitBackend } from "./emit/backend/backend-tsmorph.js";
 import { loadFrontendDsl } from "./dsl/frontend-runtime.js";
 import { declToFrontendIR } from "./lowering/frontend.js";
-import { emitFrontend as emitFrontendFromIR } from "./emit/frontend-react.js";
+import { emitFrontend as emitFrontendFromIR } from "./emit/frontend/frontend-react.js";
 
 async function main() {
   const modeFlag = process.argv.find(a => a.startsWith("--mode=")) ?? "--mode=backend";
@@ -16,12 +16,18 @@ async function main() {
   const emitterName = emitterFlag ? emitterFlag.split("=")[1] : null;
 
   // parse positional args: first DSL entry and optional outDir
+  // parse positional args: first DSL entry and optional outDir
   const rawArgs = process.argv.slice(2);
+  const outDirFlag = process.argv.find(a => a.startsWith("--outDir=")) ?? null;
   const entries = rawArgs.filter(a => a.endsWith('.dsl.ts'));
-  const entry = entries[0] ?? (mode === 'frontend' ? 'examples/frontend.dsl.ts' : 'examples/app.dsl.ts');
+  const entry = entries[0]; // ?? (mode === 'frontend' ? 'examples/frontend.dsl.ts' : 'examples/app.dsl.ts');
   const entryIndex = rawArgs.indexOf(entry);
   const maybeOut = rawArgs[entryIndex + 1];
-  const outDir = maybeOut && !maybeOut.startsWith('--') ? maybeOut : 'generated';
+
+  // Logic: Explicit flag > Positional arg (if valid) > Default
+  const outDir = outDirFlag
+    ? outDirFlag.split("=")[1]
+    : (maybeOut && !maybeOut.startsWith('--') ? maybeOut : 'generated');
   const entryArgIndex = entryIndex; // keep for later logging
   // normalise entries array
   const entriesArr = entries.length ? entries : [entry];
@@ -93,6 +99,13 @@ async function main() {
   const policies = policiesFlag ? JSON.parse(policiesFlag.split("=")[1]) : undefined;
   const emitterMapFlag = process.argv.find(a => a.startsWith("--emitter-map=")) ?? null;
   const emitterMap = emitterMapFlag ? JSON.parse(emitterMapFlag.split("=")[1]) : undefined;
+  const policyForTarget = (target: string) => {
+    if (!policies) return undefined;
+    if (policies[target]) return policies[target];
+    const keys = Object.keys(policies);
+    const looksNamespaced = keys.some(k => ["backend", "frontend"].includes(k));
+    return looksNamespaced ? undefined : policies;
+  };
 
   if (targets && targets.length > 0) {
     // orchestrate: aggregate decls and run lowering+emit for each target
@@ -111,7 +124,7 @@ async function main() {
         // ensure backend lowering registered
         await import("./lowering/backend.js");
         const { engine } = await import("./lowering/engine.js");
-        const backendIR = await engine.runTransform("backend", decl, policies);
+        const backendIR = await engine.runTransform("backend", decl, policyForTarget("backend"));
         if (inspectIR) console.log("INSPECT-IR (backend):", JSON.stringify(backendIR, null, 2));
         // choose emitter via mapping (CLI override wins)
         const { getEmitterForTarget } = await import("./emit/registry.js");
@@ -122,7 +135,7 @@ async function main() {
         // ensure frontend lowering registered
         await import("./lowering/frontend.js");
         const { engine } = await import("./lowering/engine.js");
-        const frontendIR = await engine.runTransform("frontend", decl, policies);
+        const frontendIR = await engine.runTransform("frontend", decl, policyForTarget("frontend"));
         if (inspectIR) console.log("INSPECT-IR (frontend):", JSON.stringify(frontendIR, null, 2));
         const { getEmitterForTarget } = await import("./emit/registry.js");
         const { emitterEngine } = await import("./emit/engine.js");
@@ -139,12 +152,12 @@ async function main() {
 
   if (mode === "backend") {
     const decl = await loadDsl(entry);
-    const backendIR = declToBackendIR(decl);
+    const backendIR = declToBackendIR(decl, policyForTarget("backend"));
     const { emitterEngine } = await import("./emit/engine.js");
     await emitterEngine.runEmitter("backend-tsmorph", backendIR, path.resolve(process.cwd(), outDir));
   } else if (mode === "frontend") {
     const decl = await loadFrontendDsl(entry);
-    const frontendIR = declToFrontendIR(decl);
+    const frontendIR = declToFrontendIR(decl, policyForTarget("frontend"));
 
     // create a ts-morph project so the frontend emitter can create files and save
     const project = new (await import("ts-morph")).Project({
@@ -169,8 +182,7 @@ async function main() {
     // backend
     try {
       const backendIR = await runMapper("backend", decl);
-      // @ts-ignore - backendIR typed from dynamic import
-      emitBackend(backendIR, path.resolve(process.cwd(), outDir));
+      emitBackend(backendIR as any, path.resolve(process.cwd(), outDir, "backend"));
     } catch (err) {
       console.error("backend generation failed:", err);
     }
@@ -179,7 +191,7 @@ async function main() {
     try {
       const frontendIR = await runMapper("frontend", decl);
       const { emitterEngine } = await import("./emit/engine.js");
-      await emitterEngine.runEmitter("frontend-tsmorph", frontendIR, path.resolve(process.cwd(), outDir));
+      await emitterEngine.runEmitter("frontend-tsmorph", frontendIR, path.resolve(process.cwd(), outDir, "frontend"));
     } catch (err) {
       console.error("frontend generation failed:", err);
     }

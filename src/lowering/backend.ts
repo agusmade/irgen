@@ -1,4 +1,4 @@
-import type { DeclApp, BackendIR, BackendOperationKind } from "../ir/types.js";
+import type { DeclApp, BackendIR, BackendOperationKind } from "../ir/domain/types.js";
 
 /**
  * Lowering rules:
@@ -9,7 +9,7 @@ import type { DeclApp, BackendIR, BackendOperationKind } from "../ir/types.js";
  *   LIST   -> list<Entity>s (sederhana; nanti bisa pluralization rules)
  */
 
-import { pascal, camel, pluralize } from "../utils/index.js";
+import { pascal, camel, pluralize } from "../utils/string.js";
 
 export type LoweringPolicies = {
   generateId?: "uuid_v4" | "shortid" | "custom";
@@ -75,7 +75,6 @@ export function declToBackendIR(app: DeclApp, policies?: LoweringPolicies): Back
       idProvider,
       loggerImpl: loggerProvider,
       httpClient: httpProvider,
-      frontend: (app.meta["frontend"] as any) ?? undefined,
       db: (app.meta["db"] as any) ?? undefined,
     },
   };
@@ -95,4 +94,3 @@ try {
 } catch (e) {
   // ignore if already registered (useful for repeated runs in test environment)
 }
-

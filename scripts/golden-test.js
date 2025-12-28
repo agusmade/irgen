@@ -17,24 +17,25 @@ async function main() {
   try {
     console.log("Running generator for golden test...");
     // generate both backend and frontend artifacts to validate frontend golden fixtures
-    await run("npm run gen:combined");
+  await run("npm run gen");
 
-    const checks = [
-      { actual: "generated/lib/models.ts", expected: "test/golden/models.expected.ts", type: "text" },
-      { actual: "generated/services/product.service.ts", expected: "test/golden/product.service.expected.ts", type: "text" },
-      { actual: "generated/controllers/product.controller.ts", expected: "test/golden/product.controller.expected.ts", type: "text" },
-      { actual: "generated/lib/id.ts", expected: "test/golden/id.expected.ts", type: "text" },
-      { actual: "generated/lib/logger.ts", expected: "test/golden/logger.expected.ts", type: "text" },
-      { actual: "generated/lib/http.ts", expected: "test/golden/http.expected.ts", type: "text" },
-      { actual: "generated/package.json", expected: "test/golden/package.expected.json", type: "json" },
+  const checks = [
+    { actual: "generated/backend/lib/models.ts", expected: "test/golden/models.expected.ts", type: "text" },
+    { actual: "generated/backend/services/user.service.ts", expected: "test/golden/user.service.expected.ts", type: "text" },
+    { actual: "generated/backend/controllers/post.controller.ts", expected: "test/golden/post.controller.expected.ts", type: "text" },
+    { actual: "generated/backend/controllers/comment.controller.ts", expected: "test/golden/comment.controller.expected.ts", type: "text" },
+      { actual: "generated/backend/lib/id.ts", expected: "test/golden/id.expected.ts", type: "text" },
+      { actual: "generated/backend/lib/logger.ts", expected: "test/golden/logger.expected.ts", type: "text" },
+      { actual: "generated/backend/lib/http.ts", expected: "test/golden/http.expected.ts", type: "text" },
+      { actual: "generated/backend/package.json", expected: "test/golden/package.expected.json", type: "json" },
       // frontend artifacts
-      { actual: "generated/frontend/index.tsx", expected: "test/golden/frontend/index.expected.tsx", type: "text" },
-      { actual: "generated/frontend/index.css", expected: "test/golden/frontend/index.css.expected", type: "text" },
-      { actual: "generated/frontend/pages/home.tsx", expected: "test/golden/frontend/pages/home.expected.tsx", type: "text" },
-      { actual: "generated/frontend/components/productcard.tsx", expected: "test/golden/frontend/components/productcard.expected.tsx", type: "text" },
-      { actual: "generated/frontend/pages/product.tsx", expected: "test/golden/frontend/pages/product.expected.tsx", type: "text" },
-      { actual: "generated/frontend/components/productdetail.tsx", expected: "test/golden/frontend/components/productdetail.expected.tsx", type: "text" },
-      { actual: "generated/frontend/components/productform.tsx", expected: "test/golden/frontend/components/productform.expected.tsx", type: "text" },
+      { actual: "generated/frontend/src/index.tsx", expected: "test/golden/frontend/index.expected.tsx", type: "text" },
+      { actual: "generated/frontend/src/index.css", expected: "test/golden/frontend/index.css.expected", type: "text" },
+      { actual: "generated/frontend/src/pages/home.tsx", expected: "test/golden/frontend/pages/home.expected.tsx", type: "text" },
+      { actual: "generated/frontend/src/components/productcard.tsx", expected: "test/golden/frontend/components/productcard.expected.tsx", type: "text" },
+      { actual: "generated/frontend/src/pages/product.tsx", expected: "test/golden/frontend/pages/product.expected.tsx", type: "text" },
+      { actual: "generated/frontend/src/components/productdetail.tsx", expected: "test/golden/frontend/components/productdetail.expected.tsx", type: "text" },
+      { actual: "generated/frontend/src/components/productform.tsx", expected: "test/golden/frontend/components/productform.expected.tsx", type: "text" },
     ];
 
     let failures = 0;

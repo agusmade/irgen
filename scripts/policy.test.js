@@ -1,5 +1,5 @@
 import { declToBackendIR } from "../src/lowering/backend.js";
-import { emitBackend } from "../src/emit/backend-tsmorph.js";
+import { emitBackend } from "../src/emit/backend/backend-tsmorph.js";
 import path from "node:path";
 import fs from "node:fs";
 

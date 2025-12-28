@@ -51,6 +51,12 @@ npx tsx src/cli.ts examples/app.dsl.ts generated/my-app --mode=backend
 npx tsx src/cli.ts examples/form-io.dsl.ts generated/my-frontend --mode=frontend
 ```
 
+### Optional: enable PWA for frontend outputs
+- Opt-in via CLI policies:  
+  `npx tsx src/cli.ts examples/fullstack.dsl.ts generated/fullstack --targets=backend,frontend --policies='{"frontend":{"pwa":{"enabled":true,"name":"IR Codegen Docs","shortName":"IRDocs"}}}'`
+- This writes `manifest.webmanifest`, `icons/icon.svg`, and `pwa-sw.js`, then registers the service worker in the generated frontend entry. Defaults stay off unless you set `pwa.enabled=true` (either via `--policies` or by passing `{ pwa: { enabled: true } }` as the options argument to `frontend(...)` in your DSL).
+- Frontend outputs now include a minimal Vite setup. After generation run `npm install` then `npm run dev` inside the frontend folder (e.g. `generated/fullstack/frontend`) to serve the app.
+
 ## Architecture
 See [docs/architecture.md](docs/architecture.md) for details on:
 - Generation Gap Pattern

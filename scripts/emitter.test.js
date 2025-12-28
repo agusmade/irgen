@@ -9,8 +9,8 @@ async function main() {
     const backendDecl = decl.apps[0];
 
     // ensure emitters are registered
-    await import("../src/emit/backend-tsmorph.js");
-    await import("../src/emit/frontend-react.js");
+    await import("../src/emit/backend/backend-tsmorph.js");
+    await import("../src/emit/frontend/frontend-react.js");
 
     // run emitter via engine
     await emitterEngine.runEmitter("backend-tsmorph", backendDecl, path.resolve(process.cwd(), "generated-emitter-test"));

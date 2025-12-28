@@ -1,35 +1,24 @@
 {
-  "name": "demoapp-generated",
+  "name": "backendapp-generated",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "dependencies": {
     "uuid": "^9.0.0",
-    "@prisma/client": "latest",
-    "lucide-react": "^0.263.1",
-    "react-router-dom": "^6.14.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "@prisma/client": "latest"
   },
   "devDependencies": {
-    "prisma": "latest",
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
-    "tailwindcss": "^3.3.0",
     "prettier": "^2.8.8",
     "typescript": "^5.6.3",
     "tsx": "^4.19.2",
     "vitest": "^0.34.0",
-    "postcss": "^8.4.0",
-    "autoprefixer": "^10.4.0",
-    "@tailwindcss/forms": "^0.5.0"
+    "prisma": "latest"
   },
   "scripts": {
     "format": "prettier --write .",
     "build": "tsc -p tsconfig.json",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "build:css": "tailwindcss -i src/index.css -o dist/index.css --minify",
     "test": "vitest run"
   }
 }

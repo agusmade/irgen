@@ -1,6 +1,6 @@
-import type { DeclUnified } from "../ir/decl-unified.js";
-import type { BackendIR } from "../ir/backend.js";
-import type { FrontendIR } from "../ir/frontend.js";
+import type { DeclUnified } from "../ir/decl";
+import type { BackendIR } from "../ir/domain/backend.js";
+import type { FrontendIR } from "../ir/domain/frontend.js";
 
 type MapperFn = (decl: DeclUnified) => Promise<any> | any;
 

@@ -1,4 +1,4 @@
-import { DeclApp } from "./decl.js";
+import { DeclApp } from "./raw.schema.js";
 
 /**
  * Very small DeclUnified for POC: wraps one or more DeclApp (apps)

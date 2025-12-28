@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { DeclFrontendApp, DeclComponent, DeclPage, DeclFrontendAppSchema } from "../ir/frontend.js";
+import { DeclFrontendApp, DeclComponent, DeclPage, DeclFrontendAppSchema } from "../ir/domain/frontend.js";
 
 let CURRENT_FRONTEND: DeclFrontendApp | null = null;
 
@@ -14,14 +14,28 @@ export type RuntimeComponent = DeclComponent & {
   prop: (key: string, value: string) => void;
 };
 
-export function frontend(name: string, fn: (a: {
-  page: (name: string, opts: { path: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
-  component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
-}) => void) {
+export function frontend(
+  name: string,
+  optsOrFn: Record<string, any> | ((a: {
+    page: (name: string, opts: { path: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
+    component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
+  }) => void),
+  maybeFn?: (a: {
+    page: (name: string, opts: { path: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
+    component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
+  }) => void,
+) {
   assert(typeof name === "string" && name.length > 0, "frontend(name) harus string");
+
+  const opts = (typeof optsOrFn === "function" ? {} : optsOrFn) ?? {};
+  const fn = (typeof optsOrFn === "function" ? optsOrFn : maybeFn) as ((a: {
+    page: (name: string, opts: { path: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
+    component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
+  }) => void);
+
   assert(typeof fn === "function", "frontend(..., fn) fn harus function");
 
-  CURRENT_FRONTEND = { type: "frontend", name, pages: [], components: [] };
+  CURRENT_FRONTEND = { type: "frontend", name, pages: [], components: [], ...(opts?.pwa ? { pwa: opts.pwa } : {}) };
 
   fn({
     page(pName, opts, cb) {

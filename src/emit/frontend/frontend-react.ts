@@ -1,17 +1,146 @@
 import path from "node:path";
 import fs from "node:fs";
 import { Project, QuoteKind, IndentationText, ScriptTarget } from "ts-morph";
-import type { FrontendIR, FrontendPage, FrontendComponent } from "../ir/frontend.js";
-import { emitterEngine } from "./engine.js";
-import { registerTargetEmitter } from "./registry.js";
+import type { FrontendIR, FrontendPage, FrontendComponent } from "../../ir/domain/frontend.js";
+import { emitterEngine } from "../engine.js";
+import { registerTargetEmitter } from "../registry.js";
 
 function ensureDir(p: string) {
   fs.mkdirSync(p, { recursive: true });
 }
 
+function emitFrontendPackageJson(outDir: string, ir: FrontendIR) {
+  const pkg: any = {
+    name: ir?.appName ? `${ir.appName.toLowerCase()}-frontend` : "generated-frontend",
+    version: "0.1.0",
+    private: true,
+    type: "module",
+    scripts: {
+      format: "prettier --write .",
+      "build:css": "tailwindcss -i src/index.css -o dist/index.css --minify",
+      dev: "vite",
+      build: "vite build",
+      preview: "vite preview",
+    },
+    dependencies: {
+      react: "^18.2.0",
+      "react-dom": "^18.2.0",
+      "lucide-react": "^0.263.1",
+      "react-router-dom": "^6.14.0",
+    },
+    devDependencies: {
+      "@types/react": "^18.0.0",
+      "@types/react-dom": "^18.0.0",
+      tailwindcss: "^3.3.0",
+      postcss: "^8.4.0",
+      autoprefixer: "^10.4.0",
+      "@tailwindcss/forms": "^0.5.0",
+      prettier: "^2.8.8",
+      typescript: "^5.6.3",
+      tsx: "^4.19.2",
+      vite: "^5.4.8",
+      "@vitejs/plugin-react": "^4.3.2",
+    },
+  };
+
+  fs.mkdirSync(outDir, { recursive: true });
+  fs.writeFileSync(path.join(outDir, "package.json"), JSON.stringify(pkg, null, 2), "utf-8");
+}
+
+function emitPwaAssets(outDir: string, ir: FrontendIR) {
+  if (!ir.pwa?.enabled) return;
+
+  const pwa = ir.pwa;
+  const manifest = {
+    name: pwa.name,
+    short_name: pwa.shortName,
+    description: pwa.description ?? `${ir.appName} PWA`,
+    start_url: pwa.startUrl,
+    scope: pwa.scope,
+    display: pwa.display,
+    background_color: pwa.backgroundColor,
+    theme_color: pwa.themeColor,
+    orientation: pwa.orientation,
+    icons: pwa.icons ?? [
+      { src: "/icons/icon.svg", sizes: "any", type: "image/svg+xml" },
+    ],
+  };
+
+  const publicDir = path.join(outDir, "public");
+  const iconsDir = path.join(publicDir, "icons");
+  ensureDir(iconsDir);
+  fs.writeFileSync(path.join(publicDir, "manifest.webmanifest"), JSON.stringify(manifest, null, 2), "utf-8");
+
+  const svgIcon = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:${pwa.themeColor};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:${pwa.backgroundColor};stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="64" fill="url(#grad)"/>
+  <text x="50%" y="55%" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="180" fill="#ffffff" font-weight="700">IR</text>
+</svg>
+  `.trim();
+  fs.writeFileSync(path.join(iconsDir, "icon.svg"), svgIcon, "utf-8");
+
+  const sw = `
+const CACHE_NAME = "ir-codegen-pwa-v1";
+const ASSETS = ["/", "/index.html", "/manifest.webmanifest"];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((resp) => {
+        const copy = resp.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return resp;
+      }).catch(() => caches.match("/index.html"));
+    })
+  );
+});
+  `.trim();
+
+  fs.writeFileSync(path.join(publicDir, "pwa-sw.js"), sw, "utf-8");
+}
+
+function emitViteConfig(project: Project, outDir: string) {
+  const config = `
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+export default defineConfig({
+  plugins: [react()],
+  server: { port: 5173 },
+  preview: { port: 4173 },
+  publicDir: "public",
+});
+  `.trim();
+
+  project.createSourceFile(path.join(outDir, "vite.config.ts"), config, { overwrite: true });
+}
+
 export function emitFrontend(project: Project, outDir: string, ir: FrontendIR) {
-  const frontendDir = path.join(outDir, "frontend");
+  const frontendDir = path.join(outDir, "src");
   ensureDir(frontendDir);
+
+  emitFrontendPackageJson(outDir, ir);
+  emitPwaAssets(outDir, ir);
 
   // index file (Entry Point)
   const idx = project.createSourceFile(path.join(frontendDir, "index.tsx"), "", { overwrite: true });
@@ -29,8 +158,21 @@ root.render(
 );
   `.trim());
 
+  if (ir.pwa?.enabled) {
+    idx.addStatements(`
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/pwa-sw.js').catch(err => {
+      console.error('Service worker registration failed', err);
+    });
+  });
+}
+    `.trim());
+  }
+
   // App.tsx (Router)
   const appFile = project.createSourceFile(path.join(frontendDir, "App.tsx"), "", { overwrite: true });
+  appFile.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React" });
   appFile.addImportDeclaration({ moduleSpecifier: "react-router-dom", namedImports: ["BrowserRouter", "Routes", "Route", "Link"] });
 
   // Import all pages
@@ -92,11 +234,13 @@ root.render(
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    ${ir.pwa?.enabled ? `<link rel="manifest" href="/manifest.webmanifest" />` : ""}
+    ${ir.pwa?.enabled ? `<meta name="theme-color" content="${ir.pwa.themeColor}" />` : ""}
     <title>${ir.appName}</title>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/frontend/index.tsx"></script>
+    <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>
   `.trim(), { overwrite: true });
@@ -149,12 +293,12 @@ module.exports = {
 
   // postcss.config.js
   project.createSourceFile(path.join(outDir, "postcss.config.js"), `
-module.exports = {
+export default {
   plugins: {
     tailwindcss: {},
     autoprefixer: {},
   },
-}
+};
   `.trim(), { overwrite: true });
 }
 

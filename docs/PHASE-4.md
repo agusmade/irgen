@@ -14,7 +14,7 @@ This document summarizes the small emitter pipeline I implemented as part of Pha
 
 ## Acceptance
 - `npm run test:emitter` passes and generated files appear in `generated-emitter-test/` as expected.
-- Existing generation flows (`npm run gen`, `npm run gen:frontend`, `npm run gen:combined`) remain functionally equivalent.
+- Existing generation flows (`npm run gen`, `npm run gen:frontend`, `npm run gen:backend`) remain functionally equivalent.
 
 ## Notes
 - This is intentionally minimal: the engine focuses on registration and execution. Future improvements could add emit pipelines (pre-/post-steps), formatters, and hooks for golden test integrations.

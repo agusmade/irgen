@@ -8,8 +8,8 @@ const execFileP = promisify(execFile);
 async function main() {
   try {
     // ensure emitters are registered in the project (so CLI can import them)
-    await import("../src/emit/backend-tsmorph.js");
-    await import("../src/emit/frontend-react.js");
+    await import("../src/emit/backend/backend-tsmorph.js");
+    await import("../src/emit/frontend/frontend-react.js");
 
     // list emitters
     const { stdout: listOut } = await execFileP("npx", ["tsx", "src/cli.ts", "--emitters"], { cwd: process.cwd() });
