@@ -10,8 +10,8 @@ This phase implements generation of small shared adapters into `/lib/*` for gene
   - `logger` — `console` implementation (simple wrapper); placeholders for `pino`/`winston` include a note to add dependency.
   - `http` — `fetch` implementation (wrapper using global `fetch`); `axios` adapter suggests adding `axios` dependency.
 - Tests: `scripts/adapters.test.js` ensures the lowering+emitter flows generate `lib/id.ts`, `lib/logger.ts`, and `lib/http.ts` and that adapter contents match the chosen policies.
-- Package dependency injection: the backend emitter now writes a minimal `package.json` into generated projects and injects dependencies based on policies (e.g., `axios` for `httpClient: 'axios'`, `pino` for `loggerImpl: 'pino'`, `uuid` for `generateId: 'uuid_v4'`). Verified by `scripts/package-deps.test.js`.
-- Dev toolchain + frontend deps: generated `package.json` now includes basic devDependencies and scripts (Prettier, TypeScript) and injects frontend deps when frontend generation is enabled (React + ReactDOM, Tailwind when opted in). Verified by `scripts/package-frontend.test.js`.
+- Package dependency injection: the backend emitter writes a minimal backend-only `package.json` and injects dependencies based on policies (e.g., `axios` for `httpClient: 'axios'`, `pino` for `loggerImpl: 'pino'`, `uuid` for `generateId: 'uuid_v4'`). Verified by `scripts/package-deps.test.js`.
+- Frontend packaging is handled by the frontend emitter (it writes its own `package.json` with React/router/Tailwind toolchain). The backend package stays free of frontend/tailwind deps. Verified by the updated `scripts/package-frontend.test.js`.
 
 ## Acceptance
 - `npm run test:adapters` passes locally and verifies adapters are generated and contain policy-expected content.

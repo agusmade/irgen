@@ -7,10 +7,28 @@ import { z } from "zod";
 
 export const DeclFieldSchema = z.object({
   name: z.string().min(1),
-  type: z.string().min(1),
+  type: z.enum([
+    "text",
+    "number",
+    "select",
+    "textarea",
+    "checkbox",
+    "radio",
+    "date",
+    "datetime",
+    "email",
+    "password",
+  ]),
   label: z.string().optional(),
   // basic validation rules (minLength, required, etc)
-  validators: z.record(z.any()).optional(),
+  validators: z.object({
+    required: z.boolean().optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    minLength: z.number().optional(),
+    maxLength: z.number().optional(),
+    pattern: z.string().optional(),
+  }).optional(),
   // Expanded
   placeholder: z.string().optional(),
   description: z.string().optional(),

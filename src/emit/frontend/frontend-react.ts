@@ -141,6 +141,7 @@ export function emitFrontend(project: Project, outDir: string, ir: FrontendIR) {
 
   emitFrontendPackageJson(outDir, ir);
   emitPwaAssets(outDir, ir);
+  emitViteConfig(project, outDir);
 
   // index file (Entry Point)
   const idx = project.createSourceFile(path.join(frontendDir, "index.tsx"), "", { overwrite: true });
@@ -365,6 +366,12 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
   const filePath = path.join(dir, `${component.name.toLowerCase()}.tsx`);
   const sf = project.createSourceFile(filePath, "", { overwrite: true });
 
+  const needsHooks = !!(component.form && component.form.fields && component.form.fields.length > 0);
+  if (needsHooks) {
+    sf.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React", namedImports: ["useEffect", "useState"] });
+  } else {
+    sf.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React" });
+  }
   sf.addImportDeclaration({ moduleSpecifier: "lucide-react", namespaceImport: "Icons" });
 
   const compName = `${component.name}`;
@@ -382,7 +389,11 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
       // 1. STATE DEFINITIONS
       for (const f of component.form.fields) {
         const varName = f.name.replace(/[^a-zA-Z0-9_]/g, "_");
-        writer.writeLine(`const [${varName}, set_${varName}] = useState("");`);
+        const initialVal =
+          f.type === "checkbox" ? "false /* boolean */" :
+            (f.type === "number" ? "\"\"" :
+              "\"\"");
+        writer.writeLine(`const [${varName}, set_${varName}] = useState(${initialVal});`);
 
         // Async Data Source State
         if (f.dataSource) {
@@ -411,12 +422,31 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
       for (const f of component.form.fields) {
         const varName = f.name.replace(/[^a-zA-Z0-9_]/g, "_");
         const hasReq = (f.validators && f.validators.required) ? 'true' : 'false';
-        writer.writeLine(`  if (${hasReq}) { if (!${varName} || ${varName}.toString().trim() === "") n["${f.name}"] = "${(f.label ?? f.name)} is required"; }`);
+        writer.writeLine(`  if (${hasReq}) {`);
+        writer.writeLine(`    const v = ${varName};`);
+        writer.writeLine(`    const isEmpty = (typeof v === "boolean") ? !v : (!v || v.toString().trim() === "");`);
+        writer.writeLine(`    if (isEmpty) n["${f.name}"] = "${(f.label ?? f.name)} is required";`);
+        writer.writeLine(`  }`);
         if (f.type === "number") {
           const minVal = (f.validators && typeof f.validators.min !== 'undefined') ? f.validators.min : null;
           if (minVal !== null) {
             writer.writeLine(`  if (!n["${f.name}"] && Number(${varName}) < ${minVal}) n["${f.name}"] = "${(f.label ?? f.name)} must be >= ${minVal}";`);
           }
+          const maxVal = (f.validators && typeof f.validators.max !== 'undefined') ? f.validators.max : null;
+          if (maxVal !== null) {
+            writer.writeLine(`  if (!n["${f.name}"] && Number(${varName}) > ${maxVal}) n["${f.name}"] = "${(f.label ?? f.name)} must be <= ${maxVal}";`);
+          }
+        }
+        const minLen = (f.validators && typeof f.validators.minLength !== 'undefined') ? f.validators.minLength : null;
+        if (minLen !== null) {
+          writer.writeLine(`  if (!n["${f.name}"] && ${varName}.toString().length < ${minLen}) n["${f.name}"] = "${(f.label ?? f.name)} must have length >= ${minLen}";`);
+        }
+        const maxLen = (f.validators && typeof f.validators.maxLength !== 'undefined') ? f.validators.maxLength : null;
+        if (maxLen !== null) {
+          writer.writeLine(`  if (!n["${f.name}"] && ${varName}.toString().length > ${maxLen}) n["${f.name}"] = "${(f.label ?? f.name)} must have length <= ${maxLen}";`);
+        }
+        if (f.validators && f.validators.pattern) {
+          writer.writeLine(`  if (!n["${f.name}"]) { try { const re = new RegExp(${JSON.stringify(f.validators.pattern)}); if (!re.test(${varName}.toString())) n["${f.name}"] = "${(f.label ?? f.name)} is invalid"; } catch (_) {} }`);
         }
       }
 
@@ -464,8 +494,27 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
           }
           writer.writeLine(`        </select>`);
         } else {
-          const inputType = (f.type === "number") ? "number" : "text"; // date/email/etc support later
-          writer.writeLine(`        <input className=\"${inputClassName}\" name=\"${f.name}\" value={${varName}} onChange={(e) => set_${varName}(e.target.value)} type=\"${inputType}\" placeholder=\"${f.placeholder ?? ''}\" />`);
+          const inputType = (["number","email","password","date","datetime"].includes(f.type)) ? f.type : "text";
+          if (f.type === "textarea") {
+            writer.writeLine(`        <textarea className=\"${inputClassName}\" name=\"${f.name}\" value={${varName}} onChange={(e) => set_${varName}(e.target.value)} placeholder=\"${f.placeholder ?? ''}\" />`);
+          } else if (f.type === "checkbox") {
+            writer.writeLine(`        <input className=\"${inputClassName}\" name=\"${f.name}\" checked={${varName}} onChange={(e) => set_${varName}(e.target.checked)} type="checkbox" />`);
+          } else if (f.type === "radio") {
+            if (f.options) {
+              writer.writeLine(`        <div className="mt-2 space-y-2">`);
+              for (const opt of (f.options ?? [])) {
+                writer.writeLine(`          <label className="inline-flex items-center space-x-2">`);
+                writer.writeLine(`            <input type="radio" name="${f.name}" value="${opt.value}" checked={${varName} === "${opt.value}"} onChange={(e) => set_${varName}(e.target.value)} />`);
+                writer.writeLine(`            <span>${opt.label}</span>`);
+                writer.writeLine(`          </label>`);
+              }
+              writer.writeLine(`        </div>`);
+            } else {
+              writer.writeLine(`        <input className=\"${inputClassName}\" name=\"${f.name}\" value={${varName}} onChange={(e) => set_${varName}(e.target.value)} type="text" placeholder=\"${f.placeholder ?? ''}\" />`);
+            }
+          } else {
+            writer.writeLine(`        <input className=\"${inputClassName}\" name=\"${f.name}\" value={${varName}} onChange={(e) => set_${varName}(e.target.value)} type=\"${inputType}\" placeholder=\"${f.placeholder ?? ''}\" />`);
+          }
         }
 
         writer.writeLine(`      </div>`); // End relative wrapper/mt-1
@@ -497,7 +546,7 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
           for (const [key, type] of Object.entries(component.props)) {
             writer.writeLine(`        <div className=\"sm:col-span-1\">`);
             writer.writeLine(`          <dt className=\"text-sm font-medium text-gray-500\">${key}</dt>`);
-            writer.writeLine(`          <dd className=\"mt-1 text-sm text-gray-900\">${type}</dd>`); // Placeholder display
+            writer.writeLine(`          <dd className=\"mt-1 text-sm text-gray-900\">{${JSON.stringify(type)}}</dd>`); // Escape via JSX expression
             writer.writeLine(`        </div>`);
           }
           writer.writeLine(`      </dl>`);

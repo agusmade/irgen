@@ -8,8 +8,8 @@ function run(cmd) {
       if (err) return reject({ err, stdout, stderr });
       resolve({ stdout, stderr });
     });
-    p.stdout?.pipe(process.stdout);
-    p.stderr?.pipe(process.stderr);
+    if (p.stdout) p.stdout.pipe(process.stdout);
+    if (p.stderr) p.stderr.pipe(process.stderr);
   });
 }
 

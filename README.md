@@ -38,7 +38,8 @@ We provide a script to generate all example projects into `generated/` folders:
 ### 3. Explore Outputs
 - **Backend Only**: `generated/backend-only/`
 - **Rich Frontend**: `generated/form-io/` (Run `npm install && npm run dev` inside to see the UI)
-- **Fullstack**: `generated/fullstack/`
+- **Fullstack**: `generated/fullstack/` (backend and frontend are generated independently; install/run inside each target folder)
+- **Docs (PWA-ready)**: `generated/docs/` (from `examples/docs.dsl.ts`, run frontend with `npm run dev`)
 
 ## Manual Generation
 You can generate artifacts from a specific DSL file using the CLI:
@@ -49,6 +50,10 @@ npx tsx src/cli.ts examples/app.dsl.ts generated/my-app --mode=backend
 
 # Frontend (FormIO style)
 npx tsx src/cli.ts examples/form-io.dsl.ts generated/my-frontend --mode=frontend
+
+# Backend + Frontend (separate targets)
+npx tsx src/cli.ts examples/app.dsl.ts --targets=backend,frontend --outDir=generated/fullstack
+# -> backend in generated/fullstack/backend, frontend in generated/fullstack/frontend
 ```
 
 ### Optional: enable PWA for frontend outputs
@@ -56,9 +61,10 @@ npx tsx src/cli.ts examples/form-io.dsl.ts generated/my-frontend --mode=frontend
   `npx tsx src/cli.ts examples/fullstack.dsl.ts generated/fullstack --targets=backend,frontend --policies='{"frontend":{"pwa":{"enabled":true,"name":"IR Codegen Docs","shortName":"IRDocs"}}}'`
 - This writes `manifest.webmanifest`, `icons/icon.svg`, and `pwa-sw.js`, then registers the service worker in the generated frontend entry. Defaults stay off unless you set `pwa.enabled=true` (either via `--policies` or by passing `{ pwa: { enabled: true } }` as the options argument to `frontend(...)` in your DSL).
 - Frontend outputs now include a minimal Vite setup. After generation run `npm install` then `npm run dev` inside the frontend folder (e.g. `generated/fullstack/frontend`) to serve the app.
+- Backend and frontend packages are decoupled: backend outputs stay backend-only; frontend outputs ship their own `package.json` with React/router/Tailwind toolchain.
 
 ## Architecture
-See [docs/architecture.md](docs/architecture.md) for details on:
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details on:
 - Generation Gap Pattern
 - Port & Adapters (Hexagonal)
 - Frontend Runtime & IR

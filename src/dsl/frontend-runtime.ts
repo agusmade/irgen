@@ -114,7 +114,8 @@ export async function loadFrontendDsl(entry: string): Promise<DeclFrontendApp> {
       const ts = await import("typescript");
       const src = await (await import("node:fs/promises")).readFile(abs, "utf-8");
       const transpiled = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
-      const tmp = path.join((await import("node:os")).tmpdir(), `dsl-${Date.now()}.mjs`);
+      // keep temp file in same dir so relative imports remain valid
+      const tmp = path.join(path.dirname(abs), `.dsl-tmp-${Date.now()}.mjs`);
       await (await import("node:fs/promises")).writeFile(tmp, transpiled, "utf-8");
       await import(pathToFileURL(tmp).href);
       // best-effort cleanup

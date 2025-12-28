@@ -11,25 +11,34 @@ export async function aggregateDecls(entries: string[]): Promise<DeclUnified> {
   const loaded: any[] = [];
 
   for (const e of entries) {
+    const attempts: Array<() => Promise<any>> = [];
+
+    // heuristic: if file name hints frontend, try that first
     if (e.includes("frontend")) {
-      // try frontend loader, but fall back to backend loader for resilience in POC
-      try {
-        const f = await loadFrontendDsl(e);
-        loaded.push(f);
-      } catch (err) {
-        console.warn("frontend DSL load failed, falling back to generic DSL loader:", e, err?.message ?? err);
-        try {
-          const b = await loadDsl(e);
-          loaded.push(b);
-        } catch (err2) {
-          console.warn("generic DSL loader also failed for:", e, err2?.message ?? err2);
-          // skip this entry for POC resilience
-        }
-      }
+      attempts.push(() => loadFrontendDsl(e));
+      attempts.push(() => loadDsl(e));
     } else {
-      const b = await loadDsl(e);
-      loaded.push(b);
+      attempts.push(() => loadDsl(e));
+      attempts.push(() => loadFrontendDsl(e));
     }
+
+    let loadedDecl: any | null = null;
+    for (const attempt of attempts) {
+      try {
+        loadedDecl = await attempt();
+        break;
+      } catch (err) {
+        // try next loader; keep noisy logging minimal
+        continue;
+      }
+    }
+
+    if (!loadedDecl) {
+      console.warn("unable to load DSL entry, skipping:", e);
+      continue;
+    }
+
+    loaded.push(loadedDecl);
   }
 
   const unified = mergeIntoUnified(loaded as any);

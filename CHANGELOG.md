@@ -6,6 +6,9 @@ All notable changes to the `ir-codegen` project will be documented in this file.
 
 ### Major Features (Phases 1-8 Completion)
 
+#### Cross-cutting
+- **Backend/Frontend decoupling**: Frontend generation is now driven by its own pipeline (lowering + emitter) and ships with its own `package.json`. Backend generation no longer injects frontend/tailwind dependencies or calls the frontend emitter; running backend and frontend together is an additive choice (run one, the other, or both).
+
 #### Architecture
 - **Generation Gap Pattern**: Refactored backend service generation to separate base classes (auto-generated) from user service implementations (scaffolded once).
 - **Repository Pattern**: Introduced `BaseRepository` and concrete repositories with Dependency Injection (DI) support.
@@ -26,6 +29,7 @@ All notable changes to the `ir-codegen` project will be documented in this file.
 - **Optional PWA Output**: Frontend DSL/policies now accept `pwa.enabled=true` to emit `manifest.webmanifest`, service worker, and icons (defaults remain off).
 - **Vite-Based Frontend Scaffolding**: Generated frontends include Vite config + plugins and ESM-compatible `postcss.config.js`, with entry pointing to `/src/index.tsx`.
 - **React Import Safety**: Generated `App.tsx` explicitly imports React to avoid `React is not defined` when plugins are misconfigured.
+- **Form Field Enhancements**: Frontend DSL supports typed fields (text/number/select/textarea/checkbox/radio/date/datetime/email/password) with validators (required, min/max, minLength/maxLength, pattern); emitter renders new controls and validations.
 
 #### Developer Experience
 - **Unified DSL**: Updated `app.dsl.ts` and introduced `fullstack.dsl.ts` examples.

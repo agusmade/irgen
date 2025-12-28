@@ -117,6 +117,7 @@ flowchart TB
 - A **Unified DeclIR** captures the declarations from any source in a canonical format.
 - **Domain mappers** convert the DeclIR into domain-specific IRs (BackendIR, FrontendIR, CLIIR). Each DomainIR is tailored to what generators in that domain need.
 - The **Lowering Pipeline** applies policies and conventions to the DomainIR to produce TargetIRs (e.g., ReactIR, NestIR) — this is where choices such as `GENERATE_ID` implementations are decided.
+- Backend and frontend targets are independent: enabling one does not auto-enable the other, and each emitter writes its own package/tooling (backend stays backend-only; frontend ships React/router/Tailwind).
 - **Emitters** use AST builders (no string templates), printers and file emitters to write the final project scaffolding and code.
 
 ---

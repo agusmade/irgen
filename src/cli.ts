@@ -108,13 +108,21 @@ async function main() {
   };
 
   if (targets && targets.length > 0) {
-    // orchestrate: aggregate decls and run lowering+emit for each target
-    const { aggregateDecls } = await import("./decl/aggregator.js");
-    const unified = await aggregateDecls([entry]);
-    const decl = unified.apps[0];
+    // orchestrate: load decls per target
+    let decl: any;
+    if (targets.length === 1 && targets[0] === "frontend") {
+      decl = await loadFrontendDsl(entry);
+    } else if (targets.length === 1 && targets[0] === "backend") {
+      decl = await loadDsl(entry);
+    } else {
+      // aggregate when mixing targets
+      const { aggregateDecls } = await import("./decl/aggregator.js");
+      const unified = await aggregateDecls([entry]);
+      decl = unified.apps[0];
+    }
 
     // optionally inspect the aggregated DeclUnified
-    if (inspectDecl) console.log("INSPECT-DECL:", JSON.stringify(unified, null, 2));
+    if (inspectDecl && decl) console.log("INSPECT-DECL:", JSON.stringify(decl, null, 2));
 
     // ensure emitters are imported so they can register themselves (including test/override emitters)
     await importAllEmitters();

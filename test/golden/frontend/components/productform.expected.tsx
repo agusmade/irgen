@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import * as Icons from "lucide-react";
 
 export function ProductForm() {
@@ -7,9 +8,21 @@ export function ProductForm() {
   const [errors, set_errors] = useState({} as Record<string,string>);
   const validate = () => {
     const n: Record<string,string> = {};
-    if (true) { if (!id || id.toString().trim() === "") n["id"] = "ID is required"; }
-    if (true) { if (!name || name.toString().trim() === "") n["name"] = "Name is required"; }
-    if (true) { if (!price || price.toString().trim() === "") n["price"] = "Price is required"; }
+    if (true) {
+      const v = id;
+      const isEmpty = (typeof v === "boolean") ? !v : (!v || v.toString().trim() === "");
+      if (isEmpty) n["id"] = "ID is required";
+    }
+    if (true) {
+      const v = name;
+      const isEmpty = (typeof v === "boolean") ? !v : (!v || v.toString().trim() === "");
+      if (isEmpty) n["name"] = "Name is required";
+    }
+    if (true) {
+      const v = price;
+      const isEmpty = (typeof v === "boolean") ? !v : (!v || v.toString().trim() === "");
+      if (isEmpty) n["price"] = "Price is required";
+    }
     if (!n["price"] && Number(price) < 0) n["price"] = "Price must be >= 0";
     set_errors(n);
     return Object.keys(n).length === 0;

@@ -23,6 +23,6 @@ frontend("DemoFrontend", (f) => {
   f.component("ProductList", (c) => { c.entityRef = "Product"; });
   f.component("ProductCard", (c) => {});
   // form component: structured fields (Form.io-like)
-  f.component("ProductForm", (c) => { c.field("id", "string", "ID", { required: true }); c.field("name", "string", "Name", { required: true }); c.field("price", "number", "Price", { required: true, min: 0 }); c.entityRef = "Product"; });
+  f.component("ProductForm", (c) => { c.field("id", "text", "ID", { required: true }); c.field("name", "text", "Name", { required: true }); c.field("price", "number", "Price", { required: true, min: 0 }); c.entityRef = "Product"; });
   f.component("ProductDetail", (c) => { c.entityRef = "Product"; });
 });

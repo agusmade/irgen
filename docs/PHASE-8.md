@@ -7,7 +7,7 @@
 
 ## Acceptance criteria
 - `npm run gen:frontend` generates frontend artifacts under `generated/` using `examples/frontend.dsl.ts`.
-- `npm run gen:combined` generates both backend and frontend artifacts in one run.
+- Running backend + frontend together produces two independent targets (e.g., `--targets=backend,frontend` writes to `<out>/backend` and `<out>/frontend`).
 - `npm run test:gen-frontend` passes in CI.
 
 ## Notes
