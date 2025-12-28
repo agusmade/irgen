@@ -23,6 +23,9 @@ All notable changes to the `ir-codegen` project will be documented in this file.
   - Icons (Lucide React integration).
   - Advanced Input props (placeholder, description).
 - **Client-Side Routing**: Transformed frontend output into a Single Page Application (SPA) using `react-router-dom` with auto-generated routes.
+- **Optional PWA Output**: Frontend DSL/policies now accept `pwa.enabled=true` to emit `manifest.webmanifest`, service worker, and icons (defaults remain off).
+- **Vite-Based Frontend Scaffolding**: Generated frontends include Vite config + plugins and ESM-compatible `postcss.config.js`, with entry pointing to `/src/index.tsx`.
+- **React Import Safety**: Generated `App.tsx` explicitly imports React to avoid `React is not defined` when plugins are misconfigured.
 
 #### Developer Experience
 - **Unified DSL**: Updated `app.dsl.ts` and introduced `fullstack.dsl.ts` examples.
