@@ -5,6 +5,13 @@ export function registerTargetEmitter(target: string, emitterName: string, optio
   mapping.set(target, emitterName);
 }
 
+// register noop defaults to keep registry populated for known targets
+try {
+  registerTargetEmitter("cli", "cli-fake", { force: false });
+} catch (e) {
+  // ignore if already set
+}
+
 export function getEmitterForTarget(target: string) {
   return mapping.get(target);
 }

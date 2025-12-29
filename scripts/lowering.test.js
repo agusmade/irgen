@@ -1,5 +1,5 @@
 import { engine } from "../src/lowering/engine.js";
-import { aggregateDecls } from "../src/decl/aggregator.js";
+import { aggregateDecls } from "../src/dsl/aggregator.js";
 
 async function main() {
   try {
@@ -12,11 +12,11 @@ async function main() {
     // run backend lowering via engine (default policies)
     const irDefault = await engine.runTransform("backend", decl, undefined);
     if (!irDefault) throw new Error("engine backend lowering returned falsy ir");
-    if (irDefault.policies.generateId !== "uuid_v4") throw new Error("default policy not applied via engine");
+    if (irDefault.policies.backend.generateId !== "uuid_v4") throw new Error("default policy not applied via engine");
 
     // run with explicit shortid
     const irShort = await engine.runTransform("backend", decl, { generateId: "shortid" });
-    if (irShort.policies.generateId !== "shortid") throw new Error("shortid policy not applied via engine");
+    if (irShort.policies.backend.generateId !== "shortid") throw new Error("shortid policy not applied via engine");
 
     // invalid policy should throw
     try {

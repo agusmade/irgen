@@ -6,16 +6,16 @@ import fs from "node:fs";
 async function main() {
   try {
     // default policy should default to uuid_v4
-    const { aggregateDecls } = await import("../src/decl/aggregator.js");
+    const { aggregateDecls } = await import("../src/dsl/aggregator.js");
     const unified = await aggregateDecls(["examples/app.dsl.ts"]);
     const decl = unified.apps[0];
     // call lowering with no explicit policies
     const irDefault = declToBackendIR(decl, undefined);
-    if (irDefault.policies.generateId !== "uuid_v4") throw new Error("default generateId policy not applied");
+    if (irDefault.policies.backend.generateId !== "uuid_v4") throw new Error("default generateId policy not applied");
 
     // call lowering with shortid
     const irShort = declToBackendIR(decl, { generateId: "shortid" });
-    if (irShort.policies.generateId !== "shortid") throw new Error("shortid policy not applied");
+    if (irShort.policies.backend.generateId !== "shortid") throw new Error("shortid policy not applied");
 
     // emit with shortid policy and check generated lib/id.ts
     const outDir = path.resolve(process.cwd(), "generated-policy-test");

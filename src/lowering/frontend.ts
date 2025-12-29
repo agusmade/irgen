@@ -1,4 +1,5 @@
-import type { DeclFrontendApp, FrontendIR, FrontendPwaConfig } from "../ir/domain/frontend.js";
+import type { DeclFrontendApp } from "../ir/decl/frontend.schema.js";
+import type { FrontendIR, FrontendPwaConfig } from "../ir/domain/frontend.js";
 import { pascal } from "../utils/index.js";
 
 export type FrontendPolicies = {

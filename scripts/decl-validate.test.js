@@ -1,4 +1,4 @@
-import { aggregateDecls } from "../src/decl/aggregator.js";
+import { aggregateDecls } from "../src/dsl/aggregator.js";
 
 async function main() {
   try {

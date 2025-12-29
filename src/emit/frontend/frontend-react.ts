@@ -1,7 +1,8 @@
 import path from "node:path";
 import fs from "node:fs";
 import { Project, QuoteKind, IndentationText, ScriptTarget } from "ts-morph";
-import type { FrontendIR, FrontendPage, FrontendComponent } from "../../ir/domain/frontend.js";
+import type { FrontendPage, FrontendComponent } from "../../ir/domain/frontend.js";
+import type { FrontendTargetIR } from "../../ir/target/frontend.js";
 import { emitterEngine } from "../engine.js";
 import { registerTargetEmitter } from "../registry.js";
 
@@ -9,7 +10,7 @@ function ensureDir(p: string) {
   fs.mkdirSync(p, { recursive: true });
 }
 
-function emitFrontendPackageJson(outDir: string, ir: FrontendIR) {
+function emitFrontendPackageJson(outDir: string, ir: FrontendTargetIR) {
   const pkg: any = {
     name: ir?.appName ? `${ir.appName.toLowerCase()}-frontend` : "generated-frontend",
     version: "0.1.0",
@@ -47,7 +48,7 @@ function emitFrontendPackageJson(outDir: string, ir: FrontendIR) {
   fs.writeFileSync(path.join(outDir, "package.json"), JSON.stringify(pkg, null, 2), "utf-8");
 }
 
-function emitPwaAssets(outDir: string, ir: FrontendIR) {
+function emitPwaAssets(outDir: string, ir: FrontendTargetIR) {
   if (!ir.pwa?.enabled) return;
 
   const pwa = ir.pwa;
@@ -135,7 +136,7 @@ export default defineConfig({
   project.createSourceFile(path.join(outDir, "vite.config.ts"), config, { overwrite: true });
 }
 
-export function emitFrontend(project: Project, outDir: string, ir: FrontendIR) {
+export function emitFrontend(project: Project, outDir: string, ir: FrontendTargetIR) {
   const frontendDir = path.join(outDir, "src");
   ensureDir(frontendDir);
 
@@ -305,7 +306,7 @@ export default {
 
 // Register frontend emitter with the engine
 try {
-  emitterEngine.registerEmitter("frontend-tsmorph", async (ir: FrontendIR, outDir: string) => {
+  emitterEngine.registerEmitter("frontend-tsmorph", async (ir: FrontendTargetIR, outDir: string) => {
     const project = new Project({
       useInMemoryFileSystem: false,
       manipulationSettings: {

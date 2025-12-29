@@ -1,4 +1,5 @@
-import type { DeclApp, BackendIR, BackendOperationKind } from "../ir/domain/types.js";
+import type { DeclApp } from "../ir/decl/backend.raw.schema.js";
+import type { BackendIR, BackendOperationKind } from "../ir/domain/backend.js";
 
 /**
  * Lowering rules:
@@ -15,12 +16,14 @@ export type LoweringPolicies = {
   generateId?: "uuid_v4" | "shortid" | "custom";
   loggerImpl?: "console" | "pino" | "winston" | "custom";
   httpClient?: "fetch" | "axios" | "got" | "custom";
+  formatter?: "prettier" | "biome";
 };
 
 const DEFAULT_POLICIES: Required<LoweringPolicies> = {
   generateId: "uuid_v4",
   loggerImpl: "console",
   httpClient: "fetch",
+  formatter: "prettier",
 };
 
 function opKind(kind: "create" | "get" | "list" | "update" | "remove"): BackendOperationKind {
@@ -34,11 +37,12 @@ function opKind(kind: "create" | "get" | "list" | "update" | "remove"): BackendO
 import { engine } from "./engine.js";
 
 export function declToBackendIR(app: DeclApp, policies?: LoweringPolicies): BackendIR {
-  const policy = { ...DEFAULT_POLICIES, ...(policies ?? {}) };
+  const rawPolicies = (policies as any)?.backend ?? policies ?? {};
+  const backendPolicy = { ...DEFAULT_POLICIES, ...rawPolicies };
 
-  const idProvider = policy.generateId === "uuid_v4" ? "newId" : (policy.generateId === "shortid" ? "shortId" : "newId");
-  const loggerProvider = policy.loggerImpl ?? "console";
-  const httpProvider = policy.httpClient ?? "fetch";
+  const idProvider = backendPolicy.generateId === "uuid_v4" ? "newId" : (backendPolicy.generateId === "shortid" ? "shortId" : "newId");
+  const loggerProvider = backendPolicy.loggerImpl ?? "console";
+  const httpProvider = backendPolicy.httpClient ?? "fetch";
   const appName = app.name ?? "app";
 
   return {
@@ -72,11 +76,14 @@ export function declToBackendIR(app: DeclApp, policies?: LoweringPolicies): Back
       };
     }),
     policies: {
-      generateId: policy.generateId,
-      idProvider,
-      loggerImpl: loggerProvider,
-      httpClient: httpProvider,
-      db: (app.meta["db"] as any) ?? undefined,
+      backend: {
+        generateId: backendPolicy.generateId,
+        idProvider,
+        loggerImpl: loggerProvider,
+        httpClient: httpProvider,
+        formatter: backendPolicy.formatter,
+        db: (app.meta["db"] as any) ?? undefined,
+      },
     },
   };
 }
@@ -90,6 +97,7 @@ try {
     generateId: z.enum(["uuid_v4", "shortid", "custom"]).optional(),
     loggerImpl: z.enum(["console", "pino", "winston", "custom"]).optional(),
     httpClient: z.enum(["fetch", "axios", "got", "custom"]).optional(),
+    formatter: z.enum(["prettier", "biome"]).optional(),
   });
   engine.registerPolicySchema("backend", schema);
 } catch (e) {

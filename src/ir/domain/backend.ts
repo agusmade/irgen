@@ -21,14 +21,16 @@ export interface BackendIR {
   appName: string;
   entities: BackendEntity[];
   policies: {
-    idProvider: "newId" | "shortId";
-    loggerImpl?: "console" | "pino" | "winston" | "custom";
-    httpClient?: "fetch" | "axios" | "got" | "custom";
-    generateId?: "uuid_v4" | "shortid" | "custom";
-    formatter?: "prettier" | "biome";
-    db?: {
-      provider: "prisma"; // extensible later
-      url: string;
+    backend: {
+      idProvider: "newId" | "shortId";
+      loggerImpl?: "console" | "pino" | "winston" | "custom";
+      httpClient?: "fetch" | "axios" | "got" | "custom";
+      generateId?: "uuid_v4" | "shortid" | "custom";
+      formatter?: "prettier" | "biome";
+      db?: {
+        provider: "prisma"; // extensible later
+        url: string;
+      };
     };
   };
 }

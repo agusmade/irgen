@@ -31,6 +31,7 @@
     "test:cli-build": "tsx scripts/cli-build.test.js",
     "test:cli-inspect-decl": "tsx scripts/cli-inspect-decl.test.js",
     "test:emitter-registry": "tsx scripts/emitter-registry.test.js",
+    "test:cli-target": "tsx scripts/cli-target.test.js",
     "test:gen-frontend": "node scripts/gen-frontend.test.js",
     "test:ci": "npm run test:golden"
   },

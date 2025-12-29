@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { DeclApp, DeclAppSchema, DeclEntity } from "../ir/domain/types.js";
+import { DeclApp, DeclAppSchema, DeclEntity } from "../ir/decl/backend.raw.schema.js";
 
 type EntityBuilder = {
   create(opName?: string): void;

@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { DeclFrontendApp, DeclComponent, DeclPage, DeclFrontendAppSchema } from "../ir/domain/frontend.js";
+import { DeclFrontendApp, DeclComponent, DeclPage, DeclFrontendAppSchema } from "../ir/decl/frontend.schema.js";
 
 let CURRENT_FRONTEND: DeclFrontendApp | null = null;
 

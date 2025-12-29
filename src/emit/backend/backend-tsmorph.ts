@@ -1,7 +1,8 @@
 import path from "node:path";
 import fs from "node:fs";
 import { Project, QuoteKind, IndentationText, ScriptTarget, Scope } from "ts-morph";
-import type { BackendIR, BackendEntity } from "../../ir/domain/types.js";
+import type { BackendEntity } from "../../ir/domain/backend.js";
+import type { BackendTargetIR } from "../../ir/target/backend.js";
 import { emitterEngine } from "../engine.js";
 import { formatDirectory } from "../format.js";
 
@@ -14,22 +15,28 @@ function cleanDir(p: string) {
   fs.rmSync(p, { recursive: true, force: true });
 }
 
-export function emitBackendToProject(project: Project, outDir: string, ir: BackendIR) {
+function getBackendPolicies(ir: BackendTargetIR) {
+  const p: any = (ir as any)?.policies ?? {};
+  return p.backend ?? p ?? {};
+}
+
+export function emitBackendToProject(project: Project, outDir: string, ir: BackendTargetIR) {
+  const policies = getBackendPolicies(ir);
   ensureDir(outDir);
   ensureDir(path.join(outDir, "lib"));
   ensureDir(path.join(outDir, "services"));
   ensureDir(path.join(outDir, "controllers"));
 
   // adapters
-  emitIdAdapter(project, outDir, ir);
-  emitLoggerAdapter(project, outDir, ir);
-  emitHttpAdapter(project, outDir, ir);
+  emitIdAdapter(project, outDir, policies);
+  emitLoggerAdapter(project, outDir, policies);
+  emitHttpAdapter(project, outDir, policies);
 
   // Prisma support
-  const dbProvider = ir.policies?.db?.provider;
+  const dbProvider = policies?.db?.provider;
 
   if (dbProvider === "prisma") {
-    emitPrismaSchema(outDir, ir);
+    emitPrismaSchema(outDir, policies, ir.entities);
   }
 
   emitModels(project, outDir, ir.entities);
@@ -45,17 +52,18 @@ export function emitBackendToProject(project: Project, outDir: string, ir: Backe
     emitBaseService(project, outDir, entity);
     emitUserService(project, outDir, entity);
     emitServiceTest(project, outDir, entity);
-    emitController(project, outDir, entity, ir);
+    emitController(project, outDir, entity, policies);
   }
 
   // package.json injection based on policies
-  emitPackageJson(outDir, ir);
+  emitPackageJson(outDir, ir.appName, policies);
 
 }
 
-export function emitBackend(ir: BackendIR, outDir: string) {
+export function emitBackend(ir: BackendTargetIR, outDir: string) {
   // We DO NOT clean the entire directory anymore because we want to preserve user files
   ensureDir(outDir);
+  const policies = getBackendPolicies(ir);
 
   const project = new Project({
     useInMemoryFileSystem: false,
@@ -71,7 +79,7 @@ export function emitBackend(ir: BackendIR, outDir: string) {
 
   // optional project-level formatting based on policy (default: prettier)
   try {
-    formatDirectory(outDir, ir?.policies?.formatter);
+    formatDirectory(outDir, policies.formatter);
   } catch (e) {
     // ignore format failures
   }
@@ -79,7 +87,7 @@ export function emitBackend(ir: BackendIR, outDir: string) {
 
 // Register the backend emitter with the emitter engine
 try {
-  emitterEngine.registerEmitter("backend-tsmorph", async (ir: BackendIR, outDir: string) => {
+  emitterEngine.registerEmitter("backend-tsmorph", async (ir: BackendTargetIR, outDir: string) => {
     const project = new Project({
       useInMemoryFileSystem: false,
       manipulationSettings: {
@@ -96,7 +104,7 @@ try {
     project.saveSync();
 
     // apply the chosen formatter to the output directory
-    try { formatDirectory(outDir, ir?.policies?.formatter); } catch (e) { /* ignore */ }
+    try { formatDirectory(outDir, getBackendPolicies(ir)?.formatter); } catch (e) { /* ignore */ }
   }, { force: true });
 
   // register default target -> emitter mapping
@@ -111,12 +119,12 @@ try {
 }
 
 
-function emitIdAdapter(project: Project, outDir: string, ir?: any) {
+function emitIdAdapter(project: Project, outDir: string, policies?: any) {
   const sf = project.createSourceFile(path.join(outDir, "lib", "id.ts"), "", { overwrite: true });
 
   sf.addStatements([`// Generated: single point of truth for ID generation`]);
 
-  const gen = ir?.policies?.generateId ?? "uuid_v4";
+  const gen = policies?.generateId ?? "uuid_v4";
 
   if (gen === "uuid_v4") {
     sf.addStatements([
@@ -146,8 +154,8 @@ function emitIdAdapter(project: Project, outDir: string, ir?: any) {
   }
 }
 
-function emitLoggerAdapter(project: Project, outDir: string, ir?: any) {
-  const impl = ir?.policies?.loggerImpl ?? "console";
+function emitLoggerAdapter(project: Project, outDir: string, policies?: any) {
+  const impl = policies?.loggerImpl ?? "console";
   const sf = project.createSourceFile(path.join(outDir, "lib", "logger.ts"), "", { overwrite: true });
 
   sf.addStatements([`// Generated: logger adapter (${impl})`]);
@@ -186,8 +194,8 @@ function emitLoggerAdapter(project: Project, outDir: string, ir?: any) {
   }
 }
 
-function emitHttpAdapter(project: Project, outDir: string, ir?: any) {
-  const impl = ir?.policies?.httpClient ?? "fetch";
+function emitHttpAdapter(project: Project, outDir: string, policies?: any) {
+  const impl = policies?.httpClient ?? "fetch";
   const sf = project.createSourceFile(path.join(outDir, "lib", "http.ts"), "", { overwrite: true });
 
   sf.addStatements([`// Generated: http client adapter (${impl})`]);
@@ -368,13 +376,13 @@ function emitInMemoryRepository(project: Project, outDir: string, entity: Backen
   });
 }
 
-function emitPrismaSchema(outDir: string, ir: BackendIR) {
+function emitPrismaSchema(outDir: string, policies: any, entities?: BackendEntity[]) {
   // Generate schema.prisma
   const lines: string[] = [];
 
   // Datasource & Generator
-  const provider = ir.policies?.db?.provider === "prisma" ? "sqlite" : "sqlite"; // Default to sqlite for dev
-  const url = ir.policies?.db?.url ?? "file:./dev.db";
+  const provider = policies?.db?.provider === "prisma" ? "sqlite" : "sqlite"; // Default to sqlite for dev
+  const url = policies?.db?.url ?? "file:./dev.db";
 
   lines.push(`datasource db {`);
   lines.push(`  provider = "${provider}"`);
@@ -386,7 +394,7 @@ function emitPrismaSchema(outDir: string, ir: BackendIR) {
   lines.push(`}`);
   lines.push(``);
 
-  for (const entity of ir.entities) {
+  for (const entity of entities ?? []) {
     lines.push(`model ${entity.name} {`);
 
     // Always assume ID
@@ -506,7 +514,7 @@ function emitPrismaRepository(project: Project, outDir: string, entity: BackendE
   });
 }
 
-function emitController(project: Project, outDir: string, entity: BackendEntity, ir?: BackendIR) {
+function emitController(project: Project, outDir: string, entity: BackendEntity, policies?: any) {
   const fileName = `${entity.name.toLowerCase()}.controller.ts`;
   const sf = project.createSourceFile(path.join(outDir, "controllers", fileName), "", { overwrite: true });
 
@@ -517,7 +525,7 @@ function emitController(project: Project, outDir: string, entity: BackendEntity,
   });
 
   // Decide which repo adapter to import
-  const dbProvider = ir?.policies?.db?.provider;
+  const dbProvider = policies?.db?.provider;
   const isPrisma = dbProvider === "prisma";
 
   if (isPrisma) {
@@ -777,9 +785,9 @@ function emitUserService(project: Project, outDir: string, entity: BackendEntity
   });
 }
 
-function emitPackageJson(outDir: string, ir?: any) {
+function emitPackageJson(outDir: string, appName: string, policies?: any) {
   const pkg: any = {
-    name: (ir && ir.appName) ? `${ir.appName.toLowerCase()}-generated` : "generated-app",
+    name: appName ? `${appName.toLowerCase()}-generated` : "generated-app",
     version: "0.1.0",
     private: true,
     type: "module",
@@ -791,20 +799,20 @@ function emitPackageJson(outDir: string, ir?: any) {
     },
   };
 
-  if ((ir?.policies?.generateId ?? "uuid_v4") === "uuid_v4") {
+  if ((policies?.generateId ?? "uuid_v4") === "uuid_v4") {
     pkg.dependencies.uuid = "^9.0.0";
   }
 
-  const httpClient = ir?.policies?.httpClient ?? "fetch";
+  const httpClient = policies?.httpClient ?? "fetch";
   if (httpClient === "axios") pkg.dependencies.axios = "^1.4.0";
   if (httpClient === "got") pkg.dependencies.got = "^12.0.0";
 
-  const loggerImpl = ir?.policies?.loggerImpl ?? "console";
+  const loggerImpl = policies?.loggerImpl ?? "console";
   if (loggerImpl === "pino") pkg.dependencies.pino = "^8.0.0";
   if (loggerImpl === "winston") pkg.dependencies.winston = "^4.0.0";
 
   // Prisma Support
-  if (ir?.policies?.db?.provider === "prisma") {
+  if (policies?.db?.provider === "prisma") {
     pkg.dependencies["@prisma/client"] = "latest";
     pkg.devDependencies.prisma = "latest";
     pkg.scripts["db:generate"] = "prisma generate";

@@ -120,6 +120,12 @@ flowchart TB
 - Backend and frontend targets are independent: enabling one does not auto-enable the other, and each emitter writes its own package/tooling (backend stays backend-only; frontend ships React/router/Tailwind).
 - **Emitters** use AST builders (no string templates), printers and file emitters to write the final project scaffolding and code.
 
+**Recent implementation updates (current code)**
+- CLI flow now always goes through DeclUnified aggregation + mapper registry + lowering engine + emitter registry. Flags `--emitter`/`--emitter-map` pick emitters per target.
+- TargetIR layer exists for backend/frontend/cli; currently pass-through but isolates emitter-facing shapes for future specialization.
+- Domain CLI is scaffolded (DeclCLI + mapper + target + `cli-fake` emitter that writes `CLI.md`) and is registered as a first-class target.
+- Backend policies include formatter (`prettier`/`biome`) alongside `generateId`/`loggerImpl`/`httpClient`; adapters in the backend emitter consume policy outputs.
+
 ---
 
 ## Implementation plan (phased)

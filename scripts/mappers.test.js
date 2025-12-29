@@ -1,4 +1,4 @@
-import { aggregateDecls } from "../src/decl/aggregator.js";
+import { aggregateDecls } from "../src/dsl/aggregator.js";
 import { registerBuiltins, registerMapper, unregisterMapper, listMappers, getMapper, runMapper } from "../src/mappers/index.js";
 
 async function main() {

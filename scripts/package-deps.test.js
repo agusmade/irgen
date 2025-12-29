@@ -1,4 +1,4 @@
-import { aggregateDecls } from "../src/decl/aggregator.js";
+import { aggregateDecls } from "../src/dsl/aggregator.js";
 import { engine } from "../src/lowering/engine.js";
 import { emitterEngine } from "../src/emit/engine.js";
 import fs from "node:fs";
