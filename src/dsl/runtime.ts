@@ -101,8 +101,9 @@ export async function loadDsl(entry: string): Promise<DeclApp> {
 
   try {
     await import(url);
-  } catch (err: any) {
-    console.warn("backend loader dynamic import failed, attempting transpile fallback:", err?.message ?? err);
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : String(err);
+    console.warn("backend loader dynamic import failed, attempting transpile fallback:", errMessage);
     try {
       const ts = await import("typescript");
       const src = await (await import("node:fs/promises")).readFile(abs, "utf-8");
@@ -112,8 +113,9 @@ export async function loadDsl(entry: string): Promise<DeclApp> {
       await import(pathToFileURL(tmp).href);
       // best-effort cleanup
       try { await (await import("node:fs/promises")).unlink(tmp); } catch (_) {}
-    } catch (err2) {
-      throw new Error(`Failed to load DSL (${entry}): ${err2?.message ?? err2}`);
+    } catch (err2: unknown) {
+      const err2Message = err2 instanceof Error ? err2.message : String(err2);
+      throw new Error(`Failed to load DSL (${entry}): ${err2Message}`);
     }
   }
 

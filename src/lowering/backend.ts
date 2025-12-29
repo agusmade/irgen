@@ -39,13 +39,14 @@ export function declToBackendIR(app: DeclApp, policies?: LoweringPolicies): Back
   const idProvider = policy.generateId === "uuid_v4" ? "newId" : (policy.generateId === "shortid" ? "shortId" : "newId");
   const loggerProvider = policy.loggerImpl ?? "console";
   const httpProvider = policy.httpClient ?? "fetch";
+  const appName = app.name ?? "app";
 
   return {
     domain: "backend",
-    appName: app.name,
-    entities: app.entities.map(e => {
-      const entityName = pascal(e.name);
-      const ops = e.operations.map(op => {
+    appName,
+    entities: (app.entities ?? []).map(e => {
+      const entityName = pascal(e.name ?? e.id);
+      const ops = (e.operations ?? []).map(op => {
         const K = opKind(op.kind);
         const base =
           K === "CREATE" ? "create" :

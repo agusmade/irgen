@@ -38,12 +38,16 @@ export function registerBuiltins() {
   // These imports are dynamic to avoid top-level circular deps
   const backend = async (decl: DeclUnified): Promise<BackendIR> => {
     const mod = await import("../lowering/backend.js");
-    return mod.declToBackendIR(decl.apps[0]);
+    const backendApp = decl.apps.find(app => app.type === "app");
+    if (!backendApp) throw new Error("no backend app found in unified declaration");
+    return mod.declToBackendIR(backendApp as any);
   };
 
   const frontend = async (decl: DeclUnified): Promise<FrontendIR> => {
     const mod = await import("../lowering/frontend.js");
-    return mod.declToFrontendIR(decl.apps[0]);
+    const frontendApp = decl.apps.find(app => app.type === "frontend");
+    if (!frontendApp) throw new Error("no frontend app found in unified declaration");
+    return mod.declToFrontendIR(frontendApp as any);
   };
 
   registerMapper("backend", backend, { force: true });
