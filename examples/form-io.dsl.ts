@@ -65,4 +65,18 @@ const app = frontend("FormIOApp", (app) => {
       c.field("appointment", "datetime", "Appointment", {});
     });
   });
+
+  app.page("LayoutDemo", { path: "/layout" }, (page) => {
+    page.component("InfoPanel");
+    page.component("RowExample");
+    page.component("TabsExample");
+    page.component("HeroContent");
+    page.component("CTAButton");
+  });
+
+  app.component("InfoPanel", (c) => { c.layout = { kind: "panel", title: "Panel Container", items: ["Panel item A", "Panel item B", "Panel item C"] }; });
+  app.component("RowExample", (c) => { c.layout = { kind: "row", title: "Row Layout", columns: 3, items: ["Col 1", "Col 2", "Col 3"] }; });
+  app.component("TabsExample", (c) => { c.layout = { kind: "tabs", title: "Tabs Layout", tabs: [{ label: "Overview", content: "Overview tab content" }, { label: "Details", content: "Detail tab content" }] }; });
+  app.component("HeroContent", (c) => { c.content = "Content block to show static info; can render plain text or HTML."; });
+  app.component("CTAButton", (c) => { c.button = { label: "Take Action", variant: "primary", icon: "Rocket" }; });
 });

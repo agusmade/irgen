@@ -366,7 +366,7 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
   const filePath = path.join(dir, `${component.name.toLowerCase()}.tsx`);
   const sf = project.createSourceFile(filePath, "", { overwrite: true });
 
-  const needsHooks = !!(component.form && component.form.fields && component.form.fields.length > 0);
+  const needsHooks = !!(component.form && component.form.fields && component.form.fields.length > 0) || (component.layout?.kind === "tabs");
   if (needsHooks) {
     sf.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React", namedImports: ["useEffect", "useState"] });
   } else {
@@ -381,37 +381,139 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
     // Utility classes
     const labelClass = "block text-sm font-medium text-gray-700";
     const inputClass = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm";
+    const checkboxClass = "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500";
+    const radioClass = "h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500";
     const btnClass = "inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2";
     const errorClass = "mt-2 text-sm text-red-600";
     const formClass = "space-y-6 bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6";
 
+    // Layout components
+    if (component.layout) {
+      const kind = component.layout.kind;
+      if (kind === "tabs") {
+        writer.writeLine(`const [active, setActive] = useState(0);`);
+        writer.writeLine(`const tabs = ${JSON.stringify(component.layout.tabs ?? [])};`);
+        writer.writeLine(`return (`);
+        writer.writeLine(`  <div className="bg-white shadow rounded-lg">`);
+        if (component.layout.title) writer.writeLine(`    <div className="px-4 py-3 border-b"><h3 className="text-lg font-semibold">${component.layout.title}</h3></div>`);
+        writer.writeLine(`    <div className="px-4 pt-4 flex space-x-2">`);
+        writer.writeLine(`      {tabs.map((t:any, idx:number) => (`);
+        writer.writeLine(`        <button key={idx} onClick={() => setActive(idx)} className={\`px-3 py-2 text-sm rounded \${active === idx ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}\`}>{t.label}</button>`);        
+        writer.writeLine(`      ))}`);
+        writer.writeLine(`    </div>`);
+        writer.writeLine(`    <div className="px-4 py-4">`);
+        writer.writeLine(`      {tabs[active] ? <p className="text-gray-700">{tabs[active].content ?? 'Tab content'}</p> : <p className="text-gray-400 text-sm">No tabs configured.</p>}`);
+        writer.writeLine(`    </div>`);
+        writer.writeLine(`  </div>`);
+        writer.writeLine(`);`);
+      } else if (kind === "panel") {
+        writer.writeLine(`return (`);
+        writer.writeLine(`  <div className="bg-white shadow rounded-lg p-4">`);
+        if (component.layout.title) writer.writeLine(`    <h3 className="text-lg font-semibold mb-2">${component.layout.title}</h3>`);
+        if (component.layout.items?.length) {
+          writer.writeLine(`    <ul className="space-y-1 list-disc list-inside text-gray-700">`);
+          for (const item of component.layout.items ?? []) {
+            writer.writeLine(`      <li>${item}</li>`);
+          }
+          writer.writeLine(`    </ul>`);
+        } else {
+          writer.writeLine(`    <p className="text-gray-500 text-sm">Panel content</p>`);
+        }
+        writer.writeLine(`  </div>`);
+        writer.writeLine(`);`);
+      } else if (kind === "row" || kind === "column") {
+        const cols = component.layout.columns ?? 2;
+    const grid = kind === "row" ? `grid-cols-${Math.min(4, Math.max(1, cols))}` : "grid-cols-1";
+        writer.writeLine(`const items = ${JSON.stringify(component.layout.items ?? [])};`);
+        writer.writeLine(`return (`);
+        writer.writeLine(`  <div className="bg-white shadow rounded-lg p-4">`);
+        if (component.layout.title) writer.writeLine(`    <h3 className="text-lg font-semibold mb-3">${component.layout.title}</h3>`);
+        writer.writeLine("    <div className={`grid gap-4 " + grid + "`}>");
+        writer.writeLine(`      {items.length ? items.map((it, idx) => (`);
+        writer.writeLine(`        <div key={idx} className="border border-dashed border-gray-300 rounded p-3 text-gray-700 text-sm">{it}</div>`);        
+        writer.writeLine(`      )) : <div className="text-gray-400 text-sm">No items</div>}`);
+        writer.writeLine(`    </div>`);
+        writer.writeLine(`  </div>`);
+        writer.writeLine(`);`);
+      }
+      return;
+    }
+
+    // Non-form content/button components
+    if (component.content || component.html || component.button) {
+      writer.writeLine(`return (`);
+      writer.writeLine(`  <div className="p-4 bg-white shadow rounded-lg space-y-3">`);
+      if (component.content) writer.writeLine(`    <p className="text-gray-700">${component.content}</p>`);
+      if (component.html) writer.writeLine(`    <div className="prose" dangerouslySetInnerHTML={{ __html: ${JSON.stringify(component.html)} }} />`);
+      if (component.button) {
+        const variant = component.button.variant ?? "primary";
+        const baseBtn = "inline-flex items-center px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2";
+        const variantClass = variant === "secondary"
+          ? "bg-gray-100 text-gray-800 hover:bg-gray-200 focus:ring-gray-300"
+          : (variant === "ghost"
+            ? "bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-200"
+            : "bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500");
+        writer.writeLine(`    <button className="${baseBtn} ${variantClass}" onClick={() => { /* TODO: wire action */ }}>`);
+        if (component.button.icon) {
+          writer.writeLine(`      {(Icons as any)["${component.button.icon}"] && React.createElement((Icons as any)["${component.button.icon}"], { size: 16, className: "mr-2" })}`);
+        }
+        writer.writeLine(`      ${component.button.label}`);
+        writer.writeLine(`    </button>`);
+      }
+      writer.writeLine(`  </div>`);
+      writer.writeLine(`);`);
+      return;
+    }
+
     if (component.form && component.form.fields && component.form.fields.length > 0) {
       // 1. STATE DEFINITIONS
+      const stateVars: string[] = [];
       for (const f of component.form.fields) {
         const varName = f.name.replace(/[^a-zA-Z0-9_]/g, "_");
+        stateVars.push(varName);
         const initialVal =
           f.type === "checkbox" ? "false /* boolean */" :
+            (f.type === "select" && f.multiple) ? "[]" :
             (f.type === "number" ? "\"\"" :
               "\"\"");
         writer.writeLine(`const [${varName}, set_${varName}] = useState(${initialVal});`);
 
-        // Async Data Source State
         if (f.dataSource) {
           writer.writeLine(`const [options_${varName}, setOptions_${varName}] = useState<{label:string, value:string}[]>([]);`);
+          writer.writeLine(`const [loading_${varName}, setLoading_${varName}] = useState(false);`);
+          writer.writeLine(`const [error_${varName}, setError_${varName}] = useState<string | null>(null);`);
+          writer.writeLine(`const [search_${varName}, setSearch_${varName}] = useState("");`);
         }
       }
 
       writer.writeLine(`const [errors, set_errors] = useState({} as Record<string,string>);`);
+      writer.writeLine(`const ctx = { ${stateVars.map(s => `${s}: ${s}`).join(", ")} };`);
+      writer.writeLine(`const evalExpr = (expr?: string, fallback?: any) => { try { return expr ? Function("ctx", "with(ctx){ return (" + expr + "); }")(ctx) : fallback; } catch (_) { return fallback; } };`);
 
-      // 2. EFFECTS (Data Fetching)
+      // 2. EFFECTS (Data Fetching, defaults, computed)
       for (const f of component.form.fields) {
         if (f.dataSource) {
           const varName = f.name.replace(/[^a-zA-Z0-9_]/g, "_");
           writer.writeLine(`useEffect(() => {`);
-          writer.writeLine(`  fetch("${f.dataSource.url}").then(r => r.json()).then(data => {`);
-          writer.writeLine(`    setOptions_${varName}(data.map((item: any) => ({ label: item["${f.dataSource.labelKey}"], value: item["${f.dataSource.valueKey}"] })));`);
-          writer.writeLine(`  });`);
+          writer.writeLine(`  setLoading_${varName}(true); setError_${varName}(null);`);
+          writer.writeLine(`  fetch("${f.dataSource.url}")`);
+          writer.writeLine(`    .then(r => r.json())`);
+          writer.writeLine(`    .then(data => {`);
+          writer.writeLine(`      setOptions_${varName}(data.map((item: any) => ({ label: item["${f.dataSource.labelKey}"], value: item["${f.dataSource.valueKey}"] })));`);
+          writer.writeLine(`    })`);
+          writer.writeLine(`    .catch(err => setError_${varName}(err?.message ?? "Failed to load options"))`);
+          writer.writeLine(`    .finally(() => setLoading_${varName}(false));`);
           writer.writeLine(`}, []);`);
+        }
+
+        if (f.defaultValue) {
+          const varName = f.name.replace(/[^a-zA-Z0-9_]/g, "_");
+          writer.writeLine(`useEffect(() => { const v = evalExpr(${JSON.stringify(f.defaultValue)}, ${varName}); if (typeof v !== "undefined" && ${varName} === "" ) set_${varName}(v); }, []);`);
+        }
+
+        if (f.computeValue) {
+          const varName = f.name.replace(/[^a-zA-Z0-9_]/g, "_");
+          writer.writeLine(`useEffect(() => { const next = evalExpr(${JSON.stringify(f.computeValue)}, ${varName}); if (typeof next !== "undefined" && next !== ${varName}) set_${varName}(next); }, [${stateVars.join(", ")}]);`);
         }
       }
 
@@ -422,10 +524,15 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
       for (const f of component.form.fields) {
         const varName = f.name.replace(/[^a-zA-Z0-9_]/g, "_");
         const hasReq = (f.validators && f.validators.required) ? 'true' : 'false';
+        const requiredExpr = (f.validators as any)?.requiredIf ? JSON.stringify((f.validators as any).requiredIf) : 'undefined';
         writer.writeLine(`  if (${hasReq}) {`);
         writer.writeLine(`    const v = ${varName};`);
-        writer.writeLine(`    const isEmpty = (typeof v === "boolean") ? !v : (!v || v.toString().trim() === "");`);
+        writer.writeLine(`    const isEmpty = Array.isArray(v) ? v.length === 0 : (typeof v === "boolean") ? !v : (!v || v.toString().trim() === "");`);
         writer.writeLine(`    if (isEmpty) n["${f.name}"] = "${(f.label ?? f.name)} is required";`);
+        writer.writeLine(`  }`);
+        writer.writeLine(`  if (!n["${f.name}"] && ${requiredExpr} !== undefined) {`);
+        writer.writeLine(`    const requiredDyn = evalExpr(${requiredExpr}, false);`);
+        writer.writeLine(`    if (requiredDyn) { const v = ${varName}; const isEmpty = Array.isArray(v) ? v.length === 0 : (typeof v === "boolean") ? !v : (!v || v.toString().trim() === ""); if (isEmpty) n["${f.name}"] = "${(f.label ?? f.name)} is required"; }`);
         writer.writeLine(`  }`);
         if (f.type === "number") {
           const minVal = (f.validators && typeof f.validators.min !== 'undefined') ? f.validators.min : null;
@@ -454,7 +561,19 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
       writer.writeLine(`  return Object.keys(n).length === 0;`);
       writer.writeLine(`};`);
 
-      writer.writeLine(`const onSubmit = (e: any) => { e.preventDefault(); if (!validate()) return; /* submit stub */ };`);
+      writer.writeLine(`const [submitting, setSubmitting] = useState(false);`);
+      writer.writeLine(`const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);`);
+      writer.writeLine(`const [submitError, setSubmitError] = useState<string | null>(null);`);
+      writer.writeLine(`const onSubmit = async (e: any) => { e.preventDefault(); setSubmitSuccess(null); setSubmitError(null); if (!validate()) return;`);
+      writer.writeLine(`  const payload = { ${stateVars.map(s => `${s}: ${s}`).join(", ")} };`);
+      writer.writeLine(`  if (!${component.form.submit ? "true" : "false"}) { setSubmitSuccess("Saved (mock)"); return; }`);
+      writer.writeLine(`  setSubmitting(true);`);
+      writer.writeLine(`  try {`);
+      writer.writeLine(`    const res = await fetch("${component.form.submit?.url ?? ""}", { method: "${component.form.submit?.method ?? "POST"}", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });`);
+      writer.writeLine(`    if (!res.ok) throw new Error("Submit failed");`);
+      writer.writeLine(`    setSubmitSuccess(${component.form.submit?.successMessage ? JSON.stringify(component.form.submit.successMessage) : `"Saved"`});`);
+      writer.writeLine(`  } catch (err: any) { setSubmitError(${component.form.submit?.errorMessage ? JSON.stringify(component.form.submit.errorMessage) : `"Submit error"`}); } finally { setSubmitting(false); }`);
+      writer.writeLine(`};`);
 
       // 4. RENDER
       writer.writeLine(`return (`);
@@ -464,6 +583,16 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
         const varName = f.name.replace(/[^a-zA-Z0-9_]/g, "_");
         const label = f.label ?? f.name;
 
+        const visibleExpr = f.visibleIf ? JSON.stringify(f.visibleIf) : undefined;
+        writer.writeLine(`    {(() => {`);
+        if (visibleExpr) {
+          writer.writeLine(`      const visible = evalExpr(${visibleExpr}, true);`);
+          writer.writeLine(`      if (!visible) return null;`);
+        }
+        const disabledExpr = f.disabledIf ? JSON.stringify(f.disabledIf) : undefined;
+        writer.writeLine(`      const disabledVal = ${disabledExpr ? `evalExpr(${disabledExpr}, false)` : "false"};`);
+
+        writer.writeLine(`      return (`);
         writer.writeLine(`    <div>`);
         writer.writeLine(`      <label className=\"${labelClass}\">${label}</label>`);
 
@@ -480,40 +609,59 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
         const inputClassName = f.icon ? `${inputClass} pl-10` : inputClass;
 
         if (f.type === "select") {
-          writer.writeLine(`        <select className=\"${inputClassName}\" name=\"${f.name}\" value={${varName}} onChange={(e) => set_${varName}(e.target.value)}>`);
-          writer.writeLine(`          <option value="">Select...</option>`);
-
           if (f.dataSource) {
-            // Render from state
-            writer.writeLine(`          {options_${varName}.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}`);
-          } else if (f.options) {
-            // Render static
-            for (const opt of f.options) {
-              writer.writeLine(`          <option value="${opt.value}">${opt.label}</option>`);
+            writer.writeLine(`        {loading_${varName} && <p className="text-sm text-gray-500">Loading...</p>}`);
+            writer.writeLine(`        {error_${varName} && <p className="text-sm text-red-600">{error_${varName}}</p>}`);
+            writer.writeLine(`        <input className="${inputClass} mb-2" placeholder="${f.searchPlaceholder ?? "Search..."}" value={search_${varName}} onChange={e => setSearch_${varName}(e.target.value)} />`);
+            writer.writeLine(`        {(() => { const filtered = options_${varName}.filter(o => o.label.toLowerCase().includes(search_${varName}.toLowerCase())); return (`);
+            writer.writeLine(`          <select className=\"${inputClassName}\" name=\"${f.name}\" ${f.multiple ? "multiple" : ""} value={${f.multiple ? varName : `${varName} || ""`}} onChange={(e) => {`);
+            if (f.multiple) {
+              writer.writeLine(`            const vals = Array.from(e.target.selectedOptions).map(o => o.value); set_${varName}(vals);`);
+            } else {
+              writer.writeLine(`            set_${varName}(e.target.value);`);
             }
+            writer.writeLine(`          }} disabled={disabledVal}>`);
+            if (!f.multiple) writer.writeLine(`          <option value="">Select...</option>`);
+            writer.writeLine(`          {filtered.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}`);
+            writer.writeLine(`          </select>`);
+            writer.writeLine(`        ); })()}`);
+          } else {
+            writer.writeLine(`        <select className=\"${inputClassName}\" name=\"${f.name}\" ${f.multiple ? "multiple" : ""} value={${f.multiple ? varName : `${varName} || ""`}} onChange={(e) => {`);
+            if (f.multiple) {
+              writer.writeLine(`          const vals = Array.from(e.target.selectedOptions).map(o => o.value); set_${varName}(vals);`);
+            } else {
+              writer.writeLine(`          set_${varName}(e.target.value);`);
+            }
+            writer.writeLine(`        }} disabled={disabledVal}>`);
+            if (!f.multiple) writer.writeLine(`          <option value="">Select...</option>`);
+            if (f.options) {
+              for (const opt of f.options) {
+                writer.writeLine(`          <option value="${opt.value}">${opt.label}</option>`);
+              }
+            }
+            writer.writeLine(`        </select>`);
           }
-          writer.writeLine(`        </select>`);
         } else {
           const inputType = (["number","email","password","date","datetime"].includes(f.type)) ? f.type : "text";
           if (f.type === "textarea") {
-            writer.writeLine(`        <textarea className=\"${inputClassName}\" name=\"${f.name}\" value={${varName}} onChange={(e) => set_${varName}(e.target.value)} placeholder=\"${f.placeholder ?? ''}\" />`);
+            writer.writeLine(`        <textarea className=\"${inputClassName}\" name=\"${f.name}\" value={${varName}} onChange={(e) => set_${varName}(e.target.value)} placeholder=\"${f.placeholder ?? ''}\" disabled={disabledVal} />`);
           } else if (f.type === "checkbox") {
-            writer.writeLine(`        <input className=\"${inputClassName}\" name=\"${f.name}\" checked={${varName}} onChange={(e) => set_${varName}(e.target.checked)} type="checkbox" />`);
+            writer.writeLine(`        <input className=\"${checkboxClass}\" name=\"${f.name}\" checked={${varName}} onChange={(e) => set_${varName}(e.target.checked)} type="checkbox" disabled={disabledVal} />`);
           } else if (f.type === "radio") {
             if (f.options) {
               writer.writeLine(`        <div className="mt-2 space-y-2">`);
               for (const opt of (f.options ?? [])) {
                 writer.writeLine(`          <label className="inline-flex items-center space-x-2">`);
-                writer.writeLine(`            <input type="radio" name="${f.name}" value="${opt.value}" checked={${varName} === "${opt.value}"} onChange={(e) => set_${varName}(e.target.value)} />`);
+                writer.writeLine(`            <input className="${radioClass}" type="radio" name="${f.name}" value="${opt.value}" checked={${varName} === "${opt.value}"} onChange={(e) => set_${varName}(e.target.value)} disabled={disabledVal} />`);
                 writer.writeLine(`            <span>${opt.label}</span>`);
                 writer.writeLine(`          </label>`);
               }
               writer.writeLine(`        </div>`);
             } else {
-              writer.writeLine(`        <input className=\"${inputClassName}\" name=\"${f.name}\" value={${varName}} onChange={(e) => set_${varName}(e.target.value)} type="text" placeholder=\"${f.placeholder ?? ''}\" />`);
+              writer.writeLine(`        <input className=\"${inputClassName}\" name=\"${f.name}\" value={${varName}} onChange={(e) => set_${varName}(e.target.value)} type="text" placeholder=\"${f.placeholder ?? ''}\" disabled={disabledVal} />`);
             }
           } else {
-            writer.writeLine(`        <input className=\"${inputClassName}\" name=\"${f.name}\" value={${varName}} onChange={(e) => set_${varName}(e.target.value)} type=\"${inputType}\" placeholder=\"${f.placeholder ?? ''}\" />`);
+            writer.writeLine(`        <input className=\"${inputClassName}\" name=\"${f.name}\" value={${varName}} onChange={(e) => set_${varName}(e.target.value)} type=\"${inputType}\" placeholder=\"${f.placeholder ?? ''}\" disabled={disabledVal} />`);
           }
         }
 
@@ -523,12 +671,16 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
           writer.writeLine(`      <p className="mt-2 text-sm text-gray-500">${f.description}</p>`);
         }
 
-        writer.writeLine(`      {errors[\"${f.name}\"] && <div className=\"${errorClass}\">{errors[\"${f.name}\"]}</div>}`);
+        writer.writeLine(`      {errors["${f.name}"] && <div className=\"${errorClass}\">{errors["${f.name}"]}</div>}`);
         writer.writeLine(`    </div>`);
+        writer.writeLine(`      );`);
+        writer.writeLine(`    })()}`);
         writer.writeLine("");
       }
 
-      writer.writeLine(`    <button className=\"${btnClass}\" type=\"submit\">Submit</button>`);
+      writer.writeLine(`    {submitSuccess && <div className="text-green-600 text-sm">{submitSuccess}</div>}`);
+      writer.writeLine(`    {submitError && <div className="text-red-600 text-sm">{submitError}</div>}`);
+      writer.writeLine(`    <button className=\"${btnClass}\" type="submit" disabled={submitting}>{submitting ? "Submitting..." : "Submit"}</button>`);
       writer.writeLine(`  </form>`);
       writer.writeLine(`);`);
 

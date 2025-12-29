@@ -20,6 +20,8 @@ Unlike typical scaffolders, **source code is owned by the tool**, while **user c
 - **Rich UI Components**: Forms with Async Selects, Icons (`lucide-react`), and validation.
 - **Tailwind CSS**: Automated styling configuration (`tailwind.config.js`, `postcss.config.js`).
 - **Type Safety**: End-to-end type safety from DSL to UI.
+- **Layout & Content**: Row/column/panel/tabs containers, static content/HTML, CTA buttons.
+- **Form Logic & UX**: Conditional visible/disabled/required-if, default/compute expressions, async select with loading/error/search, multiple select, prefix/suffix/tooltip, submission pipeline with success/error states (optional POST to configured URL).
 
 ## Quick Start
 

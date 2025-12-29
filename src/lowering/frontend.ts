@@ -39,8 +39,19 @@ function resolvePwaConfig(decl: DeclFrontendApp, policies?: any): FrontendPwaCon
 }
 
 export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): FrontendIR {
-  const pages = (decl.pages ?? []).map((p: any) => ({ name: p.name, path: p.path, components: (p.components ?? []).map((c: any) => ({ name: c.name, props: c.props, entityRef: c.entityRef, form: c.form })) }));
-  const components = (decl.components ?? []).map((c: any) => ({ name: c.name, props: c.props, entityRef: c.entityRef, form: c.form }));
+  const mapComponent = (c: any) => ({
+    name: c.name,
+    props: c.props,
+    entityRef: c.entityRef,
+    form: c.form,
+    layout: c.layout,
+    content: c.content,
+    html: c.html,
+    button: c.button,
+  });
+
+  const pages = (decl.pages ?? []).map((p: any) => ({ name: p.name, path: p.path, components: (p.components ?? []).map(mapComponent) }));
+  const components = (decl.components ?? []).map(mapComponent);
 
   return {
     domain: "frontend",
