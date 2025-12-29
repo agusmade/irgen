@@ -15,6 +15,8 @@ frontend("IR Codegen Docs", { pwa: { enabled: true, name: "IR Codegen Docs", sho
   app.page("Frontend", { path: "/frontend" }, (p) => {
     p.component("PwaGuide");
     p.component("TailwindAndVite");
+    p.component("FormFeatures");
+    p.component("LayoutFeatures");
   });
 
   app.page("Backend", { path: "/backend" }, (p) => {
@@ -62,6 +64,20 @@ frontend("IR Codegen Docs", { pwa: { enabled: true, name: "IR Codegen Docs", sho
   app.component("TailwindAndVite", (c) => {
     c.prop("tailwind", "Tailwind config + PostCSS emitted; styles sourced from src/index.css.");
     c.prop("vite", "Vite config with @vitejs/plugin-react; dev/build scripts available.");
+  });
+
+  app.component("FormFeatures", (c) => {
+    c.prop("fields", "text/number/select/textarea/checkbox/radio/date/datetime/time/url/phone/password/daterange, slider, currency, tags, file upload, signature");
+    c.prop("validation", "required/requiredIf, min/max, min/max length, pattern, compare fields, email/url, custom logic (JSONLogic-like)");
+    c.prop("logic", "visible/disabled/default/compute via sandboxed logic evaluator");
+    c.prop("ux", "async select with search/pagination/debounce, clearable selects, prefix/suffix/tooltip/helpHtml/className, loading/error states");
+    c.prop("actions", "submit pipeline with success/error UI, before/after hooks, onSuccess/onError, redirect, draft save");
+  });
+
+  app.component("LayoutFeatures", (c) => {
+    c.prop("containers", "row/column/panel/tabs with real child components");
+    c.prop("content", "static content/HTML blocks, CTA buttons with variants/icons");
+    c.prop("pwa", "optional PWA assets and service worker when enabled");
   });
 
   app.component("BackendOverview", (c) => {

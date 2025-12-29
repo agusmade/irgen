@@ -17,11 +17,11 @@ Unlike typical scaffolders, **source code is owned by the tool**, while **user c
 
 ### Frontend (React/Vite)
 - **Single Page Application (SPA)**: Generates a complete React Router based app.
-- **Rich UI Components**: Forms with Async Selects, Icons (`lucide-react`), and validation.
+- **Rich UI Components**: Forms covering text/number/select/textarea/checkbox/radio/date/datetime/time/url/phone/password/daterange, slider, currency, tags/chips, file upload, signature; static and async select with pagination/search/debounce; icons via `lucide-react`.
 - **Tailwind CSS**: Automated styling configuration (`tailwind.config.js`, `postcss.config.js`).
-- **Type Safety**: End-to-end type safety from DSL to UI.
-- **Layout & Content**: Row/column/panel/tabs containers, static content/HTML, CTA buttons.
-- **Form Logic & UX**: Conditional visible/disabled/required-if, default/compute expressions, async select with loading/error/search, multiple select, prefix/suffix/tooltip, submission pipeline with success/error states (optional POST to configured URL).
+- **Layout & Content**: Row/column/panel/tabs containers render real child components; static content/HTML blocks; CTA buttons with variants.
+- **Form Logic & UX**: JSONLogic-like visibility/disable/required-if, default/compute expressions, compare fields, min/max (number/date), email/url built-ins, custom validators, prefix/suffix/tooltip/helpHtml/className, async select loading/error/skeleton, clearable selects.
+- **Submission Pipeline & Actions**: Optional POST with success/error messaging, confirm dialog, lifecycle hooks (before/after, onSuccess/onError), redirect, local draft save; mock submit when URL not set.
 
 ## Quick Start
 

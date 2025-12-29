@@ -5,6 +5,8 @@ import { z } from "zod";
  * FrontendIR: domain-specific for frontend emitter.
  */
 
+const LogicExprSchema: z.ZodType<any> = z.union([z.string(), z.record(z.any()), z.array(z.any())]);
+
 export const DeclFieldSchema = z.object({
   name: z.string().min(1),
   type: z.enum([
@@ -16,6 +18,15 @@ export const DeclFieldSchema = z.object({
     "radio",
     "date",
     "datetime",
+    "time",
+    "url",
+    "phone",
+    "file",
+    "slider",
+    "currency",
+    "tags",
+    "signature",
+    "daterange",
     "email",
     "password",
   ]),
@@ -23,28 +34,56 @@ export const DeclFieldSchema = z.object({
   // basic validation rules (minLength, required, etc)
   validators: z.object({
     required: z.boolean().optional(),
-    requiredIf: z.string().optional(),
+    requiredIf: LogicExprSchema.optional(),
     min: z.number().optional(),
     max: z.number().optional(),
+    minDate: z.string().optional(),
+    maxDate: z.string().optional(),
     minLength: z.number().optional(),
     maxLength: z.number().optional(),
     pattern: z.string().optional(),
+    format: z.enum(["email", "url"]).optional(),
+    equalsField: z.string().optional(),
+    notEqualsField: z.string().optional(),
+    greaterThanField: z.string().optional(),
+    lessThanField: z.string().optional(),
+    custom: z.array(z.object({
+      logic: LogicExprSchema,
+      message: z.string().optional(),
+    })).optional(),
+    uniqueIn: z.array(z.string()).optional(),
   }).optional(),
   // Expanded
   placeholder: z.string().optional(),
   description: z.string().optional(),
   icon: z.string().optional(),
   options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
-  dataSource: z.object({ url: z.string(), labelKey: z.string(), valueKey: z.string() }).optional(),
-  visibleIf: z.string().optional(),
-  disabledIf: z.string().optional(),
-  defaultValue: z.string().optional(),
-  computeValue: z.string().optional(),
+  dataSource: z.object({
+    url: z.string(),
+    labelKey: z.string(),
+    valueKey: z.string(),
+    searchParam: z.string().optional(),
+    pageParam: z.string().optional(),
+    pageSizeParam: z.string().optional(),
+    pageSize: z.number().optional(),
+    debounceMs: z.number().optional(),
+  }).optional(),
+  visibleIf: LogicExprSchema.optional(),
+  disabledIf: LogicExprSchema.optional(),
+  defaultValue: LogicExprSchema.optional(),
+  computeValue: LogicExprSchema.optional(),
   multiple: z.boolean().optional(),
   prefix: z.string().optional(),
   suffix: z.string().optional(),
   tooltip: z.string().optional(),
   searchPlaceholder: z.string().optional(),
+  clearable: z.boolean().optional(),
+  ariaLabel: z.string().optional(),
+  accept: z.string().optional(),
+  step: z.number().optional(),
+  defaultCurrency: z.string().optional(),
+  helpHtml: z.string().optional(),
+  className: z.string().optional(),
 });
 
 export const DeclFormSchema = z.object({
@@ -54,6 +93,13 @@ export const DeclFormSchema = z.object({
     method: z.enum(["POST", "PUT", "PATCH"]).optional(),
     successMessage: z.string().optional(),
     errorMessage: z.string().optional(),
+    confirmMessage: z.string().optional(),
+    beforeSubmit: LogicExprSchema.optional(),
+    afterSubmit: LogicExprSchema.optional(),
+    onSuccess: LogicExprSchema.optional(),
+    onError: LogicExprSchema.optional(),
+    redirect: z.string().optional(),
+    draftKey: z.string().optional(),
   }).optional(),
 });
 
@@ -71,10 +117,11 @@ export const DeclComponentSchema = z.object({
     kind: z.enum(["row", "column", "panel", "tabs"]),
     title: z.string().optional(),
     columns: z.number().min(1).max(4).optional(),
-    items: z.array(z.string()).optional(),
+    items: z.array(z.string()).optional(), // child component names
     tabs: z.array(z.object({
       label: z.string(),
       content: z.string().optional(),
+      items: z.array(z.string()).optional(),
     })).optional(),
   }).optional(),
   // non-form content/button helpers

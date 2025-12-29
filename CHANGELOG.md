@@ -21,26 +21,25 @@ All notable changes to the `ir-codegen` project will be documented in this file.
 
 #### Frontend
 - **Tailwind CSS**: Full integration with automated `tailwind.config.js` and `postcss.config.js` generation.
-- **Rich UI Components**: Added support for:
-  - Select Inputs (Static Options & Async Data Source).
-  - Icons (Lucide React integration).
-  - Advanced Input props (placeholder, description).
+- **Rich UI Components**:
+  - Form fields now cover text/number/select/textarea/checkbox/radio/date/datetime/time/url/phone/password/daterange, slider, currency, tags/chips, file upload, signature.
+  - Select supports static options and async data sources with search/pagination/debounce, clearable, loading/error skeletons.
+  - Prefix/suffix/tooltip/helpHtml/className for richer templating; icons via Lucide React.
 - **Client-Side Routing**: Transformed frontend output into a Single Page Application (SPA) using `react-router-dom` with auto-generated routes.
 - **Optional PWA Output**: Frontend DSL/policies now accept `pwa.enabled=true` to emit `manifest.webmanifest`, service worker, and icons (defaults remain off).
 - **Vite-Based Frontend Scaffolding**: Generated frontends include Vite config + plugins and ESM-compatible `postcss.config.js`, with entry pointing to `/src/index.tsx`.
 - **React Import Safety**: Generated `App.tsx` explicitly imports React to avoid `React is not defined` when plugins are misconfigured.
-- **Form Field Enhancements**: Frontend DSL supports typed fields (text/number/select/textarea/checkbox/radio/date/datetime/email/password) with validators (required, min/max, minLength/maxLength, pattern); emitter renders new controls and validations.
-- **Layout & Content Components**: Added layout configs (row/column/panel/tabs) and non-form content/button blocks to frontend DSL; emitter renders basic containers and CTA buttons with variants.
-- **Form Logic & UX**: Conditional visible/disabled/required-if, default/compute expressions, async select UX (loading/error/search), multiple select, prefix/suffix/tooltip support.
-- **Submission Pipeline**: Optional form submit config (url/method/success/error messages) with success/error UI and loading state; mock submit when not configured.
+- **Layout & Content Components**: Layout configs (row/column/panel/tabs) now render real child components; content/html blocks; CTA buttons with variants.
+- **Validation & Logic**: JSONLogic-like sandbox (no `Function`), compare fields, min/max for numbers and dates (including date range), email/url built-ins, conditional visible/disabled/required-if, custom logic validators, required/empty checks that understand arrays/objects.
+- **UX & Accessibility**: Async select UX (loading/error/search), multiple select, prefix/suffix/tooltip, aria-labels, error display; loading skeletons for async select.
+- **Submission Pipeline & Actions**: Optional submit config (url/method/success/error messages) with loading/success/error UI, confirm dialog, lifecycle hooks (before/after submit, onSuccess/onError), redirect, draft save (localStorage), mock submit when not configured.
 
 ### Pending / Parity Gaps vs Form.io (Future PRs)
-- Components: file upload (storage/adapter), signature, currency/slider/survey, phone/url/time/day/datetime-range, tags/chips, resource/select grid, address/geo, nested form/wizard/steps, edit grid/repeater.
-- Layout: columns/panel/tabs with real child components (not placeholders), rich HTML templates.
-- Validation/Logic: unique/custom validation functions/JSONLogic, compare fields, min/max for date/time, email/url built-in, conditional show/hide/disable with JSONLogic, safer expression sandbox (replace `Function`).
-- UX: async select pagination/filter/debounce, clearable selects, per-field error/loading skeletons, aria/i18n.
-- Actions: lifecycle hooks (before/after submit), custom action handlers, draft save, redirect/confirmation.
-- Styling/Templates: custom render templates per component, richer tooltip/help/prefix/suffix on more field types.
+- Components: survey, address/geo, select grid/resource grid, nested form/wizard/steps, edit grid/repeater, file upload storage adapter.
+- Validation/Logic: stronger JSONLogic coverage (full operator set), i18n-friendly messages, richer unique/async validation.
+- UX: dedicated i18n, richer per-field skeletons, configurable async select adapters, select grid.
+- Actions: custom action handlers beyond submit (custom buttons/hooks).
+- Styling/Templates: custom render templates per component/theme slots.
 #### Developer Experience
 - **Unified DSL**: Updated `app.dsl.ts` and introduced `fullstack.dsl.ts` examples.
 - **Examples Organization**: `generate-examples.sh` script to manage multiple example outputs in dedicated folders.
