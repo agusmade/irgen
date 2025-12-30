@@ -48,6 +48,8 @@ export function frontend(
   const fn = (typeof optsOrFn === "function" ? optsOrFn : maybeFn) as ((a: {
     page: (name: string, opts: { path: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
     component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
+    meta: (key: string, value: unknown) => void;
+    policy: (target: string, value: Record<string, any>) => void;
   }) => void);
 
   assert(typeof fn === "function", "frontend(..., fn) fn harus function");

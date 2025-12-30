@@ -1,5 +1,4 @@
 import path from "node:path";
-import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { aggregateDecls } from "./dsl/aggregator.js";
 import { registerBuiltins, runMapper } from "./mappers/index.js";

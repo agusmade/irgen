@@ -36,7 +36,8 @@
     "test:emitter-registry": "tsx scripts/emitter-registry.test.js",
     "test:cli-target": "tsx scripts/cli-target.test.js",
     "test:gen-frontend": "node scripts/gen-frontend.test.js",
-    "test:ci": "npm run test:golden"
+    "test:golden:electron": "node scripts/electron-golden.test.js",
+    "test:ci": "npm run test:golden && npm run test:golden:electron"
   },
   "dependencies": {
     "ts-morph": "^23.0.0",
