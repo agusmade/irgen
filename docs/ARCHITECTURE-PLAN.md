@@ -125,14 +125,14 @@ This is a practical, incremental plan. Each phase lists goals, key tasks, and su
 - Acceptance: design doc committed to `docs/DESIGN-PHASE-0.md`. ✅
 
 ### Phase 1 — Decl Aggregator & Validation (2–4 days) — **Done** ✅
-- Implement **DeclUnified** schema and an aggregator that runs DSL loaders and optional schema readers. ✅
+- Implement **DeclBundle** schema and an aggregator that runs DSL loaders and optional schema readers. ✅
 - Add central validation & normalization pass (pluralization, id defaults, operation normalization). ✅
-- Acceptance: aggregator returns validated `DeclUnified` for sample DSLs (see `scripts/decl-validate.test.js`). ✅
+- Acceptance: aggregator returns validated `DeclBundle` for sample DSLs (see `scripts/decl-validate.test.js`). ✅
 
 ### Phase 2 — Mapper Registry (2–3 days) — **Done** ✅
 - Implement mapper registry (register mapper for `backend`, `frontend`, `cli`). ✅
-- Port `declToBackendIR` and `declToFrontendIR` to consume `DeclUnified` (via mappers). ✅
-- Acceptance: produce BackendIR & FrontendIR from same DeclUnified source (see `scripts/mappers.test.js`). ✅
+- Port `declToBackendIR` and `declToFrontendIR` to consume `DeclBundle` (via mappers). ✅
+- Acceptance: produce BackendIR & FrontendIR from same DeclBundle source (see `scripts/mappers.test.js`). ✅
 
 ### Phase 3 — Lowering Engine & Policies (3–7 days) — **Done** ✅
 - Create Lowering engine to convert DomainIR → TargetIR(s) with policy injection (POC: `declToBackendIR(app, policies?)`). ✅
@@ -178,7 +178,7 @@ This is a practical, incremental plan. Each phase lists goals, key tasks, and su
 
 ## Estimates & Notes
 - Total rough estimate for a faithful implementation: **2–4 weeks** for a robust, tested pipeline (depending on team size and depth of emitter rework).
-- The migration can be iterative: start with DeclUnified + mapper registry (POC), then progressively rewire lowering and emitters.
+- The migration can be iterative: start with DeclBundle + mapper registry (POC), then progressively rewire lowering and emitters.
 - Early tests and golden files are critical to keep regressions manageable.
 
 ---
@@ -216,8 +216,8 @@ This is a practical, incremental plan. Each phase lists goals, key tasks, and su
 ## POC scaffold (what I added)
 I scaffolded a small POC to demonstrate the unified flow end-to-end (minimal, iterative):
 
-- `src/ir/decl-unified.ts` — `DeclUnified` type and helper
-- `src/decl/aggregator.ts` — aggregator that loads DSLs and merges them into `DeclUnified`
+- `src/ir/decl/bundle.ts` — `DeclBundle` type and helper
+- `src/dsl/aggregator.ts` — aggregator that loads DSLs, bundles, then normalizes declarations
 - `src/mappers/index.ts` — simple mapper registry and builtin registration for `backend` and `frontend`
 - `scripts/poc-smoke.js` — a minimal smoke test that runs `npm run gen:combined` and checks `generated/lib/models.ts` and `generated/services`
 - `package.json` scripts added: `gen:combined` and `test:poc`

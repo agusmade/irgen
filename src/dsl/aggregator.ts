@@ -1,6 +1,6 @@
 import { loadDsl } from "./runtime.js";
 import { loadFrontendDsl } from "./frontend-runtime.js";
-import { DeclBundle, mergeIntoBundle, validateAndNormalizeBundle } from "../ir/decl/index.js";
+import { DeclBundle, asBundle, validateAndNormalizeBundle } from "../ir/decl/index.js";
 
 /**
  * Minimal aggregator: load DSL entries and merge them into a DeclBundle.
@@ -42,7 +42,7 @@ export async function aggregateDecls(entries: string[], opts?: { prefer?: "front
     loaded.push(loadedDecl);
   }
 
-  const unified = mergeIntoBundle(loaded as any);
+  const unified = asBundle(loaded as any);
   // validate + normalize
   return validateAndNormalizeBundle(unified as any);
 }

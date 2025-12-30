@@ -96,8 +96,8 @@ async function main() {
   registerBuiltins();
 
   // ensure target lowering transforms are registered when available
-  if (targets.includes("backend")) await import("./lowering/backend-target.js");
-  if (targets.includes("frontend")) await import("./lowering/frontend-target.js");
+  if (targets.includes("backend")) await import("./lowering/backend.to-target.js");
+  if (targets.includes("frontend")) await import("./lowering/frontend.to-target.js");
 
   const { engine } = await import("./lowering/engine.js");
   const { emitterEngine } = await import("./emit/engine.js");

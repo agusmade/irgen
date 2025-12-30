@@ -9,15 +9,18 @@ async function main() {
     const { aggregateDecls } = await import("../src/dsl/aggregator.js");
     const unified = await aggregateDecls(["examples/app.dsl.ts"]);
     const decl = unified.apps[0];
-    // call lowering with no explicit policies
-    const irDefault = declToBackendIR(decl, undefined);
+    const domainIr = declToBackendIR(decl);
+
+    const { engine } = await import("../src/lowering/engine.js");
+    await import("../src/lowering/backend.to-target.js");
+
+    const irDefault = await engine.runTransform("backend-target", domainIr, undefined);
     if (irDefault.policies.backend.generateId !== "uuid_v4") throw new Error("default generateId policy not applied");
 
-    // call lowering with shortid
-    const irShort = declToBackendIR(decl, { generateId: "shortid" });
+    const irShort = await engine.runTransform("backend-target", domainIr, { generateId: "shortid" });
     if (irShort.policies.backend.generateId !== "shortid") throw new Error("shortid policy not applied");
 
-    // emit with shortid policy and check generated lib/id.ts
+    // emit with shortid policy and check generated lib/id.ts (target IR expected)
     const outDir = path.resolve(process.cwd(), "generated-policy-test");
     emitBackend(irShort, outDir);
 

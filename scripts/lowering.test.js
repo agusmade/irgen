@@ -6,21 +6,22 @@ async function main() {
     const unified = await aggregateDecls(["examples/app.dsl.ts"]);
     const decl = unified.apps[0];
 
-    // ensure backend lowering module is loaded so it can register its transform
+    // load transforms
     await import("../src/lowering/backend.js");
+    await import("../src/lowering/backend.to-target.js");
 
-    // run backend lowering via engine (default policies)
-    const irDefault = await engine.runTransform("backend", decl, undefined);
-    if (!irDefault) throw new Error("engine backend lowering returned falsy ir");
+    const domainIr = await engine.runTransform("backend", decl, undefined);
+    if (!domainIr) throw new Error("engine backend lowering returned falsy domain ir");
+
+    const irDefault = await engine.runTransform("backend-target", domainIr, undefined);
     if (irDefault.policies.backend.generateId !== "uuid_v4") throw new Error("default policy not applied via engine");
 
-    // run with explicit shortid
-    const irShort = await engine.runTransform("backend", decl, { generateId: "shortid" });
+    const irShort = await engine.runTransform("backend-target", domainIr, { generateId: "shortid" });
     if (irShort.policies.backend.generateId !== "shortid") throw new Error("shortid policy not applied via engine");
 
-    // invalid policy should throw
+    // invalid policy should throw at target layer
     try {
-      await engine.runTransform("backend", decl, { generateId: "nonsense" });
+      await engine.runTransform("backend-target", domainIr, { generateId: "nonsense" });
       throw new Error("engine did not throw on invalid policy");
     } catch (err) {
       // expected

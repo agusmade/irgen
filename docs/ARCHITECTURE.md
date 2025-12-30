@@ -120,11 +120,13 @@ flowchart TB
 - Backend and frontend targets are independent: enabling one does not auto-enable the other, and each emitter writes its own package/tooling (backend stays backend-only; frontend ships React/router/Tailwind).
 - **Emitters** use AST builders (no string templates), printers and file emitters to write the final project scaffolding and code.
 
-**Recent implementation updates (current code)**
-- CLI flow now always goes through DeclUnified aggregation + mapper registry + lowering engine + emitter registry. Flags `--emitter`/`--emitter-map` pick emitters per target.
-- TargetIR layer exists for backend/frontend/cli; currently pass-through but isolates emitter-facing shapes for future specialization.
-- Domain CLI is scaffolded (DeclCLI + mapper + target + `cli-fake` emitter that writes `CLI.md`) and is registered as a first-class target.
-- Backend policies include formatter (`prettier`/`biome`) alongside `generateId`/`loggerImpl`/`httpClient`; adapters in the backend emitter consume policy outputs.
+**Implementation notes (current code)**
+- Pipeline follows: Decl (DSL) ➜ bundle/normalize ➜ mapper ➜ DomainIR ➜ target lowering ➜ emitter. CLI always goes through mapper + lowering engine + emitter registry; `--emitter/--emitter-map` pick emitters per target.
+- Decl: per-domain schemas in `src/ir/decl/*` (backend.raw, frontend, cli) + bundle/normalize for aggregated input.
+- DomainIR: per-domain semantic contracts (`src/ir/domain/*`), free from DSL Zod schemas and policy decisions.
+- TargetIR: emitter-facing contracts (`src/ir/target/*`); backend target now holds policies.backend.* after target-lowering; frontend/cli are currently passthrough placeholders.
+- CLI target is scaffolded (Decl + mapper + target + `cli-fake` emitter producing `CLI.md`) and registered as a target.
+- Backend policies resolved in target lowering (generateId/loggerImpl/httpClient/formatter/db); backend emitter consumes policies from TargetIR.
 
 ---
 
@@ -228,8 +230,8 @@ This is a practical, incremental plan. Each phase lists goals, key tasks, and su
 ## POC scaffold (what I added)
 I scaffolded a small POC to demonstrate the unified flow end-to-end (minimal, iterative):
 
-- `src/ir/decl-unified.ts` — `DeclUnified` type and helper
-- `src/decl/aggregator.ts` — aggregator that loads DSLs and merges them into `DeclUnified`
+- `src/ir/decl/bundle.ts` — `DeclBundle` type and helper
+- `src/dsl/aggregator.ts` — aggregator that loads DSLs, bundles, then normalizes declarations
 - `src/mappers/index.ts` — simple mapper registry and builtin registration for `backend` and `frontend`
 - `scripts/poc-smoke.js` — a minimal smoke test that runs `npm run gen:combined` and checks `generated/lib/models.ts` and `generated/services`
 - `package.json` scripts added: `gen:combined` and `test:poc`

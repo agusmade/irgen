@@ -35,14 +35,14 @@ flowchart TD
 
 ### 2. Decl Aggregator
 - **Input**: DeclIR dari berbagai sumber (DSL, schema opsional)
-- **Output**: DeclUnified
+- **Output**: DeclBundle
 - **Kontrak**: 
   - Merging deklarasi dari berbagai sumber
   - Normalisasi nama (pluralisasi, id default)
   - Validasi dan normalisasi
 
 ### 3. Mapper Registry
-- **Input**: DeclUnified
+- **Input**: DeclBundle
 - **Output**: DomainIR (BackendIR, FrontendIR, CLIIR)
 - **Kontrak**: 
   - Mendaftarkan mapper untuk domain tertentu (backend, frontend, cli)

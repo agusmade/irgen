@@ -4,6 +4,11 @@ All notable changes to the `ir-codegen` project will be documented in this file.
 
 ## [Unreleased] - 2024-XX-XX
 
+### Architecture/IR
+- Refined IR layering to match DeclIR → DomainIR → TargetIR: DSL schemas now live under `src/ir/decl/*`, DomainIR files are schema/policy-free, and TargetIR holds emitter-facing policies (backend target now carries `policies.backend.*`).
+- Removed legacy/unified/compat shims in favor of explicit bundle/normalize (`DeclBundle`) aggregation.
+- Mapper/CLI paths always go through bundle → mapper → lowering engine → target transform → emitter; backend target lowering now handles policy defaults/validation.
+
 ### Major Features (Phases 1-8 Completion)
 
 #### Cross-cutting

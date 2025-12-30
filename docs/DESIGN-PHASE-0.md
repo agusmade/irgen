@@ -6,7 +6,7 @@ This short design note captures the terminology decisions, policy keys, and init
 
 ## Finalized terminology
 - DeclIR: Declarative IR captured from DSLs and schema inputs. Close to authoring surface-level concepts (apps, entities, pages, operations).
-- DeclUnified: A normalized collection of one or more DeclIR instances; canonical input to mappers.
+- DeclBundle: A normalized collection of one or more DeclIR instances; canonical input to mappers.
 - DomainIR: Domain-specific IR derived from DeclUnified (BackendIR, FrontendIR, CLIIR). Shaped for domain lowering steps.
 - Lowering: The deterministic transformation from DomainIR → TargetIR(s); where policy decisions and conventions are applied.
 - TargetIR: Concrete IR tailored to an emitter (e.g., ReactIR, NestIR) that is straightforward to convert to AST.

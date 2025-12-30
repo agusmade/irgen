@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { DeclAppSchema } from "./backend.raw.schema.js";
-import { DeclFrontendAppSchema } from "./frontend.schema.js";
-import { DeclCliAppSchema } from "./cli.schema.js";
+import { DeclFrontendAppSchema } from "./frontend.raw.schema.js";
+import { DeclCliAppSchema } from "./cli.raw.schema.js";
 import type { DeclBundle } from "./bundle.js";
 import { pluralize } from "../../utils/string.js";
 
@@ -14,22 +14,36 @@ export function validateAndNormalizeBundle(d: unknown): DeclBundle {
 
   const normalized: DeclBundle = {
     apps: parsed.apps.map(app => {
-      if (app.type !== "app") return app;
-
-      return {
-        ...app,
-        entities: app.entities.map(entity => ({
-          ...entity,
-          plural: entity.plural || pluralize(entity.name || ""),
-          operations: normalizeOperations(entity.operations || []),
-          id: entity.id,
-          name: entity.name ?? entity.id,
-        })),
-      };
+      if (app.type === "app") return normalizeBackendApp(app);
+      if (app.type === "frontend") return normalizeFrontendApp(app);
+      if (app.type === "cli") return normalizeCliApp(app);
+      return app as any;
     }),
   };
 
   return normalized;
+}
+
+function normalizeBackendApp(app: any) {
+  return {
+    ...app,
+    entities: app.entities.map((entity: any) => ({
+      ...entity,
+      plural: entity.plural || pluralize(entity.name || ""),
+      operations: normalizeOperations(entity.operations || []),
+      id: entity.id,
+      name: entity.name ?? entity.id,
+    })),
+  };
+}
+
+function normalizeFrontendApp(app: any) {
+  // Frontend decl already has defaults via Zod; keep as passthrough for future normalization hooks.
+  return app;
+}
+
+function normalizeCliApp(app: any) {
+  return app;
 }
 
 function normalizeOperations(
@@ -55,4 +69,3 @@ function normalizeOperations(
 // Backward-compatibility exports
 export const DeclUnifiedSchema = DeclBundleSchema;
 export const validateAndNormalizeDeclUnified = validateAndNormalizeBundle;
-

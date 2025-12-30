@@ -1,4 +1,4 @@
-import type { DeclCliApp } from "../ir/decl/cli.schema.js";
+import type { DeclCliApp } from "../ir/decl/cli.raw.schema.js";
 import type { CliIR } from "../ir/domain/cli.js";
 import { engine } from "./engine.js";
 import { z } from "zod";

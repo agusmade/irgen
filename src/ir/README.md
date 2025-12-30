@@ -1,12 +1,9 @@
 # IR module
 
-This folder contains the IR types used by the pipeline. For clarity the IR is split into:
+Struktur IR dipisah sesuai pipeline: DeclIR (input) ➜ DomainIR (semantik) ➜ TargetIR (emitter).
 
-- `decl.ts` — DeclIR (DSL-facing) schemas and types (Zod schemas + inferred types).
-- `backend.ts` — BackendIR types (domain-specific types used by lowering and emitters).
+- `decl/` — DSL-facing schemas (Zod) per domain: `backend.raw.schema.ts`, `frontend.raw.schema.ts`, `cli.raw.schema.ts`, plus bundle/normalize untuk agregasi `DeclBundle`.
+- `domain/` — DomainIR per domain: `backend.ts`, `frontend.ts`, `cli.ts` (murni tipe semantik, tanpa schema DSL/policy).
+- `target/` — TargetIR per domain: emitter-facing. Backend target memuat `policies.backend.*` hasil target-lowering; frontend/cli masih passthrough placeholder.
 
-The old `types.ts` remains as a re-export for backward compatibility.
-
-Utilities such as string transformers (`pascal`, `camel`, `kebab`) have been moved to `src/utils/` for cross-domain reuse.
-
-💡 Next steps for backend improvements: make `policies.idProvider` extensible, add typed DTOs, and provide interfaces for service adapters.
+Barrel lama dan shim telah dihapus; gunakan impor per-domain di atas. Utilities umum ada di `src/utils/`.

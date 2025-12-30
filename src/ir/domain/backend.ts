@@ -20,17 +20,4 @@ export interface BackendIR {
   domain: "backend";
   appName: string;
   entities: BackendEntity[];
-  policies: {
-    backend: {
-      idProvider: "newId" | "shortId";
-      loggerImpl?: "console" | "pino" | "winston" | "custom";
-      httpClient?: "fetch" | "axios" | "got" | "custom";
-      generateId?: "uuid_v4" | "shortid" | "custom";
-      formatter?: "prettier" | "biome";
-      db?: {
-        provider: "prisma"; // extensible later
-        url: string;
-      };
-    };
-  };
 }

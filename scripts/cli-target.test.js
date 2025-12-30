@@ -19,7 +19,7 @@ async function main() {
     registerBuiltins();
     const domainIr = await runMapper("cli", decl);
 
-    await import("../src/lowering/cli-target.js");
+    await import("../src/lowering/cli.to-target.js");
     const { engine } = await import("../src/lowering/engine.js");
     const targetIr = await engine.runTransform("cli-target", domainIr);
 

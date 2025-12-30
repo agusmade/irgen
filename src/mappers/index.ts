@@ -1,8 +1,8 @@
-import type { DeclUnified } from "../ir/decl";
+import type { DeclBundle } from "../ir/decl";
 import type { BackendIR } from "../ir/domain/backend.js";
 import type { FrontendIR } from "../ir/domain/frontend.js";
 
-type MapperFn = (decl: DeclUnified, options?: any) => Promise<any> | any;
+type MapperFn = (decl: DeclBundle, options?: any) => Promise<any> | any;
 
 const registry = new Map<string, MapperFn>();
 
@@ -25,7 +25,7 @@ export function listMappers(): string[] {
   return Array.from(registry.keys());
 }
 
-export async function runMapper(name: string, decl: DeclUnified, options?: any) {
+export async function runMapper(name: string, decl: DeclBundle, options?: any) {
   const fn = getMapper(name);
   if (!fn) throw new Error(`mapper not registered: ${name}`);
   return await fn(decl, options);
@@ -36,7 +36,7 @@ export function registerBuiltins() {
   if (listMappers().length > 0) return; // idempotent
 
   // These imports are dynamic to avoid top-level circular deps
-  const backend = async (decl: DeclUnified, policies?: any): Promise<BackendIR> => {
+  const backend = async (decl: DeclBundle, policies?: any): Promise<BackendIR> => {
     await import("../lowering/backend.js"); // ensure transform registered
     const { engine } = await import("../lowering/engine.js");
     const backendApp = decl.apps.find(app => app.type === "app");
@@ -44,7 +44,7 @@ export function registerBuiltins() {
     return engine.runTransform("backend", backendApp as any, policies);
   };
 
-  const frontend = async (decl: DeclUnified, policies?: any): Promise<FrontendIR> => {
+  const frontend = async (decl: DeclBundle, policies?: any): Promise<FrontendIR> => {
     await import("../lowering/frontend.js"); // ensure transform registered
     const { engine } = await import("../lowering/engine.js");
     const frontendApp = decl.apps.find(app => app.type === "frontend");
@@ -52,7 +52,7 @@ export function registerBuiltins() {
     return engine.runTransform("frontend", frontendApp as any, policies);
   };
 
-  const cli = async (decl: DeclUnified, policies?: any): Promise<any> => {
+  const cli = async (decl: DeclBundle, policies?: any): Promise<any> => {
     await import("../lowering/cli.js");
     const { engine } = await import("../lowering/engine.js");
     const cliApp = decl.apps.find(app => app.type === "cli");
