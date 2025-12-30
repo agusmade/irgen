@@ -1,6 +1,6 @@
-import type { BackendIR } from "../ir/domain/backend.js";
-import type { BackendTargetIR } from "../ir/target/backend.js";
-import { engine } from "./engine.js";
+import type { BackendIR } from "../../ir/domain/backend.js";
+import type { BackendTargetIR } from "../../ir/target/backend.js";
+import { engine } from "../engine.js";
 import { z } from "zod";
 
 export type BackendTargetPoliciesInput = {

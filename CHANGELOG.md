@@ -2,7 +2,7 @@
 
 All notable changes to the `ir-codegen` project will be documented in this file.
 
-## [Unreleased] - 2024-XX-XX
+## [Unreleased] - 2025-12-XX
 
 ### Architecture/IR
 - Refined IR layering to match DeclIR → DomainIR → TargetIR: DSL schemas now live under `src/ir/decl/*`, DomainIR files are schema/policy-free, and TargetIR holds emitter-facing policies (backend target now carries `policies.backend.*`).

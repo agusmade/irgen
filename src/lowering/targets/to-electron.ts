@@ -1,6 +1,6 @@
-import type { FrontendIR } from "../ir/domain/frontend.js";
-import type { ElectronTargetIR, ElectronPolicies } from "../ir/target/electron.js";
-import { engine } from "./engine.js";
+import type { FrontendIR } from "../../ir/domain/frontend.js";
+import type { ElectronTargetIR, ElectronPolicies } from "../../ir/target/electron.js";
+import { engine } from "../engine.js";
 import { z } from "zod";
 
 export type ElectronPolicyInput = {

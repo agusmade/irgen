@@ -12,7 +12,7 @@ async function main() {
     const domainIr = declToBackendIR(decl);
 
     const { engine } = await import("../src/lowering/engine.js");
-    await import("../src/lowering/backend.to-target.js");
+    await import("../src/lowering/targets/to-backend.js");
 
     const irDefault = await engine.runTransform("backend-target", domainIr, undefined);
     if (irDefault.policies.backend.generateId !== "uuid_v4") throw new Error("default generateId policy not applied");

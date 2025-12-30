@@ -4,7 +4,7 @@ import { aggregateDecls } from "../src/dsl/aggregator.js";
 async function main() {
   try {
     await import("../src/lowering/backend.js");
-    await import("../src/lowering/backend.to-target.js");
+    await import("../src/lowering/targets/to-backend.js");
     const unified = await aggregateDecls(["examples/app.dsl.ts"]);
     const decl = unified.apps[0];
     const domainIr = await engine.runTransform("backend", decl, undefined);

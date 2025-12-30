@@ -27,10 +27,6 @@ async function main() {
     ? outDirFlag.split("=")[1]
     : (maybeOut && !maybeOut.startsWith("--") ? maybeOut : "generated");
 
-  const defaultEntry = entry ?? (mode === "frontend" ? "examples/frontend.dsl.ts" : "examples/app.dsl.ts");
-  // normalise entries array (fallback to example DSL when not provided)
-  const entriesArr = entries.length ? entries : [defaultEntry];
-
   // helper: import all emit modules so they can register themselves
   async function importAllEmitters() {
     try {
@@ -69,9 +65,17 @@ async function main() {
     if (targetsFromFlag && targetsFromFlag.length > 0) return targetsFromFlag;
     if (m === "combined") return ["backend", "frontend"];
     if (m === "frontend" || m === "backend" || m === "electron") return [m];
+    if (m === "electrobun") return ["electrobun"];
     return ["backend"];
   };
   const targets = normalizeModeToTargets(mode);
+
+  const defaultEntry = entry
+    ?? ((targets.includes("frontend") || targets.includes("electron") || targets.includes("electrobun"))
+      ? "examples/frontend.dsl.ts"
+      : "examples/app.dsl.ts");
+  // normalise entries array (fallback to example DSL when not provided)
+  const entriesArr = entries.length ? entries : [defaultEntry];
 
   const inspectIR = process.argv.includes("--inspect-ir");
   const inspectDecl = process.argv.includes("--inspect-decl");
@@ -81,9 +85,12 @@ async function main() {
   const emitterMap = emitterMapFlag ? JSON.parse(emitterMapFlag.split("=")[1]) : undefined;
 
   // Aggregate all entries into DeclUnified (validation/normalization inside)
-  const prefer = targets.some(t => t === "frontend" || t === "electron") ? "frontend" : "backend";
+  const prefer = targets.some(t => t === "frontend" || t === "electron" || t === "electrobun") ? "frontend" : "backend";
   const unified = await aggregateDecls(entriesArr, { prefer });
   if (inspectDecl) console.log("INSPECT-DECL:", JSON.stringify(unified, null, 2));
+
+  // ensure built-in mappers are available before extensions register/compose
+  registerBuiltins();
 
   async function loadExtensions() {
     if (!extModules.length) return;
@@ -121,12 +128,11 @@ async function main() {
 
   // ensure emitters and transforms are registered
   await importAllEmitters();
-  registerBuiltins();
 
   // ensure target lowering transforms are registered when available
-  if (targets.includes("backend")) await import("./lowering/backend.to-target.js");
-  if (targets.includes("frontend")) await import("./lowering/frontend.to-target.js");
-  if (targets.includes("electron")) await import("./lowering/electron.to-target.js");
+  if (targets.includes("backend")) await import("./lowering/targets/to-backend.js");
+  if (targets.includes("frontend")) await import("./lowering/targets/to-frontend.js");
+  if (targets.includes("electron")) await import("./lowering/targets/to-electron.js");
 
   const { engine } = await import("./lowering/engine.js");
   const { emitterEngine } = await import("./emit/engine.js");
@@ -188,7 +194,8 @@ async function main() {
   }
 
   console.log("OK");
-  console.log("MODE:", mode);
+  console.log("MODE:", process.argv.find(a => a.startsWith("--mode=")) ? mode : "(auto)");
+  console.log("TARGETS:", targets.join(", "));
   console.log("DSL :", entriesArr.join(", "));
   console.log("OUT :", outDir);
 }

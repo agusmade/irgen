@@ -8,7 +8,7 @@ async function main() {
 
     // load transforms
     await import("../src/lowering/backend.js");
-    await import("../src/lowering/backend.to-target.js");
+    await import("../src/lowering/targets/to-backend.js");
 
     const domainIr = await engine.runTransform("backend", decl, undefined);
     if (!domainIr) throw new Error("engine backend lowering returned falsy domain ir");

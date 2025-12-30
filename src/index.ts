@@ -49,13 +49,13 @@ async function importAllEmitters() {
 
 async function ensureTargetTransforms(targets: string[]) {
   if (targets.includes("backend")) {
-    await import("./lowering/backend.to-target.js");
+    await import("./lowering/targets/to-backend.js");
   }
   if (targets.includes("frontend")) {
-    await import("./lowering/frontend.to-target.js");
+    await import("./lowering/targets/to-frontend.js");
   }
   if (targets.includes("electron")) {
-    await import("./lowering/electron.to-target.js");
+    await import("./lowering/targets/to-electron.js");
   }
 }
 
