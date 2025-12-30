@@ -60,10 +60,37 @@ npx tsx src/cli.ts examples/app.dsl.ts --targets=backend,frontend --outDir=gener
 
 ### Optional: enable PWA for frontend outputs
 - Opt-in via CLI policies:  
-  `npx tsx src/cli.ts examples/fullstack.dsl.ts generated/fullstack --targets=backend,frontend --policies='{"frontend":{"pwa":{"enabled":true,"name":"IR Codegen Docs","shortName":"IRDocs"}}}'`
-- This writes `manifest.webmanifest`, `icons/icon.svg`, and `pwa-sw.js`, then registers the service worker in the generated frontend entry. Defaults stay off unless you set `pwa.enabled=true` (either via `--policies` or by passing `{ pwa: { enabled: true } }` as the options argument to `frontend(...)` in your DSL).
+`npx tsx src/cli.ts examples/fullstack.dsl.ts generated/fullstack --targets=backend,frontend`
+- This writes `manifest.webmanifest`, `icons/icon.svg`, and `pwa-sw.js`, then registers the service worker in the generated frontend entry. Defaults stay off unless you set `pwa.enabled=true` (recommended via the options argument to `frontend(...)` in your DSL; you can still override with `--policies='{"frontend":{"pwa":{"enabled":true,"name":"IR Codegen Docs","shortName":"IRDocs"}}}'` if you prefer CLI flags).
 - Frontend outputs now include a minimal Vite setup. After generation run `npm install` then `npm run dev` inside the frontend folder (e.g. `generated/fullstack/frontend`) to serve the app.
 - Backend and frontend packages are decoupled: backend outputs stay backend-only; frontend outputs ship their own `package.json` with React/router/Tailwind toolchain.
+
+## JS Module API & Extensions
+- Import the DSL helpers directly:
+  ```ts
+  import { app, frontend } from "ir-codegen";
+
+  app("My Backend", { policies: { backend: { generateId: "uuid_v4" } } }, (be) => { /* ... */ });
+  frontend("My Frontend", { pwa: { enabled: true } }, (fe) => { /* ... */ });
+  ```
+- Programmatic generation with extensions:
+  ```ts
+  import { Codegen } from "ir-codegen";
+  import myExtension from "./my-extension.js";
+
+  const codegen = new Codegen({ extensions: [myExtension] });
+  await codegen.generate({ entries: ["./myapp.ts"], targets: ["backend", "frontend"], outDir: "generated" });
+  ```
+- Extension shape: export a function `(ctx, options?) => void|Promise<void>` and use the provided `ctx` to register mappers/transforms/emitters/target mappings:
+  ```ts
+  // my-extension.ts
+  export default (ctx) => {
+    ctx.registerTargetEmitter("my-target", "my-emitter");
+    ctx.registerMapper("my-target", (decl) => {/* ... */}, { force: true });
+  };
+  ```
+- CLI can load extensions too: `npx tsx src/cli.ts ./myapp.ts --targets=backend,frontend --ext=./my-extension.ts`
+- Electron target: IPC whitelist and handler stubs can be declared in the DSL via `policies.electron.ipc` (whitelist + `handlers`), and the emitter generates `ipc-handlers.ts` wired to `main.ts`, `preload.ts`, and `load-file.js`.
 
 ## Architecture
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details on:

@@ -51,8 +51,8 @@ frontend("IR Codegen Docs", { pwa: { enabled: true, name: "IR Codegen Docs", sho
   });
 
   app.component("Policies", (c) => {
-    c.prop("backend", `--policies='{\"backend\":{\"generateId\":\"uuid_v4\"}}'`);
-    c.prop("frontendPwa", `--policies='{\"frontend\":{\"pwa\":{\"enabled\":true}}}'`);
+    c.prop("backend", `Set in DSL meta/policies or override with --policies='{\"backend\":{\"generateId\":\"uuid_v4\"}}'`);
+    c.prop("frontendPwa", `Set pwa in frontend(..., { pwa }) or override with --policies='{\"frontend\":{\"pwa\":{\"enabled\":true}}}'`);
   });
 
   app.component("PwaGuide", (c) => {

@@ -2,6 +2,8 @@
   "name": "ir-codegen",
   "version": "0.1.0",
   "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
     "dev": "tsx src/cli.ts examples/app.dsl.ts",
@@ -14,6 +16,7 @@
     "gen:fullstack": "tsx src/cli.ts examples/fullstack.dsl.ts --outDir=generated/fullstack",
     "gen:combined": "tsx src/cli.ts examples/app.dsl.ts --outDir=generated/app",
     "gen:docs": "tsx src/cli.ts --mode=frontend examples/docs.dsl.ts --outDir=generated/docs",
+    "gen:electron-docs": "tsx src/cli.ts --targets=frontend,electron examples/electron-docs.dsl.ts --outDir=generated/electron-docs",
     "gen": "npm run gen:backend && npm run gen:frontend && npm run gen:fullstack && npm run gen:combined",
     "test:poc": "node scripts/poc-smoke.js",
     "test:golden": "node scripts/golden-test.js",

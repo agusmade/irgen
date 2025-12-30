@@ -8,8 +8,9 @@ This phase implements a more expressive CLI orchestration for building one or mo
 - `--targets=backend,frontend` — run the pipeline for the listed targets (decl aggregation → lowering → emission). Each target is emitted into a subfolder of the `outDir` (e.g., `generated/backend`, `generated/frontend`).
 - `--inspect-ir` — prints the lowered TargetIR(s) (JSON) to stdout to aid debugging.
 - `--inspect-decl` — prints the aggregated DeclBundle (useful to debug the input to mappers/lowering).
-- `--policies='{"generateId":"shortid"}'` — optional JSON policies string that is passed to the lowering engine to influence policy decisions for all targets.
+- `--policies='{"generateId":"shortid"}'` — optional JSON policies override; default policies now bisa dibawa lewat DSL/meta sehingga flag ini hanya dipakai saat butuh override cepat.
 - `--emitter-map='{"backend":"my-backend-emitter"}'` — JSON mapping that overrides which emitter runs for each target (useful to test or choose alternate emitters at runtime).
+- `--ext=./path/to/ext.ts` — optional extension module(s) to load; extensions can register mappers/transforms/emitters/target mappings (same interface as programmatic usage).
 ## What I implemented
 - `src/cli.ts`: added argument parsing and orchestration logic to aggregate DeclBundle, run the lowering transform for each requested target (`backend` and `frontend`), optionally print TargetIR with `--inspect-ir`, and invoke registered emitters (via `emitterEngine`) with output paths under the provided `outDir`.
 - `src/lowering/frontend.ts`: made frontend lowering tolerant when no frontend-specific pages/components exist (generates empty arrays), and registered the frontend transform with the engine so it can be orchestrated by the CLI.

@@ -19,6 +19,7 @@ type EntityBuilder = {
 type AppBuilder = {
   entity(name: string, fn: (e: EntityBuilder) => void): void;
   meta(key: string, value: unknown): void;
+  policy(target: string, value: Record<string, any>): void;
 };
 
 let CURRENT: DeclApp | null = null;
@@ -33,11 +34,33 @@ function defaultEntityId(name: string) {
   return `${kebab(name)}`;
 }
 
-export function app(name: string, fn: (a: AppBuilder) => void) {
+type AppOptions = {
+  meta?: Record<string, any>;
+  policies?: Record<string, any>;
+};
+
+function mergePolicy(target: string, value: Record<string, any>) {
+  if (!CURRENT) return;
+  CURRENT.meta = CURRENT.meta ?? {};
+  const existing = (CURRENT.meta.policies ?? {}) as Record<string, any>;
+  CURRENT.meta.policies = { ...existing, [target]: { ...(existing[target] ?? {}), ...value } };
+}
+
+export function app(name: string, fn: (a: AppBuilder) => void): void;
+export function app(name: string, opts: AppOptions, fn: (a: AppBuilder) => void): void;
+export function app(name: string, optsOrFn: AppOptions | ((a: AppBuilder) => void), maybeFn?: (a: AppBuilder) => void) {
   assert(typeof name === "string" && name.length > 0, "app(name) harus string");
+  const opts = (typeof optsOrFn === "function" ? {} : optsOrFn) ?? {};
+  const fn = (typeof optsOrFn === "function" ? optsOrFn : maybeFn) as (a: AppBuilder) => void;
   assert(typeof fn === "function", "app(..., fn) fn harus function");
 
-  CURRENT = { type: "app", name, entities: [], meta: {} };
+  CURRENT = { type: "app", name, entities: [], meta: { ...(opts.meta ?? {}) } };
+  if (opts.policies) {
+    for (const [target, value] of Object.entries(opts.policies)) {
+      mergePolicy(target, value as Record<string, any>);
+    }
+  }
+
   fn({
     entity(entityName, entityFn) {
       assert(CURRENT, "entity() harus di dalam app()");
@@ -83,6 +106,10 @@ export function app(name: string, fn: (a: AppBuilder) => void) {
     meta(key, value) {
       assert(CURRENT, "meta() harus di dalam app()");
       CURRENT.meta[key] = value;
+    },
+    policy(target, value) {
+      assert(CURRENT, "policy() harus di dalam app()");
+      mergePolicy(target, value);
     },
   });
 }

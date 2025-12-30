@@ -173,7 +173,8 @@ This is a practical, incremental plan. Each phase lists goals, key tasks, and su
 
 ### Phase 6 — CLI Orchestration & Flags (1–2 days) — **Done** ✅
 - Added `--targets=backend,frontend` to orchestrate the pipeline from DSL to emitted outputs (generates target subfolders under the chosen `outDir`).
-- Added `--inspect-ir` to print the lowered TargetIR for debugging and `--policies='{"key":"val"}'` for passing policies to the lowering engine.
+- Added `--inspect-ir` to print the lowered TargetIR for debugging and optional `--policies='{"key":"val"}'` to override policies (default policies sekarang bisa disuplai dari DSL/meta).
+- Added `--ext=path/to/ext.ts` to load extension modules that can register mappers/emitters/target mappings (same shape as programmatic extensions).
 - Acceptance: CLI runs orchestration for requested targets; `scripts/cli-build.test.js` exercises and validates the behavior. ✅
 
 ### Phase 7 — Tests & Golden Files (3–7 days) — **Done** ✅

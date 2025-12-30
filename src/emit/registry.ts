@@ -12,6 +12,12 @@ try {
   // ignore if already set
 }
 
+try {
+  registerTargetEmitter("electron", "electron-shell", { force: false });
+} catch (e) {
+  // ignore if already set
+}
+
 export function getEmitterForTarget(target: string) {
   return mapping.get(target);
 }

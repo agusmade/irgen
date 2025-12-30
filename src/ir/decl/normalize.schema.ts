@@ -5,8 +5,15 @@ import { DeclCliAppSchema } from "./cli.raw.schema.js";
 import type { DeclBundle } from "./bundle.js";
 import { pluralize } from "../../utils/string.js";
 
+export const DeclBundleMetaSchema = z.object({
+  policies: z.record(z.any()).optional(),
+  targets: z.array(z.string()).optional(),
+  outDir: z.string().optional(),
+}).passthrough();
+
 export const DeclBundleSchema = z.object({
   apps: z.array(z.union([DeclAppSchema, DeclFrontendAppSchema, DeclCliAppSchema])),
+  meta: DeclBundleMetaSchema.optional(),
 }).strict();
 
 export function validateAndNormalizeBundle(d: unknown): DeclBundle {
@@ -19,6 +26,7 @@ export function validateAndNormalizeBundle(d: unknown): DeclBundle {
       if (app.type === "cli") return normalizeCliApp(app);
       return app as any;
     }),
+    meta: parsed.meta,
   };
 
   return normalized;

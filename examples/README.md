@@ -35,4 +35,12 @@ Demonstrates a complete backend configuration (frontend part is currently mapped
 
 Output: `generated/fullstack/`
 
+### 5. Electron + Web (shared DSL) - `electron-docs.dsl.ts`
+Demonstrates generating web/PWA and Electron shell from the same FrontendIR. Electron policies set window defaults, IPC whitelist, packaging meta, and custom IPC handlers (emitted into `ipc-handlers.ts`).
 
+Output: `generated/electron-docs/frontend` and `generated/electron-docs/electron`
+
+Dev quickstart:
+- `npm run gen:electron-docs`
+- In `generated/electron-docs/frontend`: `npm install && npm run dev` (serves web/PWA on 5173)
+- In `generated/electron-docs/electron`: `npm install && npm run start:electron:dev` (uses `ELECTRON_START_URL` to open the dev server) or `npm run start:electron:file` after building frontend to load `dist/index.html`. Custom IPC stubs live in `ipc-handlers.ts`; defaults include `ping` and `open-file-dialog`.

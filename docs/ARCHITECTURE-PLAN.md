@@ -159,7 +159,8 @@ This is a practical, incremental plan. Each phase lists goals, key tasks, and su
 
 ### Phase 6 — CLI Orchestration & Flags (1–2 days) — **Done** ✅
 - Added `--targets=backend,frontend` to orchestrate the pipeline from DSL to emitted outputs (generates target subfolders under the chosen `outDir`).
-- Added `--inspect-ir` to print the lowered TargetIR for debugging and `--policies='{"key":"val"}'` for passing policies to the lowering engine.
+- Added `--inspect-ir` to print the lowered TargetIR for debugging and optional `--policies='{"key":"val"}'` to override policies when needed (default policies now bisa dibawa via DSL/meta).
+- Added `--ext=path/to/ext.ts` to load extension modules (same interface as programmatic Codegen extensions) for registering custom mappers/transforms/emitters/target mappings.
 - Acceptance: CLI runs orchestration for requested targets; `scripts/cli-build.test.js` exercises and validates the behavior. ✅
 
 ### Phase 7 — Tests & Golden Files (3–7 days) — **Done** ✅

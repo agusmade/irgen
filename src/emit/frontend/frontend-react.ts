@@ -126,6 +126,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
+  base: "./",
   plugins: [react()],
   server: { port: 5173 },
   preview: { port: 4173 },
@@ -367,7 +368,8 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
   const filePath = path.join(dir, `${component.name.toLowerCase()}.tsx`);
   const sf = project.createSourceFile(filePath, "", { overwrite: true });
 
-  const needsHooks = !!(component.form && component.form.fields && component.form.fields.length > 0) || (component.layout?.kind === "tabs");
+  const hasIpcButton = Boolean((component as any).props && (component as any).props["ipcChannel"]);
+  const needsHooks = !!(component.form && component.form.fields && component.form.fields.length > 0) || (component.layout?.kind === "tabs") || hasIpcButton;
   if (needsHooks) {
     sf.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React", namedImports: ["useEffect", "useState"] });
   } else {
@@ -404,6 +406,40 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
     const btnClass = "inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2";
     const errorClass = "mt-2 text-sm text-red-600";
     const formClass = "space-y-6 bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6";
+
+    // IPC demo button
+    if ((component as any).props?.["ipcChannel"]) {
+      const channel = (component as any).props["ipcChannel"];
+      const title = (component as any).props["title"] ?? "IPC Demo";
+      const description = (component as any).props["description"] ?? "Invoke IPC channel from renderer";
+      writer.writeLine(`const [result, setResult] = useState<string | null>(null);`);
+      writer.writeLine(`const [error, setError] = useState<string | null>(null);`);
+      writer.writeLine(`const handleClick = async () => {`);
+      writer.writeLine(`  try {`);
+      writer.writeLine(`    // @ts-ignore - bridge injected by Electron preload`);
+      writer.writeLine(`    const api = (window as any).api;`);
+      writer.writeLine(`    if (!api?.invoke) { setError("IPC bridge unavailable"); return; }`);
+      writer.writeLine(`    const res = await api.invoke("${channel}");`);
+      writer.writeLine(`    setResult(res ?? "No selection");`);
+      writer.writeLine(`    setError(null);`);
+      writer.writeLine(`  } catch (err:any) {`);
+      writer.writeLine(`    setError(err?.message ?? String(err));`);
+      writer.writeLine(`  }`);
+      writer.writeLine(`};`);
+      writer.writeLine(`return (`);
+      writer.writeLine(`  <div className="bg-white shadow rounded-lg p-4 space-y-3">`);
+      writer.writeLine(`    <div>`);
+      writer.writeLine(`      <h3 className="text-lg font-semibold">${title}</h3>`);
+      writer.writeLine(`      <p className="text-gray-600 text-sm">${description}</p>`);
+      writer.writeLine(`      <p className="text-gray-500 text-xs mt-1">IPC Channel: ${channel}</p>`);
+      writer.writeLine(`    </div>`);
+      writer.writeLine(`    <button onClick={handleClick} className="${btnClass}">Invoke IPC</button>`);
+      writer.writeLine(`    {result && <p className="text-sm text-gray-700">Result: {String(result)}</p>}`);
+      writer.writeLine(`    {error && <p className="text-sm text-red-600">Error: {error}</p>}`);
+      writer.writeLine(`  </div>`);
+      writer.writeLine(`);`);
+      return;
+    }
 
     // Layout components (real child components)
     if (component.layout) {

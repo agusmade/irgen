@@ -1,4 +1,6 @@
 import path from "node:path";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { aggregateDecls } from "./dsl/aggregator.js";
 import { registerBuiltins, runMapper } from "./mappers/index.js";
 
@@ -13,6 +15,8 @@ async function main() {
 
   // parse positional args: first DSL entry and optional outDir
   const rawArgs = process.argv.slice(2);
+  const extFlags = rawArgs.filter(a => a.startsWith("--ext="));
+  const extModules = extFlags.flatMap(f => f.replace("--ext=", "").split(",")).filter(Boolean);
   const outDirFlag = process.argv.find(a => a.startsWith("--outDir=")) ?? null;
   const entries = rawArgs.filter(a => a.endsWith(".dsl.ts"));
   const entry = entries[0];
@@ -65,7 +69,7 @@ async function main() {
   const normalizeModeToTargets = (m: string): string[] => {
     if (targetsFromFlag && targetsFromFlag.length > 0) return targetsFromFlag;
     if (m === "combined") return ["backend", "frontend"];
-    if (m === "frontend" || m === "backend") return [m];
+    if (m === "frontend" || m === "backend" || m === "electron") return [m];
     return ["backend"];
   };
   const targets = normalizeModeToTargets(mode);
@@ -73,23 +77,48 @@ async function main() {
   const inspectIR = process.argv.includes("--inspect-ir");
   const inspectDecl = process.argv.includes("--inspect-decl");
   const policiesFlag = process.argv.find(a => a.startsWith("--policies=")) ?? null;
-  const policies = policiesFlag ? JSON.parse(policiesFlag.split("=")[1]) : undefined;
+  const policiesFromCli = policiesFlag ? JSON.parse(policiesFlag.split("=")[1]) : undefined;
   const emitterMapFlag = process.argv.find(a => a.startsWith("--emitter-map=")) ?? null;
   const emitterMap = emitterMapFlag ? JSON.parse(emitterMapFlag.split("=")[1]) : undefined;
-  const policyForTarget = (target: string) => {
-    if (!policies) return undefined;
-    if (policies[target]) return policies[target];
-    const keys = Object.keys(policies);
-    const looksNamespaced = keys.some(k => ["backend", "frontend"].includes(k));
-    return looksNamespaced ? undefined : policies;
-  };
 
   // Aggregate all entries into DeclUnified (validation/normalization inside)
-  const prefer = targets.length === 1 && targets[0] === "frontend"
-    ? "frontend"
-    : "backend";
+  const prefer = targets.some(t => t === "frontend" || t === "electron") ? "frontend" : "backend";
   const unified = await aggregateDecls(entriesArr, { prefer });
   if (inspectDecl) console.log("INSPECT-DECL:", JSON.stringify(unified, null, 2));
+
+  async function loadExtensions() {
+    if (!extModules.length) return;
+    const { createExtensionContext } = await import("./extensions/context.js");
+    const ctx = createExtensionContext();
+    for (const modPath of extModules) {
+      const abs = path.isAbsolute(modPath) ? modPath : path.resolve(process.cwd(), modPath);
+      const modUrl = pathToFileURL(abs).href;
+      const imported = await import(modUrl);
+      const fn = (imported.default ?? imported.extension ?? imported);
+      if (typeof fn === "function") {
+        fn(ctx, imported.options ?? undefined);
+      } else {
+        console.warn(`extension module ${modPath} did not export a function`);
+      }
+    }
+  }
+
+  await loadExtensions();
+
+  const bundlePolicies = (unified as any)?.meta?.policies;
+  const pickPolicy = (src: any, target: string) => {
+    if (!src) return undefined;
+    if (src[target]) return src[target];
+    const keys = Object.keys(src);
+    const looksNamespaced = keys.some(k => ["backend", "frontend", "electron", "cli"].includes(k));
+    return looksNamespaced ? undefined : src;
+  };
+  const policyForTarget = (target: string) => {
+    const fromDsl = pickPolicy(bundlePolicies, target);
+    const fromCli = pickPolicy(policiesFromCli, target);
+    if (fromDsl && fromCli) return { ...fromDsl, ...fromCli };
+    return fromCli ?? fromDsl;
+  };
 
   // ensure emitters and transforms are registered
   await importAllEmitters();
@@ -98,6 +127,7 @@ async function main() {
   // ensure target lowering transforms are registered when available
   if (targets.includes("backend")) await import("./lowering/backend.to-target.js");
   if (targets.includes("frontend")) await import("./lowering/frontend.to-target.js");
+  if (targets.includes("electron")) await import("./lowering/electron.to-target.js");
 
   const { engine } = await import("./lowering/engine.js");
   const { emitterEngine } = await import("./emit/engine.js");
@@ -148,7 +178,7 @@ async function main() {
     const chosenEmitter =
       (emitterMap?.[target]) ??
       getEmitterForTarget(target) ??
-      (target === "backend" ? "backend-tsmorph" : target === "frontend" ? "frontend-tsmorph" : null);
+      (target === "backend" ? "backend-tsmorph" : target === "frontend" ? "frontend-tsmorph" : target === "electron" ? "electron-shell" : null);
 
     if (!chosenEmitter) {
       console.warn(`no emitter mapping for target ${target}, skipping emit`);

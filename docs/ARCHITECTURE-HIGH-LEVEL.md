@@ -65,7 +65,7 @@ flowchart TD
   - Format dan menulis file
 
 ### 6. CLI
-- **Input**: Argumen CLI (--mode, --targets, --policies)
+- **Input**: Argumen CLI (--mode, --targets, optional --policies override; default policies bisa datang dari DSL/meta; optional --ext to load extensions)
 - **Output**: Kode yang dihasilkan
 - **Kontrak**: 
   - Menjalankan pipeline berdasarkan argumen

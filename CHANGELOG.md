@@ -8,6 +8,7 @@ All notable changes to the `ir-codegen` project will be documented in this file.
 - Refined IR layering to match DeclIR → DomainIR → TargetIR: DSL schemas now live under `src/ir/decl/*`, DomainIR files are schema/policy-free, and TargetIR holds emitter-facing policies (backend target now carries `policies.backend.*`).
 - Removed legacy/unified/compat shims in favor of explicit bundle/normalize (`DeclBundle`) aggregation.
 - Mapper/CLI paths always go through bundle → mapper → lowering engine → target transform → emitter; backend target lowering now handles policy defaults/validation.
+- DSL can carry `meta`/`policies` that flow into DeclBundle; CLI merges DSL policies with `--policies` overrides. Extensions can be loaded via CLI `--ext` or programmatic API.
 
 ### Major Features (Phases 1-8 Completion)
 
@@ -38,6 +39,7 @@ All notable changes to the `ir-codegen` project will be documented in this file.
 - **Validation & Logic**: JSONLogic-like sandbox (no `Function`), compare fields, min/max for numbers and dates (including date range), email/url built-ins, conditional visible/disabled/required-if, custom logic validators, required/empty checks that understand arrays/objects.
 - **UX & Accessibility**: Async select UX (loading/error/search), multiple select, prefix/suffix/tooltip, aria-labels, error display; loading skeletons for async select.
 - **Submission Pipeline & Actions**: Optional submit config (url/method/success/error messages) with loading/success/error UI, confirm dialog, lifecycle hooks (before/after submit, onSuccess/onError), redirect, draft save (localStorage), mock submit when not configured.
+- **Electron Target (Multi-frontend)**: Added Electron target lowering + emitter (`electron-shell`) that generates `main.ts`, `preload.ts`, `ipc-handlers.ts`, `package.json`, `tsconfig.json`, and helper scripts. IPC whitelist + custom handler stubs come from DSL policies (`policies.electron.ipc`), and the emitter avoids double-registering built-in handlers. FrontendIR is shared between Web/PWA and Electron via policy-driven lowering.
 
 ### Pending / Parity Gaps vs Form.io (Future PRs)
 - Components: survey, address/geo, select grid/resource grid, nested form/wizard/steps, edit grid/repeater, file upload storage adapter.

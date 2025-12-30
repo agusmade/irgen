@@ -14,15 +14,32 @@ export type RuntimeComponent = DeclComponent & {
   prop: (key: string, value: string) => void;
 };
 
+type FrontendOptions = {
+  pwa?: DeclFrontendApp["pwa"];
+  meta?: Record<string, any>;
+  policies?: Record<string, any>;
+};
+
+function mergePolicy(target: string, value: Record<string, any>) {
+  if (!CURRENT_FRONTEND) return;
+  CURRENT_FRONTEND.meta = CURRENT_FRONTEND.meta ?? {};
+  const existing = (CURRENT_FRONTEND.meta.policies ?? {}) as Record<string, any>;
+  CURRENT_FRONTEND.meta.policies = { ...existing, [target]: { ...(existing[target] ?? {}), ...value } };
+}
+
 export function frontend(
   name: string,
-  optsOrFn: Record<string, any> | ((a: {
+  optsOrFn: FrontendOptions | ((a: {
     page: (name: string, opts: { path: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
     component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
+    meta: (key: string, value: unknown) => void;
+    policy: (target: string, value: Record<string, any>) => void;
   }) => void),
   maybeFn?: (a: {
     page: (name: string, opts: { path: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
     component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
+    meta: (key: string, value: unknown) => void;
+    policy: (target: string, value: Record<string, any>) => void;
   }) => void,
 ) {
   assert(typeof name === "string" && name.length > 0, "frontend(name) harus string");
@@ -35,7 +52,20 @@ export function frontend(
 
   assert(typeof fn === "function", "frontend(..., fn) fn harus function");
 
-  CURRENT_FRONTEND = { type: "frontend", name, pages: [], components: [], ...(opts?.pwa ? { pwa: opts.pwa } : {}) };
+  const baseMeta = opts?.meta ?? {};
+  CURRENT_FRONTEND = {
+    type: "frontend",
+    name,
+    pages: [],
+    components: [],
+    ...(opts?.pwa ? { pwa: opts.pwa } : {}),
+    meta: { ...baseMeta },
+  };
+  if (opts?.policies) {
+    for (const [target, value] of Object.entries(opts.policies)) {
+      mergePolicy(target, value as Record<string, any>);
+    }
+  }
 
   fn({
     page(pName, opts, cb) {
@@ -88,6 +118,15 @@ export function frontend(
       if (typeof cb === "function") cb(comp);
 
       if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(comp);
+    },
+    meta(key: string, value: unknown) {
+      assert(CURRENT_FRONTEND, "meta() harus di dalam frontend()");
+      CURRENT_FRONTEND.meta = CURRENT_FRONTEND.meta ?? {};
+      (CURRENT_FRONTEND.meta as any)[key] = value;
+    },
+    policy(target: string, value: Record<string, any>) {
+      assert(CURRENT_FRONTEND, "policy() harus di dalam frontend()");
+      mergePolicy(target, value);
     },
   });
 

@@ -17,8 +17,8 @@ export const DeclCliAppSchema = z.object({
   type: z.literal("cli"),
   name: z.string().min(1),
   commands: z.array(DeclCliCommandSchema).default([]),
+  meta: z.record(z.any()).default({}),
 });
 
 export type DeclCliApp = z.infer<typeof DeclCliAppSchema>;
 export type DeclCliCommand = z.infer<typeof DeclCliCommandSchema>;
-

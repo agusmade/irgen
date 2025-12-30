@@ -156,9 +156,9 @@ export const DeclFrontendAppSchema = z.object({
   pages: z.array(DeclPageSchema).default([]),
   components: z.array(DeclComponentSchema).default([]),
   pwa: DeclPwaConfigSchema.optional(),
+  meta: z.record(z.any()).default({}),
 });
 
 export type DeclComponent = z.infer<typeof DeclComponentSchema>;
 export type DeclPage = z.infer<typeof DeclPageSchema>;
 export type DeclFrontendApp = z.infer<typeof DeclFrontendAppSchema>;
-
