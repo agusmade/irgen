@@ -90,7 +90,8 @@ npx tsx src/cli.ts examples/app.dsl.ts --targets=backend,frontend --outDir=gener
   };
   ```
 - CLI can load extensions too: `npx tsx src/cli.ts ./myapp.ts --targets=backend,frontend --ext=./my-extension.ts`
-- Electron target: IPC whitelist and handler stubs can be declared in the DSL via `policies.electron.ipc` (whitelist + `handlers`), and the emitter generates `ipc-handlers.ts` wired to `main.ts`, `preload.ts`, and `load-file.js`.
+- Electron target: IPC whitelist and handler stubs can be declared in the DSL via `policies.electron.ipc` (whitelist + `handlers`), and the emitter generates `ipc-handlers.ts` wired to `main.ts`, `preload.ts`, and `load-file.js`. Electron shell includes security hardening (contextIsolation/nodeIntegration off, navigation/CSP guards), session restore (window state persisted to userData), crash reporting slot, auto-update wiring with renderer status events (`auto-update-status`), and optional retry on failure.
+- Extension namespacing & order: built-ins register first; extensions load in order. Use `ctx.namespace("myExt")` to prefix registrations (e.g., `myExt:frontend`) to avoid collisions. See `docs/EXTENSIONS.md` for details.
 
 ## Architecture
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details on:

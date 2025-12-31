@@ -9,6 +9,7 @@ All notable changes to the `ir-codegen` project will be documented in this file.
 - Removed legacy/unified/compat shims in favor of explicit bundle/normalize (`DeclBundle`) aggregation.
 - Mapper/CLI paths always go through bundle → mapper → lowering engine → target transform → emitter; backend target lowering now handles policy defaults/validation.
 - DSL can carry `meta`/`policies` that flow into DeclBundle; CLI merges DSL policies with `--policies` overrides. Extensions can be loaded via CLI `--ext` or programmatic API.
+- CLI: registers built-in mappers before extensions, supports `--ext` loading, defaults to frontend DSL for frontend-like targets (electron/electrobun), prefers frontend loader when those targets requested, and logs actual targets (mode auto when no flag).
 
 ### Major Features (Phases 1-8 Completion)
 
@@ -40,6 +41,9 @@ All notable changes to the `ir-codegen` project will be documented in this file.
 - **UX & Accessibility**: Async select UX (loading/error/search), multiple select, prefix/suffix/tooltip, aria-labels, error display; loading skeletons for async select.
 - **Submission Pipeline & Actions**: Optional submit config (url/method/success/error messages) with loading/success/error UI, confirm dialog, lifecycle hooks (before/after submit, onSuccess/onError), redirect, draft save (localStorage), mock submit when not configured.
 - **Electron Target (Multi-frontend)**: Added Electron target lowering + emitter (`electron-shell`) that generates `main.ts`, `preload.ts`, `ipc-handlers.ts`, `package.json`, `tsconfig.json`, and helper scripts. IPC whitelist + custom handler stubs come from DSL policies (`policies.electron.ipc`), and the emitter avoids double-registering built-in handlers. FrontendIR is shared between Web/PWA and Electron via policy-driven lowering.
+- **Electrobun Extension (sample)**: Optional extension emits Electrobun bundle (config, IR summary, page/component stubs, barrel, main stub, package.json with Bun+electrobun scripts). Upstream Electrobun CLI may have platform limitations (see electrobun issue #10).
+- **Target lowering rename**: Target transforms standardized to `lowering/targets/to-*.ts` (to-backend, to-frontend, to-electron, etc.) for clarity.
+- **Electron hardening & lifecycle**: Added security defaults (window.open/will-navigate guards, CSP header, eval/Function disabled), reliability (single instance, window state persist/restore), logging, crash reporting slot, auto-update wiring with renderer status events and retry-on-fail, and session-aware IPC cleanup. Auto-update policies support provider/url/channel, prerelease opt-in, headers, and retry tuning.
 
 ### Pending / Parity Gaps vs Form.io (Future PRs)
 - Components: survey, address/geo, select grid/resource grid, nested form/wizard/steps, edit grid/repeater, file upload storage adapter.
