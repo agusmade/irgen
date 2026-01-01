@@ -1,5 +1,6 @@
 import React from "react";
 import * as Icons from "lucide-react";
+import { evalLogic, getByPath, isEmptyVal } from "../lib/logic";
 
 export function ProductDetail() {
   return (

@@ -36,6 +36,15 @@ export interface FrontendField {
   defaultCurrency?: string;
   helpHtml?: string;
   loweredValidators?: LoweredValidationRule[];
+  loweredVisibleIf?: LoweredLogicExpression;
+  loweredDisabledIf?: LoweredLogicExpression;
+  loweredDefaultValue?: LoweredLogicExpression;
+  loweredComputeValue?: LoweredLogicExpression;
+}
+
+export interface LoweredLogicExpression {
+  logic: any;
+  dependencies: string[];
 }
 
 export interface LoweredValidationRule {

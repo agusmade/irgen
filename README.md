@@ -20,7 +20,7 @@ Unlike typical scaffolders, **source code is owned by the tool**, while **user c
 - **Rich UI Components**: Forms covering text/number/select/textarea/checkbox/radio/date/datetime/time/url/phone/password/daterange, slider, currency, tags/chips, file upload, signature; static and async select with pagination/search/debounce; icons via `lucide-react`.
 - **Tailwind CSS**: Automated styling configuration (`tailwind.config.js`, `postcss.config.js`).
 - **Layout & Content**: Row/column/panel/tabs containers render real child components; static content/HTML blocks; CTA buttons with variants.
-- **Form Logic & UX**: JSONLogic-like visibility/disable/required-if, default/compute expressions, compare fields, min/max (number/date), email/url built-ins, custom validators, prefix/suffix/tooltip/helpHtml/className, async select loading/error/skeleton, clearable selects.
+- **Form Logic & UX**: JSONLogic-like visibility/disable/required-if, default/compute expressions, compare fields, min/max (number/date), email/url built-ins, custom validators, prefix/suffix/tooltip/helpHtml/className, async select loading/error/skeleton, clearable selects; **optimized dependency tracking** for efficient React rerenders.
 - **Submission Pipeline & Actions**: Optional POST with success/error messaging, confirm dialog, lifecycle hooks (before/after, onSuccess/onError), redirect, local draft save; mock submit when URL not set.
 
 ## Quick Start

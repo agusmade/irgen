@@ -103,6 +103,50 @@ function lowerValidators(f: any): LoweredValidationRule[] {
   return rules;
 }
 
+function extractLogicDependencies(logic: any): string[] {
+  const deps = new Set<string>();
+  const scan = (node: any) => {
+    if (!node) return;
+    if (typeof node === "string") {
+      const trimmed = node.trim();
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === "object") { scan(parsed); return; }
+      } catch (_) { }
+      const match = trimmed.match(/^([A-Za-z0-9_\\.]+)\\s*(==|===|!=|!==|>=|<=|>|<)\\s*(.+)$/);
+      if (match) { deps.add(match[1]); } else { deps.add(trimmed); }
+    } else if (Array.isArray(node)) {
+      node.forEach(scan);
+    } else if (typeof node === "object") {
+      const entries = Object.entries(node);
+      if (entries.length > 0) {
+        const [op, val] = entries[0];
+        if (op === "var" && typeof val === "string") {
+          deps.add(val);
+        } else if (Array.isArray(val)) {
+          val.forEach(scan);
+        } else {
+          scan(val);
+        }
+      }
+    }
+  };
+  scan(logic);
+  return Array.from(deps).map(d => d.split(".")[0]); // only top-level for state tracking
+}
+
+function lowerLogicExpression(logic: string | undefined): any {
+  if (!logic) return undefined;
+  let parsed = logic;
+  try {
+    parsed = JSON.parse(logic);
+  } catch (_) { }
+  return {
+    logic: parsed,
+    dependencies: extractLogicDependencies(parsed)
+  };
+}
+
 export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): FrontendIR {
   const mapComponent = (c: any) => ({
     name: c.name,
@@ -112,7 +156,11 @@ export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): Fronten
       ...c.form,
       fields: (c.form.fields ?? []).map((f: any) => ({
         ...f,
-        loweredValidators: lowerValidators(f)
+        loweredValidators: lowerValidators(f),
+        loweredVisibleIf: lowerLogicExpression(f.visibleIf),
+        loweredDisabledIf: lowerLogicExpression(f.disabledIf),
+        loweredDefaultValue: lowerLogicExpression(f.defaultValue),
+        loweredComputeValue: lowerLogicExpression(f.computeValue),
       }))
     } : undefined,
     layout: c.layout,

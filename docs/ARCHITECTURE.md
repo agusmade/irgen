@@ -124,7 +124,7 @@ flowchart TB
 - Pipeline follows: Decl (DSL) ➜ bundle/normalize ➜ mapper ➜ DomainIR ➜ target lowering ➜ emitter. CLI always goes through mapper + lowering engine + emitter registry; `--emitter/--emitter-map` pick emitters per target.
 - Decl: per-domain schemas in `src/ir/decl/*` (backend.raw, frontend, cli) + bundle/normalize for aggregated input.
 - DomainIR: per-domain semantic contracts (`src/ir/domain/*`), free from DSL Zod schemas and policy decisions.
-- TargetIR: emitter-facing contracts (`src/ir/target/*`); backend target now holds policies.backend.* after target-lowering; frontend/cli are currently passthrough placeholders.
+- TargetIR: emitter-facing contracts (`src/ir/target/*`); both backend and frontend targets now hold resolved policies after target-lowering.
 - CLI target is scaffolded (Decl + mapper + target + `cli-fake` emitter producing `CLI.md`) and registered as a target.
 - Backend policies resolved in target lowering (generateId/loggerImpl/httpClient/formatter/db); backend emitter consumes policies from TargetIR.
 - Electron target: lowering resolves window/security/packaging/auto-update/reliability policies; emitter renders `main.ts`, `preload.ts`, `ipc-handlers.ts`, `package.json`, `tsconfig.json`, and helper scripts with security guards, session restore, logging, crashReporter slot, auto-update wiring (status events to renderer, retry-on-fail), and IPC whitelist enforcement. Checklist: see `docs/ELECTRON-CHECKLIST.md`.

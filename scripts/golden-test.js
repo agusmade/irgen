@@ -17,13 +17,13 @@ async function main() {
   try {
     console.log("Running generator for golden test...");
     // generate both backend and frontend artifacts to validate frontend golden fixtures
-  await run("npm run gen");
+    await run("npm run gen");
 
-  const checks = [
-    { actual: "generated/backend/lib/models.ts", expected: "test/golden/models.expected.ts", type: "text" },
-    { actual: "generated/backend/services/user.service.ts", expected: "test/golden/user.service.expected.ts", type: "text" },
-    { actual: "generated/backend/controllers/post.controller.ts", expected: "test/golden/post.controller.expected.ts", type: "text" },
-    { actual: "generated/backend/controllers/comment.controller.ts", expected: "test/golden/comment.controller.expected.ts", type: "text" },
+    const checks = [
+      { actual: "generated/backend/lib/models.ts", expected: "test/golden/models.expected.ts", type: "text" },
+      { actual: "generated/backend/services/user.service.ts", expected: "test/golden/user.service.expected.ts", type: "text" },
+      { actual: "generated/backend/controllers/post.controller.ts", expected: "test/golden/post.controller.expected.ts", type: "text" },
+      { actual: "generated/backend/controllers/comment.controller.ts", expected: "test/golden/comment.controller.expected.ts", type: "text" },
       { actual: "generated/backend/lib/id.ts", expected: "test/golden/id.expected.ts", type: "text" },
       { actual: "generated/backend/lib/logger.ts", expected: "test/golden/logger.expected.ts", type: "text" },
       { actual: "generated/backend/lib/http.ts", expected: "test/golden/http.expected.ts", type: "text" },
@@ -31,6 +31,7 @@ async function main() {
       // frontend artifacts
       { actual: "generated/frontend/src/index.tsx", expected: "test/golden/frontend/index.expected.tsx", type: "text" },
       { actual: "generated/frontend/src/index.css", expected: "test/golden/frontend/index.css.expected", type: "text" },
+      { actual: "generated/frontend/src/lib/logic.ts", expected: "test/golden/frontend/lib/logic.expected.ts", type: "text" },
       { actual: "generated/frontend/src/pages/home.tsx", expected: "test/golden/frontend/pages/home.expected.tsx", type: "text" },
       { actual: "generated/frontend/src/components/productcard.tsx", expected: "test/golden/frontend/components/productcard.expected.tsx", type: "text" },
       { actual: "generated/frontend/src/pages/product.tsx", expected: "test/golden/frontend/pages/product.expected.tsx", type: "text" },

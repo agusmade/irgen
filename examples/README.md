@@ -31,9 +31,9 @@ Demonstrates generating simple React components.
 Output: `generated/frontend-only/`
 
 ### 4. Fullstack - `fullstack.dsl.ts`
-Demonstrates a complete backend configuration (frontend part is currently mapped to backend entities).
+Demonstrates a complete backend + frontend configuration. Backend and frontend are generated independently into their own subdirectories, ensuring clean separation and target-specific optimizations.
 
-Output: `generated/fullstack/`
+Output: `generated/fullstack/backend` and `generated/fullstack/frontend`
 
 ### 5. Electron + Web (shared DSL) - `electron-docs.dsl.ts`
 Demonstrates generating web/PWA and Electron shell from the same FrontendIR. Electron policies set window defaults, IPC whitelist, packaging meta, and custom IPC handlers (emitted into `ipc-handlers.ts`).

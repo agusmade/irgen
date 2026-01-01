@@ -141,9 +141,13 @@ export function emitFrontend(project: Project, outDir: string, ir: FrontendTarge
   const frontendDir = path.join(outDir, "src");
   ensureDir(frontendDir);
 
+  const policy = ir.policies.frontend;
+  const primaryColor = policy.styling.theme.primaryColor;
+
   emitFrontendPackageJson(outDir, ir);
   emitPwaAssets(outDir, ir);
   emitViteConfig(project, outDir);
+  emitSharedLogic(project, frontendDir);
 
   // index file (Entry Point)
   const idx = project.createSourceFile(path.join(frontendDir, "index.tsx"), "", { overwrite: true });
@@ -196,7 +200,7 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("            <div className=\"flex justify-between h-16\">");
     writer.writeLine("              <div className=\"flex\">");
     writer.writeLine("                <div className=\"flex-shrink-0 flex items-center\">");
-    writer.writeLine(`                  <span className=\"font-bold text-xl text-indigo-600\">${ir.appName}</span>`);
+    writer.writeLine(`                  <span className=\"font-bold text-xl\" style={{ color: "${ir.policies.frontend.styling.theme.primaryColor}" }}>${ir.appName}</span>`);
     writer.writeLine("                </div>");
     writer.writeLine("                <div className=\"hidden sm:ml-6 sm:flex sm:space-x-8\">");
     ir.pages.forEach(p => {
@@ -268,7 +272,7 @@ if ('serviceWorker' in navigator) {
   }
 
   for (const c of ir.components) {
-    emitComponent(project, frontendDir, c);
+    emitComponent(project, frontendDir, c, ir);
     compsBarrel.addStatements([`export * from "./components/${c.name.toLowerCase()}";`]);
   }
 }
@@ -303,6 +307,81 @@ export default {
   },
 };
   `.trim(), { overwrite: true });
+}
+
+function emitSharedLogic(project: Project, srcDir: string) {
+  const libDir = path.join(srcDir, "lib");
+  ensureDir(libDir);
+  const filePath = path.join(libDir, "logic.ts");
+  const sf = project.createSourceFile(filePath, "", { overwrite: true });
+
+  sf.addStatements([
+    `export const getByPath = (obj: any, path?: string) => { if (!path) return undefined; return path.split(".").reduce((acc, key) => (acc && typeof acc === "object") ? acc[key] : undefined, obj); };`,
+    `export const isEmptyVal = (v: any): boolean => {
+  if (Array.isArray(v)) return v.length === 0;
+  if (typeof v === "object" && v !== null) { const vals = Object.values(v); return vals.length === 0 ? true : vals.every(isEmptyVal); }
+  if (typeof v === "boolean") return !v;
+  return (!v || v.toString().trim() === "");
+};`,
+    `export const evalLogic = (logic: any, fallback?: any, logicCtx: any = {}): any => {
+  const evalNode = (node: any): any => {
+    if (node === undefined || node === null) return undefined;
+    if (typeof node === "string") {
+      const trimmed = node.trim();
+      try { const parsed = JSON.parse(trimmed); if (parsed && typeof parsed === "object") return evalNode(parsed); } catch (_) {}
+      const match = trimmed.match(/^([A-Za-z0-9_\\.]+)\\s*(==|===|!=|!==|>=|<=|>|<)\\s*(.+)$/);
+      if (match) {
+        const [, lhsKey, opSym, rhsRaw] = match;
+        const lhs = getByPath(logicCtx, lhsKey);
+        let rhs: any = rhsRaw;
+        if (rhsRaw === "true") rhs = true; else if (rhsRaw === "false") rhs = false; else if (!isNaN(Number(rhsRaw))) rhs = Number(rhsRaw); else rhs = rhsRaw.replace(/^['"]|['"]$/g, "");
+        switch (opSym) {
+          case "==": return lhs == rhs;
+          case "===": return lhs === rhs;
+          case "!=": return lhs != rhs;
+          case "!==": return lhs !== rhs;
+          case ">": return lhs > rhs;
+          case "<": return lhs < rhs;
+          case ">=": return lhs >= rhs;
+          case "<=": return lhs <= rhs;
+        }
+      }
+      return getByPath(logicCtx, trimmed) ?? trimmed;
+    }
+    if (Array.isArray(node)) return node.map(evalNode);
+    if (typeof node !== "object") return node;
+    const entries = Object.entries(node); if (entries.length === 0) return undefined;
+    const [op, valRaw] = entries[0];
+    const list = Array.isArray(valRaw) ? valRaw : [valRaw];
+    const values = list.map(evalNode);
+    switch (op) {
+      case "var": return getByPath(logicCtx, values[0]);
+      case "==": return values[0] == values[1];
+      case "===": return values[0] === values[1];
+      case "!=": return values[0] != values[1];
+      case "!==": return values[0] !== values[1];
+      case ">": return values[0] > values[1];
+      case "<": return values[0] < values[1];
+      case ">=": return values[0] >= values[1];
+      case "<=": return values[0] <= values[1];
+      case "and": return values.every(Boolean);
+      case "or": return values.some(Boolean);
+      case "!": return !values[0];
+      case "!!": return !!values[0];
+      case "if": return values[0] ? values[1] : values[2];
+      case "in": return Array.isArray(values[1]) ? values[1].includes(values[0]) : false;
+      case "+": return values.reduce((a,b) => (Number(a) || 0) + (Number(b) || 0), 0);
+      case "-": return values.length === 1 ? -(Number(values[0]) || 0) : (Number(values[0]) || 0) - (Number(values[1]) || 0);
+      case "*": return values.reduce((a,b) => (Number(a) || 0) * (Number(b) || 0), 1);
+      case "/": return values.length === 1 ? (Number(values[0]) || 0) : (Number(values[1]) ? (Number(values[0]) || 0) / (Number(values[1]) || 1) : undefined);
+      case "%": return values.length === 1 ? Number(values[0]) % 1 : (Number(values[0]) || 0) % (Number(values[1]) || 1);
+      default: return undefined;
+    }
+  };
+  const res = evalNode(logic);
+  return (typeof res === "undefined") ? fallback : res;
+};`
+  ]);
 }
 
 // Register frontend emitter with the engine
@@ -362,7 +441,7 @@ function emitPage(project: Project, frontendDir: string, page: FrontendPage) {
   });
 }
 
-function emitComponent(project: Project, frontendDir: string, component: FrontendComponent) {
+function emitComponent(project: Project, frontendDir: string, component: FrontendComponent, ir: FrontendTargetIR) {
   const dir = path.join(frontendDir, "components");
   project.createDirectory(dir);
   const filePath = path.join(dir, `${component.name.toLowerCase()}.tsx`);
@@ -376,6 +455,7 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
     sf.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React" });
   }
   sf.addImportDeclaration({ moduleSpecifier: "lucide-react", namespaceImport: "Icons" });
+  sf.addImportDeclaration({ moduleSpecifier: "../lib/logic", namedImports: ["evalLogic", "getByPath", "isEmptyVal"] });
 
   // Import layout child components if any
   // Import layout child components if any and valid identifier
@@ -403,12 +483,13 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
     const inputClass = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm";
     const checkboxClass = "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500";
     const radioClass = "h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500";
-    const btnClass = "inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2";
+    const primaryBtnColor = ir.policies.frontend.styling.theme.primaryColor;
+    const btnClass = `inline-flex justify-center rounded-md border border-transparent py-2 px-4 text-sm font-medium text-white shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2`;
     const errorClass = "mt-2 text-sm text-red-600";
     const formClass = "space-y-6 bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6";
 
-    // IPC demo button
-    if ((component as any).props?.["ipcChannel"]) {
+    // Layout components (real child components)
+    if (hasIpcButton) {
       const channel = (component as any).props["ipcChannel"];
       const title = (component as any).props["title"] ?? "IPC Demo";
       const description = (component as any).props["description"] ?? "Invoke IPC channel from renderer";
@@ -440,8 +521,6 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
       writer.writeLine(`);`);
       return;
     }
-
-    // Layout components (real child components)
     if (component.layout) {
       const kind = component.layout.kind;
       if (kind === "tabs") {
@@ -523,8 +602,9 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
           ? "bg-gray-100 text-gray-800 hover:bg-gray-200 focus:ring-gray-300"
           : (variant === "ghost"
             ? "bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-200"
-            : "bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500");
-        writer.writeLine(`    <button className="${baseBtn} ${variantClass}" onClick={() => { /* TODO: wire action */ }}>`);
+            : "");
+        const style = variant === "primary" ? { backgroundColor: ir.policies.frontend.styling.theme.primaryColor } : {};
+        writer.writeLine(`    <button className="${baseBtn} ${variantClass}" style={${JSON.stringify(style)}} onClick={() => { /* TODO: wire action */ }}>`);
         if (component.button.icon) {
           writer.writeLine(`      {(Icons as any)["${component.button.icon}"] && React.createElement((Icons as any)["${component.button.icon}"], { size: 16, className: "mr-2" })}`);
         }
@@ -564,72 +644,7 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
 
       writer.writeLine(`const [errors, set_errors] = useState({} as Record<string,string>);`);
       writer.writeLine(`const ctx = { ${stateVars.map(s => `${s}: ${s}`).join(", ")} };`);
-      writer.writeLine(`const getByPath = (obj: any, path?: string) => { if (!path) return undefined; return path.split(".").reduce((acc, key) => (acc && typeof acc === "object") ? acc[key] : undefined, obj); };`);
-      writer.writeLine(`const evalLogic = (logic: any, fallback?: any, logicCtx: any = ctx): any => {`);
-      writer.writeLine(`  const evalNode = (node: any): any => {`);
-      writer.writeLine(`    if (node === undefined || node === null) return undefined;`);
-      writer.writeLine(`    if (typeof node === "string") {`);
-      writer.writeLine(`      const trimmed = node.trim();`);
-      writer.writeLine(`      try { const parsed = JSON.parse(trimmed); if (parsed && typeof parsed === "object") return evalNode(parsed); } catch (_) {}`);
-      writer.writeLine(`      const match = trimmed.match(/^([A-Za-z0-9_\\.]+)\\s*(==|===|!=|!==|>=|<=|>|<)\\s*(.+)$/);`);
-      writer.writeLine(`      if (match) {`);
-      writer.writeLine(`        const [, lhsKey, opSym, rhsRaw] = match;`);
-      writer.writeLine(`        const lhs = getByPath(logicCtx, lhsKey);`);
-      writer.writeLine(`        let rhs: any = rhsRaw;`);
-      writer.writeLine(`        if (rhsRaw === "true") rhs = true; else if (rhsRaw === "false") rhs = false; else if (!isNaN(Number(rhsRaw))) rhs = Number(rhsRaw); else rhs = rhsRaw.replace(/^['"]|['"]$/g, "");`);
-      writer.writeLine(`        switch (opSym) {`);
-      writer.writeLine(`          case "==": return lhs == rhs;`);
-      writer.writeLine(`          case "===": return lhs === rhs;`);
-      writer.writeLine(`          case "!=": return lhs != rhs;`);
-      writer.writeLine(`          case "!==": return lhs !== rhs;`);
-      writer.writeLine(`          case ">": return lhs > rhs;`);
-      writer.writeLine(`          case "<": return lhs < rhs;`);
-      writer.writeLine(`          case ">=": return lhs >= rhs;`);
-      writer.writeLine(`          case "<=": return lhs <= rhs;`);
-      writer.writeLine(`        }`);
-      writer.writeLine(`      }`);
-      writer.writeLine(`      return getByPath(logicCtx, trimmed) ?? trimmed;`);
-      writer.writeLine(`    }`);
-      writer.writeLine(`    if (Array.isArray(node)) return node.map(evalNode);`);
-      writer.writeLine(`    if (typeof node !== "object") return node;`);
-      writer.writeLine(`    const entries = Object.entries(node); if (entries.length === 0) return undefined;`);
-      writer.writeLine(`    const [op, valRaw] = entries[0];`);
-      writer.writeLine(`    const list = Array.isArray(valRaw) ? valRaw : [valRaw];`);
-      writer.writeLine(`    const values = list.map(evalNode);`);
-      writer.writeLine(`    switch (op) {`);
-      writer.writeLine(`      case "var": return getByPath(logicCtx, values[0]);`);
-      writer.writeLine(`      case "==": return values[0] == values[1];`);
-      writer.writeLine(`      case "===": return values[0] === values[1];`);
-      writer.writeLine(`      case "!=": return values[0] != values[1];`);
-      writer.writeLine(`      case "!==": return values[0] !== values[1];`);
-      writer.writeLine(`      case ">": return values[0] > values[1];`);
-      writer.writeLine(`      case "<": return values[0] < values[1];`);
-      writer.writeLine(`      case ">=": return values[0] >= values[1];`);
-      writer.writeLine(`      case "<=": return values[0] <= values[1];`);
-      writer.writeLine(`      case "and": return values.every(Boolean);`);
-      writer.writeLine(`      case "or": return values.some(Boolean);`);
-      writer.writeLine(`      case "!": return !values[0];`);
-      writer.writeLine(`      case "!!": return !!values[0];`);
-      writer.writeLine(`      case "if": return values[0] ? values[1] : values[2];`);
-      writer.writeLine(`      case "in": return Array.isArray(values[1]) ? values[1].includes(values[0]) : false;`);
-      writer.writeLine(`      case "+": return values.reduce((a,b) => (Number(a) || 0) + (Number(b) || 0), 0);`);
-      writer.writeLine(`      case "-": return values.length === 1 ? -(Number(values[0]) || 0) : (Number(values[0]) || 0) - (Number(values[1]) || 0);`);
-      writer.writeLine(`      case "*": return values.reduce((a,b) => (Number(a) || 0) * (Number(b) || 0), 1);`);
-      writer.writeLine(`      case "/": return values.length === 1 ? (Number(values[0]) || 0) : (Number(values[1]) ? (Number(values[0]) || 0) / (Number(values[1]) || 1) : undefined);`);
-      writer.writeLine(`      case "%": return values.length === 1 ? Number(values[0]) % 1 : (Number(values[0]) || 0) % (Number(values[1]) || 1);`);
-      writer.writeLine(`      default: return undefined;`);
-      writer.writeLine(`    }`);
-      writer.writeLine(`  };`);
-      writer.writeLine(`  const res = evalNode(logic);`);
-      writer.writeLine(`  return (typeof res === "undefined") ? fallback : res;`);
-      writer.writeLine(`};`);
       writer.writeLine(`const getFieldVal = (field: string) => getByPath(ctx, field.replace(/[^a-zA-Z0-9_]/g, "_"));`);
-      writer.writeLine(`const isEmptyVal = (v: any): boolean => {`);
-      writer.writeLine(`  if (Array.isArray(v)) return v.length === 0;`);
-      writer.writeLine(`  if (typeof v === "object" && v !== null) { const vals = Object.values(v); return vals.length === 0 ? true : vals.every(isEmptyVal); }`);
-      writer.writeLine(`  if (typeof v === "boolean") return !v;`);
-      writer.writeLine(`  return (!v || v.toString().trim() === "");`);
-      writer.writeLine(`};`);
 
       // 2. EFFECTS (Data Fetching, defaults, computed)
       for (const f of component.form.fields) {
@@ -661,14 +676,16 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
           writer.writeLine(`}, [search_${varName}, page_${varName}]);`);
         }
 
-        if (f.defaultValue) {
+        if (f.loweredDefaultValue) {
           const varName = f.name.replace(/[^a-zA-Z0-9_]/g, "_");
-          writer.writeLine(`useEffect(() => { const v = evalLogic(${JSON.stringify(f.defaultValue)}, ${varName}); if (typeof v !== "undefined" && ${varName} === "" ) set_${varName}(v); }, []);`);
+          const deps = f.loweredDefaultValue.dependencies.map(d => d.replace(/[^a-zA-Z0-9_]/g, "_"));
+          writer.writeLine(`useEffect(() => { const v = evalLogic(${JSON.stringify(f.loweredDefaultValue.logic)}, ${varName}, ctx); if (typeof v !== "undefined" && ${varName} === "" ) set_${varName}(v); }, [${deps.join(", ")}]);`);
         }
 
-        if (f.computeValue) {
+        if (f.loweredComputeValue) {
           const varName = f.name.replace(/[^a-zA-Z0-9_]/g, "_");
-          writer.writeLine(`useEffect(() => { const next = evalLogic(${JSON.stringify(f.computeValue)}, ${varName}); if (typeof next !== "undefined" && next !== ${varName}) set_${varName}(next); }, [${stateVars.join(", ")}]);`);
+          const deps = f.loweredComputeValue.dependencies.map(d => d.replace(/[^a-zA-Z0-9_]/g, "_"));
+          writer.writeLine(`useEffect(() => { const next = evalLogic(${JSON.stringify(f.loweredComputeValue.logic)}, ${varName}, ctx); if (typeof next !== "undefined" && next !== ${varName}) set_${varName}(next); }, [${deps.join(", ")}]);`);
         }
       }
 
@@ -815,14 +832,14 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
         const varName = f.name.replace(/[^a-zA-Z0-9_]/g, "_");
         const label = f.label ?? f.name;
 
-        const visibleExpr = f.visibleIf ? JSON.stringify(f.visibleIf) : undefined;
+        const visibleExpr = f.loweredVisibleIf ? JSON.stringify(f.loweredVisibleIf.logic) : undefined;
         writer.writeLine(`    {(() => {`);
         if (visibleExpr) {
-          writer.writeLine(`      const visible = evalLogic(${visibleExpr}, true);`);
+          writer.writeLine(`      const visible = evalLogic(${visibleExpr}, true, ctx);`);
           writer.writeLine(`      if (!visible) return null;`);
         }
-        const disabledExpr = f.disabledIf ? JSON.stringify(f.disabledIf) : undefined;
-        writer.writeLine(`      const disabledVal = ${disabledExpr ? `evalLogic(${disabledExpr}, false)` : "false"};`);
+        const disabledExpr = f.loweredDisabledIf ? JSON.stringify(f.loweredDisabledIf.logic) : undefined;
+        writer.writeLine(`      const disabledVal = ${disabledExpr ? `evalLogic(${disabledExpr}, false, ctx)` : "false"};`);
 
         writer.writeLine(`      return (`);
         writer.writeLine(`    <div className="${f.className ?? ""}">`);
@@ -968,7 +985,7 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
 
       writer.writeLine(`    {submitSuccess && <div className="text-green-600 text-sm">{submitSuccess}</div>}`);
       writer.writeLine(`    {submitError && <div className="text-red-600 text-sm">{submitError}</div>}`);
-      writer.writeLine(`    <button className=\"${btnClass}\" type="submit" disabled={submitting}>{submitting ? "Submitting..." : "Submit"}</button>`);
+      writer.writeLine(`    <button className="${btnClass}" style={{ backgroundColor: "${primaryBtnColor}" }} type="submit" disabled={submitting}>{submitting ? "Submitting..." : "Submit"}</button>`);
       writer.writeLine(`  </form>`);
       writer.writeLine(`);`);
 

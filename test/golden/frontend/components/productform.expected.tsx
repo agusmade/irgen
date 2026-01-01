@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import * as Icons from "lucide-react";
+import { evalLogic, getByPath, isEmptyVal } from "../lib/logic";
 
 export function ProductForm() {
   const [id, set_id] = useState("");
@@ -7,72 +8,7 @@ export function ProductForm() {
   const [price, set_price] = useState("");
   const [errors, set_errors] = useState({} as Record<string,string>);
   const ctx = { id: id, name: name, price: price };
-  const getByPath = (obj: any, path?: string) => { if (!path) return undefined; return path.split(".").reduce((acc, key) => (acc && typeof acc === "object") ? acc[key] : undefined, obj); };
-  const evalLogic = (logic: any, fallback?: any, logicCtx: any = ctx): any => {
-    const evalNode = (node: any): any => {
-      if (node === undefined || node === null) return undefined;
-      if (typeof node === "string") {
-        const trimmed = node.trim();
-        try { const parsed = JSON.parse(trimmed); if (parsed && typeof parsed === "object") return evalNode(parsed); } catch (_) {}
-        const match = trimmed.match(/^([A-Za-z0-9_\.]+)\s*(==|===|!=|!==|>=|<=|>|<)\s*(.+)$/);
-        if (match) {
-          const [, lhsKey, opSym, rhsRaw] = match;
-          const lhs = getByPath(logicCtx, lhsKey);
-          let rhs: any = rhsRaw;
-          if (rhsRaw === "true") rhs = true; else if (rhsRaw === "false") rhs = false; else if (!isNaN(Number(rhsRaw))) rhs = Number(rhsRaw); else rhs = rhsRaw.replace(/^['"]|['"]$/g, "");
-          switch (opSym) {
-            case "==": return lhs == rhs;
-            case "===": return lhs === rhs;
-            case "!=": return lhs != rhs;
-            case "!==": return lhs !== rhs;
-            case ">": return lhs > rhs;
-            case "<": return lhs < rhs;
-            case ">=": return lhs >= rhs;
-            case "<=": return lhs <= rhs;
-          }
-        }
-        return getByPath(logicCtx, trimmed) ?? trimmed;
-      }
-      if (Array.isArray(node)) return node.map(evalNode);
-      if (typeof node !== "object") return node;
-      const entries = Object.entries(node); if (entries.length === 0) return undefined;
-      const [op, valRaw] = entries[0];
-      const list = Array.isArray(valRaw) ? valRaw : [valRaw];
-      const values = list.map(evalNode);
-      switch (op) {
-        case "var": return getByPath(logicCtx, values[0]);
-        case "==": return values[0] == values[1];
-        case "===": return values[0] === values[1];
-        case "!=": return values[0] != values[1];
-        case "!==": return values[0] !== values[1];
-        case ">": return values[0] > values[1];
-        case "<": return values[0] < values[1];
-        case ">=": return values[0] >= values[1];
-        case "<=": return values[0] <= values[1];
-        case "and": return values.every(Boolean);
-        case "or": return values.some(Boolean);
-        case "!": return !values[0];
-        case "!!": return !!values[0];
-        case "if": return values[0] ? values[1] : values[2];
-        case "in": return Array.isArray(values[1]) ? values[1].includes(values[0]) : false;
-        case "+": return values.reduce((a,b) => (Number(a) || 0) + (Number(b) || 0), 0);
-        case "-": return values.length === 1 ? -(Number(values[0]) || 0) : (Number(values[0]) || 0) - (Number(values[1]) || 0);
-        case "*": return values.reduce((a,b) => (Number(a) || 0) * (Number(b) || 0), 1);
-        case "/": return values.length === 1 ? (Number(values[0]) || 0) : (Number(values[1]) ? (Number(values[0]) || 0) / (Number(values[1]) || 1) : undefined);
-        case "%": return values.length === 1 ? Number(values[0]) % 1 : (Number(values[0]) || 0) % (Number(values[1]) || 1);
-        default: return undefined;
-      }
-    };
-    const res = evalNode(logic);
-    return (typeof res === "undefined") ? fallback : res;
-  };
   const getFieldVal = (field: string) => getByPath(ctx, field.replace(/[^a-zA-Z0-9_]/g, "_"));
-  const isEmptyVal = (v: any): boolean => {
-    if (Array.isArray(v)) return v.length === 0;
-    if (typeof v === "object" && v !== null) { const vals = Object.values(v); return vals.length === 0 ? true : vals.every(isEmptyVal); }
-    if (typeof v === "boolean") return !v;
-    return (!v || v.toString().trim() === "");
-  };
   const validate = () => {
     const n: Record<string,string> = {};
     // id validation
@@ -167,7 +103,7 @@ export function ProductForm() {
   
       {submitSuccess && <div className="text-green-600 text-sm">{submitSuccess}</div>}
       {submitError && <div className="text-red-600 text-sm">{submitError}</div>}
-      <button className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" type="submit" disabled={submitting}>{submitting ? "Submitting..." : "Submit"}</button>
+      <button className="inline-flex justify-center rounded-md border border-transparent py-2 px-4 text-sm font-medium text-white shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2" style={{ backgroundColor: "#4f46e5" }} type="submit" disabled={submitting}>{submitting ? "Submitting..." : "Submit"}</button>
     </form>
   );
 }
