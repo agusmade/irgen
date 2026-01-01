@@ -14,10 +14,10 @@ async function main() {
     if (!domainIr) throw new Error("engine backend lowering returned falsy domain ir");
 
     const irDefault = await engine.runTransform("backend-target", domainIr, undefined);
-    if (irDefault.policies.backend.generateId !== "uuid_v4") throw new Error("default policy not applied via engine");
+    if (irDefault.policies.backend.core.generateId !== "uuid_v4") throw new Error("default policy not applied via engine");
 
     const irShort = await engine.runTransform("backend-target", domainIr, { generateId: "shortid" });
-    if (irShort.policies.backend.generateId !== "shortid") throw new Error("shortid policy not applied via engine");
+    if (irShort.policies.backend.core.generateId !== "shortid") throw new Error("shortid policy not applied via engine");
 
     // invalid policy should throw at target layer
     try {

@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*.ts",
+    "examples/**/*.ts"
+  ],
+  "exclude": [
+    "src/emit/frontend/**/*",
+    "src/emit/form-io/**/*"
+  ]
+}

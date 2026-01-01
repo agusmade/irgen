@@ -4,16 +4,37 @@ export interface FrontendField {
   type: string;
   label?: string;
   validators?: Record<string, any>;
+  multiple?: boolean;
   // Expanded properties
   placeholder?: string;
   description?: string;
   icon?: string;
   options?: { label: string; value: string }[];
-  dataSource?: { url: string; labelKey: string; valueKey: string };
+  dataSource?: {
+    url: string;
+    labelKey: string;
+    valueKey: string;
+    searchParam?: string;
+    pageParam?: string;
+    pageSizeParam?: string;
+    pageSize?: number;
+    debounceMs?: number;
+  };
   visibleIf?: string;
   disabledIf?: string;
   defaultValue?: string;
   computeValue?: string;
+  className?: string;
+  tooltip?: string;
+  prefix?: string;
+  suffix?: string;
+  searchPlaceholder?: string;
+  ariaLabel?: string;
+  clearable?: boolean;
+  accept?: string;
+  step?: number;
+  defaultCurrency?: string;
+  helpHtml?: string;
 }
 
 export interface FrontendForm {
@@ -23,6 +44,13 @@ export interface FrontendForm {
     method?: "POST" | "PUT" | "PATCH";
     successMessage?: string;
     errorMessage?: string;
+    draftKey?: string;
+    confirmMessage?: string;
+    beforeSubmit?: string;
+    onSuccess?: string;
+    redirect?: string;
+    onError?: string;
+    afterSubmit?: string;
   };
 }
 
@@ -36,7 +64,7 @@ export interface FrontendComponent {
     title?: string;
     columns?: number;
     items?: string[];
-    tabs?: { label: string; content?: string }[];
+    tabs?: { label: string; content?: string; items?: string[] }[];
   };
   content?: string;
   html?: string;
@@ -77,4 +105,3 @@ export interface FrontendIR {
   components: FrontendComponent[];
   pwa?: FrontendPwaConfig;
 }
-

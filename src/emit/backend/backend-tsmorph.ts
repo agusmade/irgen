@@ -3,8 +3,12 @@ import fs from "node:fs";
 import { Project, QuoteKind, IndentationText, ScriptTarget, Scope } from "ts-morph";
 import type { BackendEntity } from "../../ir/domain/backend.js";
 import type { BackendTargetIR } from "../../ir/target/backend.js";
+import { BackendPolicySchema } from "../../ir/target/backend.policy.js";
 import { emitterEngine } from "../engine.js";
 import { formatDirectory } from "../format.js";
+import { emitIdAdapter, emitLoggerAdapter, emitHttpAdapter, emitResponseAdapter, emitAuthAdapter, emitContextAdapter, emitErrorAdapter, emitValidationAdapter, emitPaginationAdapter } from "./adapters.js";
+import { emitHttpServer } from "./server.js";
+import { emitPackageJson, emitTsConfig } from "./packaging.js";
 
 function ensureDir(p: string) {
   fs.mkdirSync(p, { recursive: true });
@@ -17,7 +21,19 @@ function cleanDir(p: string) {
 
 function getBackendPolicies(ir: BackendTargetIR) {
   const p: any = (ir as any)?.policies ?? {};
-  return p.backend ?? p ?? {};
+  const backend = BackendPolicySchema.parse(p.backend ?? p ?? {});
+  const core = backend.core ?? {};
+  return {
+    ...backend,
+    core,
+    // legacy fields fallback for emitters still reading old keys
+    generateId: backend.generateId ?? core.generateId,
+    loggerImpl: backend.loggerImpl ?? core.loggerImpl,
+    httpClient: backend.httpClient ?? core.httpClient,
+    formatter: backend.formatter ?? core.formatter,
+    db: backend.db ?? core.db,
+    idProvider: backend.idProvider ?? (core.generateId === "shortid" ? "shortId" : "newId"),
+  };
 }
 
 export function emitBackendToProject(project: Project, outDir: string, ir: BackendTargetIR) {
@@ -30,7 +46,13 @@ export function emitBackendToProject(project: Project, outDir: string, ir: Backe
   // adapters
   emitIdAdapter(project, outDir, policies);
   emitLoggerAdapter(project, outDir, policies);
+  emitContextAdapter(project, outDir, policies);
   emitHttpAdapter(project, outDir, policies);
+  emitResponseAdapter(project, outDir, policies);
+  emitAuthAdapter(project, outDir, policies);
+  emitErrorAdapter(project, outDir, policies);
+  emitValidationAdapter(project, outDir, policies);
+  emitPaginationAdapter(project, outDir, policies);
 
   // Prisma support
   const dbProvider = policies?.db?.provider;
@@ -57,6 +79,9 @@ export function emitBackendToProject(project: Project, outDir: string, ir: Backe
 
   // package.json injection based on policies
   emitPackageJson(outDir, ir.appName, policies);
+  emitTsConfig(outDir);
+  emitHttpServer(project, outDir, ir, policies);
+  emitOpenAPI(project, outDir, ir, policies);
 
 }
 
@@ -119,128 +144,217 @@ try {
 }
 
 
-function emitIdAdapter(project: Project, outDir: string, policies?: any) {
-  const sf = project.createSourceFile(path.join(outDir, "lib", "id.ts"), "", { overwrite: true });
 
-  sf.addStatements([`// Generated: single point of truth for ID generation`]);
+function emitOpenAPI(project: Project, outDir: string, ir: BackendTargetIR, policies?: any) {
+  const rest = policies?.interfaces?.rest ?? { enabled: true, basePath: "/api", openapi: { enabled: true, title: "API", version: "1.0.0" } };
+  if (!rest.enabled || rest.openapi?.enabled === false) return;
 
-  const gen = policies?.generateId ?? "uuid_v4";
+  const basePath = rest.basePath ?? "/api";
+  const envelopeKeys = policies?.envelope?.keys ?? { data: "data", meta: "meta", error: "error" };
+  const metaKeys = policies?.envelope?.meta ?? { requestIdKey: "requestId" };
 
-  if (gen === "uuid_v4") {
-    sf.addStatements([
-      `import { v4 as uuidv4 } from "uuid";`,
-      ``,
-      `export function newId(): string {`,
-      `  return uuidv4();`,
-      `}`,
-      ``,
-    ]);
-  } else if (gen === "shortid") {
-    sf.addStatements([
-      `import crypto from "node:crypto";`,
-      ``,
-      `export function newId(): string {`,
-      `  return crypto.randomBytes(4).toString("hex");`,
-      `}`,
-      ``,
-    ]);
-  } else {
-    sf.addStatements([
-      `export function newId(): string {`,
-      `  throw new Error("no generateId policy implemented");`,
-      `}`,
-      ``,
-    ]);
+  const componentsSchemas: Record<string, any> = {};
+  function mapType(t: string | undefined): any {
+    if (!t) return { type: "string" };
+    const lower = t.toLowerCase();
+    if (lower.endsWith("[]")) return { type: "array", items: mapType(t.slice(0, -2)) };
+    if (["string", "uuid"].includes(lower)) return { type: "string" };
+    if (["number", "int", "integer", "float", "double"].includes(lower)) return { type: "number" };
+    if (["boolean", "bool"].includes(lower)) return { type: "boolean" };
+    return { type: "string" };
   }
-}
 
-function emitLoggerAdapter(project: Project, outDir: string, policies?: any) {
-  const impl = policies?.loggerImpl ?? "console";
-  const sf = project.createSourceFile(path.join(outDir, "lib", "logger.ts"), "", { overwrite: true });
+  ir.entities.forEach((entity) => {
+    const props: Record<string, any> = {};
+    if (entity.model) {
+      Object.entries(entity.model).forEach(([k, v]) => {
+        props[k] = mapType(v);
+      });
+    }
+    componentsSchemas[entity.name] = {
+      type: "object",
+      properties: props,
+    };
+  });
 
-  sf.addStatements([`// Generated: logger adapter (${impl})`]);
+  const paths: Record<string, any> = {};
 
-  if (impl === "console") {
-    sf.addStatements([
-      `export const logger = {`,
-      `  info: (...args: any[]) => console.info(...args),`,
-      `  warn: (...args: any[]) => console.warn(...args),`,
-      `  error: (...args: any[]) => console.error(...args),`,
-      `  debug: (...args: any[]) => console.debug(...args),`,
-      `};`,
-      ``,
-    ]);
-  } else if (impl === "pino" || impl === "winston") {
-    sf.addStatements([
-      `// ${impl} adapter: please add ${impl} as a dependency in the generated project`,
-      `export const logger = {`,
-      `  info: (...args: any[]) => console.info("[logger:${impl}]", ...args),`,
-      `  warn: (...args: any[]) => console.warn("[logger:${impl}]", ...args),`,
-      `  error: (...args: any[]) => console.error("[logger:${impl}]", ...args),`,
-      `  debug: (...args: any[]) => console.debug("[logger:${impl}]", ...args),`,
-      `};`,
-      ``,
-    ]);
-  } else {
-    sf.addStatements([
-      `export const logger = {`,
-      `  info: (..._args: any[]) => { throw new Error("logger implementation not provided"); },`,
-      `  warn: (..._args: any[]) => { throw new Error("logger implementation not provided"); },`,
-      `  error: (..._args: any[]) => { throw new Error("logger implementation not provided"); },`,
-      `  debug: (..._args: any[]) => { throw new Error("logger implementation not provided"); },`,
-      `};`,
-      ``,
-    ]);
+  ir.entities.forEach((entity) => {
+    const resource = entity.name.toLowerCase();
+    const entityRef = { $ref: `#/components/schemas/${entity.name}` };
+
+    const listOp = entity.operations.find((o) => o.kind === "LIST");
+    if (listOp) {
+      paths[`${basePath}/${resource}`] = {
+        get: {
+          summary: `List ${entity.name}`,
+          parameters: [
+            { name: "page", in: "query", schema: { type: "integer", minimum: 1 } },
+            { name: "limit", in: "query", schema: { type: "integer", minimum: 1 } },
+          ],
+          responses: {
+            200: {
+              description: "OK",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      [envelopeKeys.data]: { type: "array", items: entityRef },
+                      [envelopeKeys.meta]: {
+                        type: "object",
+                        properties: {
+                          [metaKeys.requestIdKey]: { type: "string" },
+                          page: { type: "integer" },
+                          limit: { type: "integer" },
+                          total: { type: "integer" },
+                          hasNext: { type: "boolean" },
+                        },
+                      },
+                      [envelopeKeys.error]: { nullable: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      };
+    }
+
+    const createOp = entity.operations.find((o) => o.kind === "CREATE");
+    if (createOp) {
+      paths[`${basePath}/${resource}`] = {
+        ...(paths[`${basePath}/${resource}`] ?? {}),
+        post: {
+          summary: `Create ${entity.name}`,
+          requestBody: {
+            required: true,
+            content: { "application/json": { schema: entityRef } },
+          },
+          responses: {
+            201: {
+              description: "Created",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      [envelopeKeys.data]: entityRef,
+                      [envelopeKeys.meta]: { type: "object", properties: { [metaKeys.requestIdKey]: { type: "string" } } },
+                      [envelopeKeys.error]: { nullable: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      };
+    }
+
+    const getOp = entity.operations.find((o) => o.kind === "GET");
+    if (getOp) {
+      paths[`${basePath}/${resource}/{id}`] = {
+        ...(paths[`${basePath}/${resource}/{id}`] ?? {}),
+        get: {
+          summary: `Get ${entity.name} by id`,
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+          responses: {
+            200: {
+              description: "OK",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      [envelopeKeys.data]: entityRef,
+                      [envelopeKeys.meta]: { type: "object", properties: { [metaKeys.requestIdKey]: { type: "string" } } },
+                      [envelopeKeys.error]: { nullable: true },
+                    },
+                  },
+                },
+              },
+            },
+            404: { description: "Not found" },
+          },
+        },
+      };
+    }
+
+    const updateOp = entity.operations.find((o) => o.kind === "UPDATE");
+    if (updateOp) {
+      paths[`${basePath}/${resource}/{id}`] = {
+        ...(paths[`${basePath}/${resource}/{id}`] ?? {}),
+        patch: {
+          summary: `Update ${entity.name}`,
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+          requestBody: {
+            required: true,
+            content: { "application/json": { schema: entityRef } },
+          },
+          responses: {
+            200: {
+              description: "OK",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      [envelopeKeys.data]: entityRef,
+                      [envelopeKeys.meta]: { type: "object", properties: { [metaKeys.requestIdKey]: { type: "string" } } },
+                      [envelopeKeys.error]: { nullable: true },
+                    },
+                  },
+                },
+              },
+            },
+            404: { description: "Not found" },
+          },
+        },
+      };
+    }
+
+    const deleteOp = entity.operations.find((o) => o.kind === "REMOVE");
+    if (deleteOp) {
+      paths[`${basePath}/${resource}/{id}`] = {
+        ...(paths[`${basePath}/${resource}/{id}`] ?? {}),
+        delete: {
+          summary: `Delete ${entity.name}`,
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+          responses: {
+            200: { description: "Deleted" },
+            404: { description: "Not found" },
+          },
+        },
+      };
+    }
+  });
+
+  const securitySchemes: Record<string, any> = {};
+  const security: any[] = [];
+  if (policies?.auth?.jwt?.enabled) {
+    securitySchemes["bearerAuth"] = { type: "http", scheme: "bearer", bearerFormat: "JWT" };
+    security.push({ bearerAuth: [] });
   }
-}
 
-function emitHttpAdapter(project: Project, outDir: string, policies?: any) {
-  const impl = policies?.httpClient ?? "fetch";
-  const sf = project.createSourceFile(path.join(outDir, "lib", "http.ts"), "", { overwrite: true });
+  const spec: any = {
+    openapi: "3.0.3",
+    info: {
+      title: rest.openapi?.title ?? "API",
+      version: rest.openapi?.version ?? "1.0.0",
+    },
+    servers: rest.openapi?.serverUrl ? [{ url: rest.openapi.serverUrl }] : [],
+    paths,
+    components: {
+      schemas: componentsSchemas,
+      securitySchemes,
+    },
+  };
 
-  sf.addStatements([`// Generated: http client adapter (${impl})`]);
+  if (security.length > 0) spec.security = security;
 
-  if (impl === "fetch") {
-    sf.addStatements([
-      `export async function httpGet(url: string) {`,
-      `  const res = await fetch(url);`,
-      `  return await res.json();`,
-      `}`,
-      ``,
-      `export async function httpPost(url: string, body: any) {`,
-      `  const res = await fetch(url, { method: "POST", headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });`,
-      `  return await res.json();`,
-      `}`,
-      ``,
-    ]);
-  } else if (impl === "axios") {
-    sf.addStatements([
-      `// axios adapter: install axios in the generated project to use a real HTTP client`,
-      `import axios from "axios";`,
-      ``,
-      `export async function httpGet(url: string) {`,
-      `  const res = await axios.get(url);`,
-      `  return res.data;`,
-      `}`,
-      ``,
-      `export async function httpPost(url: string, body: any) {`,
-      `  const res = await axios.post(url, body);`,
-      `  return res.data;`,
-      `}`,
-      ``,
-    ]);
-  } else {
-    sf.addStatements([
-      `export async function httpGet(_url: string) {`,
-      `  throw new Error("http client implementation not provided");`,
-      `}`,
-      ``,
-      `export async function httpPost(_url: string, _body: any) {`,
-      `  throw new Error("http client implementation not provided");`,
-      `}`,
-      ``,
-    ]);
-  }
+  project.createSourceFile(path.join(outDir, "openapi.json"), JSON.stringify(spec, null, 2), { overwrite: true });
 }
 
 function emitModels(project: Project, outDir: string, entities: BackendEntity[]) {
@@ -785,55 +899,11 @@ function emitUserService(project: Project, outDir: string, entity: BackendEntity
   });
 }
 
-function emitPackageJson(outDir: string, appName: string, policies?: any) {
-  const pkg: any = {
-    name: appName ? `${appName.toLowerCase()}-generated` : "generated-app",
-    version: "0.1.0",
-    private: true,
-    type: "module",
-    dependencies: {},
-    devDependencies: {},
-    scripts: {
-      format: "prettier --write .",
-      build: "tsc -p tsconfig.json"
-    },
-  };
-
-  if ((policies?.generateId ?? "uuid_v4") === "uuid_v4") {
-    pkg.dependencies.uuid = "^9.0.0";
-  }
-
-  const httpClient = policies?.httpClient ?? "fetch";
-  if (httpClient === "axios") pkg.dependencies.axios = "^1.4.0";
-  if (httpClient === "got") pkg.dependencies.got = "^12.0.0";
-
-  const loggerImpl = policies?.loggerImpl ?? "console";
-  if (loggerImpl === "pino") pkg.dependencies.pino = "^8.0.0";
-  if (loggerImpl === "winston") pkg.dependencies.winston = "^4.0.0";
-
-  // Prisma Support
-  if (policies?.db?.provider === "prisma") {
-    pkg.dependencies["@prisma/client"] = "latest";
-    pkg.devDependencies.prisma = "latest";
-    pkg.scripts["db:generate"] = "prisma generate";
-    pkg.scripts["db:push"] = "prisma db push";
-  }
-
-  // dev toolchain
-  pkg.devDependencies.prettier = "^2.8.8";
-  pkg.devDependencies.typescript = "^5.6.3";
-  pkg.devDependencies.tsx = "^4.19.2";
-
-  // testing
-  pkg.devDependencies.vitest = "^0.34.0";
-  pkg.scripts.test = "vitest run";
-
-  // use already-imported fs and path at top of file
-  fs.mkdirSync(outDir, { recursive: true });
-  fs.writeFileSync(path.join(outDir, "package.json"), JSON.stringify(pkg, null, 2), "utf-8");
-}
-
 function emitServiceTest(project: Project, outDir: string, entity: BackendEntity) {
+  const createOp = entity.operations.find(op => op.kind === "CREATE");
+  if (!createOp) return; // skip test if no create operation
+
+  const hasIdField = !!(entity.model && Object.prototype.hasOwnProperty.call(entity.model, "id"));
   const fileName = `${entity.name.toLowerCase()}.service.spec.ts`;
   // Place tests next to user services
   const userServiceDir = path.join(outDir, "services");
@@ -869,9 +939,9 @@ function emitServiceTest(project: Project, outDir: string, entity: BackendEntity
     ``,
     `  it("should create a ${entity.name.toLowerCase()}", async () => {`,
     `    const data = { /* mock data */ } as any;`,
-    `    const result = await service.create(data);`,
+    `    const result = await service.${createOp.methodName}(data);`,
     `    expect(result).toBeDefined();`,
-    `    expect(result.id).toBeDefined();`,
+    ...(hasIdField ? [`    expect((result as any).id).toBeDefined();`] : []),
     `  });`,
     `});`
   ]);

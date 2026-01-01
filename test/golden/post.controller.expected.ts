@@ -1,9 +1,9 @@
 import { PostService } from "../services/post.service";
-import { PrismaPostRepository } from "../base/repositories/post.prisma-repository";
+import { InMemoryPostRepository } from "../base/repositories/post.memory-repository";
 import { Post } from "../lib/models";
 
 export class PostController {
-  private service: PostService = new PostService(new PrismaPostRepository());
+  private service: PostService = new PostService(new InMemoryPostRepository());
 
   async createPost(payload: Post): Promise<Post> {
     return this.service.createPost(payload);

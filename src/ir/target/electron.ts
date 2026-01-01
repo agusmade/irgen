@@ -53,6 +53,12 @@ export interface ElectronIpcPolicy {
   handlers?: ElectronIpcHandler[];
 }
 
+export interface ElectronLoadingPolicy {
+  devUrl?: string;
+  prodIndex?: string;
+  splashHtml?: string;
+}
+
 export interface ElectronPolicies {
   electron: {
     window: ElectronWindowPolicy;

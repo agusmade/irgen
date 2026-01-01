@@ -1,20 +1,12 @@
 import type { BackendIR } from "../domain/backend.js";
+import type { BackendPolicy } from "./backend.policy.js";
 
 export interface BackendTargetPolicies {
-  backend: {
+  backend: BackendPolicy & {
     idProvider: "newId" | "shortId";
-    loggerImpl?: "console" | "pino" | "winston" | "custom";
-    httpClient?: "fetch" | "axios" | "got" | "custom";
-    generateId?: "uuid_v4" | "shortid" | "custom";
-    formatter?: "prettier" | "biome";
-    db?: {
-      provider: "prisma";
-      url: string;
-    };
   };
 }
 
 export interface BackendTargetIR extends BackendIR {
   policies: BackendTargetPolicies;
 }
-

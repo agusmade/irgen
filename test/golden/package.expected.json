@@ -2,23 +2,24 @@
   "name": "backendapp-generated",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "dependencies": {
     "uuid": "^9.0.0",
-    "@prisma/client": "latest"
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5"
   },
   "devDependencies": {
-    "prisma": "latest",
     "prettier": "^2.8.8",
     "typescript": "^5.6.3",
     "tsx": "^4.19.2",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
     "vitest": "^0.34.0"
   },
   "scripts": {
     "format": "prettier --write .",
     "build": "tsc -p tsconfig.json",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
+    "start": "node dist/server.js",
     "test": "vitest run"
   }
 }

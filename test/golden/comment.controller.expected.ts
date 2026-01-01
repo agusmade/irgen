@@ -1,10 +1,10 @@
 import { CommentService } from "../services/comment.service";
-import { PrismaCommentRepository } from "../base/repositories/comment.prisma-repository";
+import { InMemoryCommentRepository } from "../base/repositories/comment.memory-repository";
 import { Comment } from "../lib/models";
 
 export class CommentController {
   private service: CommentService = new CommentService(
-    new PrismaCommentRepository()
+    new InMemoryCommentRepository()
   );
 
   async createComment(payload: Comment): Promise<Comment> {

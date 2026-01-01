@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "tsx src/cli.ts examples/app.dsl.ts",
     "build": "tsc -p tsconfig.json",
+    "build:backend": "tsc -p tsconfig.backend.json",
     "start": "node dist/cli.js examples/app.dsl.ts",
     "clean": "rimraf dist generated*",
     "gen:backend": "tsx src/cli.ts --mode=backend examples/backend-only.dsl.ts --outDir=generated/backend",
@@ -16,6 +17,7 @@
     "gen:fullstack": "tsx src/cli.ts examples/fullstack.dsl.ts --outDir=generated/fullstack",
     "gen:combined": "tsx src/cli.ts examples/app.dsl.ts --outDir=generated/app",
     "gen:docs": "tsx src/cli.ts --mode=frontend examples/docs.dsl.ts --outDir=generated/docs",
+    "gen:backend-policy": "tsx src/cli.ts examples/backend-with-policy.dsl.ts --targets=backend --outDir=generated/backend-policy",
     "gen:electron-docs": "tsx src/cli.ts --targets=frontend,electron examples/electron-docs.dsl.ts --outDir=generated/electron-docs",
     "gen": "npm run gen:backend && npm run gen:frontend && npm run gen:fullstack && npm run gen:combined",
     "test:poc": "node scripts/poc-smoke.js",
@@ -36,8 +38,9 @@
     "test:emitter-registry": "tsx scripts/emitter-registry.test.js",
     "test:cli-target": "tsx scripts/cli-target.test.js",
     "test:gen-frontend": "node scripts/gen-frontend.test.js",
+    "test:golden:backend": "node scripts/backend-golden.test.js",
     "test:golden:electron": "node scripts/electron-golden.test.js",
-    "test:ci": "npm run test:golden && npm run test:golden:electron"
+    "test:ci": "npm run test:golden && npm run test:golden:backend && npm run test:golden:electron"
   },
   "dependencies": {
     "ts-morph": "^23.0.0",
@@ -45,9 +48,10 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "jsonwebtoken": "^9.0.3",
+    "prettier": "^2.8.8",
     "rimraf": "^6.0.1",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3",
-    "prettier": "^2.8.8"
+    "typescript": "^5.6.3"
   }
 }

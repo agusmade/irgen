@@ -15,10 +15,10 @@ async function main() {
     await import("../src/lowering/targets/to-backend.js");
 
     const irDefault = await engine.runTransform("backend-target", domainIr, undefined);
-    if (irDefault.policies.backend.generateId !== "uuid_v4") throw new Error("default generateId policy not applied");
+    if (irDefault.policies.backend.core.generateId !== "uuid_v4") throw new Error("default generateId policy not applied");
 
     const irShort = await engine.runTransform("backend-target", domainIr, { generateId: "shortid" });
-    if (irShort.policies.backend.generateId !== "shortid") throw new Error("shortid policy not applied");
+    if (irShort.policies.backend.core.generateId !== "shortid") throw new Error("shortid policy not applied");
 
     // emit with shortid policy and check generated lib/id.ts (target IR expected)
     const outDir = path.resolve(process.cwd(), "generated-policy-test");

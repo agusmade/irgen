@@ -3,6 +3,13 @@ import { pathToFileURL } from "node:url";
 import { aggregateDecls } from "./dsl/aggregator.js";
 import { registerBuiltins, runMapper } from "./mappers/index.js";
 
+// Guard: require a modern Node (tsx/TS output uses optional chaining/nullish coalescing)
+const NODE_MAJOR = Number(process.versions.node.split(".")[0]);
+if (Number.isFinite(NODE_MAJOR) && NODE_MAJOR < 16) {
+  console.error(`ir-codegen requires Node.js >=16 (detected ${process.versions.node}). Please switch to a newer Node before running the CLI.`);
+  process.exit(1);
+}
+
 async function main() {
   const modeFlag = process.argv.find(a => a.startsWith("--mode=")) ?? "--mode=backend";
   const mode = modeFlag.split("=")[1];
