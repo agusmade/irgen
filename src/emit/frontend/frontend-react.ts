@@ -501,7 +501,7 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
         if (component.layout.title) writer.writeLine(`    <h3 className="text-lg font-semibold mb-3">${component.layout.title}</h3>`);
         writer.writeLine("    <div className={`grid gap-4 " + grid + "`}>");
         writer.writeLine(`      {items.length ? items.map((Comp: any, idx: number) => (`);
-        writer.writeLine(`        <div key={idx} className="border border-dashed border-gray-300 rounded p-3 text-gray-700 text-sm"><Comp /></div>`);        
+        writer.writeLine(`        <div key={idx} className="border border-dashed border-gray-300 rounded p-3 text-gray-700 text-sm"><Comp /></div>`);
         writer.writeLine(`      )) : <div className="text-gray-400 text-sm">No items</div>}`);
         writer.writeLine(`    </div>`);
         writer.writeLine(`  </div>`);
@@ -678,81 +678,72 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
 
       for (const f of component.form.fields) {
         const varName = f.name.replace(/[^a-zA-Z0-9_]/g, "_");
-        const hasReq = (f.validators && f.validators.required) ? 'true' : 'false';
-        const requiredExpr = (f.validators as any)?.requiredIf ? JSON.stringify((f.validators as any).requiredIf) : 'undefined';
-        writer.writeLine(`  if (${hasReq}) {`);
-        writer.writeLine(`    const v = ${varName};`);
-        writer.writeLine(`    if (isEmptyVal(v)) n["${f.name}"] = "${(f.label ?? f.name)} is required";`);
-        writer.writeLine(`  }`);
-        writer.writeLine(`  if (!n["${f.name}"] && ${requiredExpr} !== undefined) {`);
-        writer.writeLine(`    const requiredDyn = evalLogic(${requiredExpr}, false);`);
-        writer.writeLine(`    if (requiredDyn) { const v = ${varName}; if (isEmptyVal(v)) n["${f.name}"] = "${(f.label ?? f.name)} is required"; }`);
-        writer.writeLine(`  }`);
-        if (f.type === "number") {
-          const minVal = (f.validators && typeof f.validators.min !== 'undefined') ? f.validators.min : null;
-          if (minVal !== null) {
-            writer.writeLine(`  if (!n["${f.name}"] && Number(${varName}) < ${minVal}) n["${f.name}"] = "${(f.label ?? f.name)} must be >= ${minVal}";`);
-          }
-          const maxVal = (f.validators && typeof f.validators.max !== 'undefined') ? f.validators.max : null;
-          if (maxVal !== null) {
-            writer.writeLine(`  if (!n["${f.name}"] && Number(${varName}) > ${maxVal}) n["${f.name}"] = "${(f.label ?? f.name)} must be <= ${maxVal}";`);
-          }
-        }
-        const minLen = (f.validators && typeof f.validators.minLength !== 'undefined') ? f.validators.minLength : null;
-        if (minLen !== null) {
-          writer.writeLine(`  if (!n["${f.name}"] && ${varName}.toString().length < ${minLen}) n["${f.name}"] = "${(f.label ?? f.name)} must have length >= ${minLen}";`);
-        }
-        const maxLen = (f.validators && typeof f.validators.maxLength !== 'undefined') ? f.validators.maxLength : null;
-        if (maxLen !== null) {
-          writer.writeLine(`  if (!n["${f.name}"] && ${varName}.toString().length > ${maxLen}) n["${f.name}"] = "${(f.label ?? f.name)} must have length <= ${maxLen}";`);
-        }
-        if (f.validators && f.validators.pattern) {
-          writer.writeLine(`  if (!n["${f.name}"]) { try { const re = new RegExp(${JSON.stringify(f.validators.pattern)}); if (!re.test(${varName}.toString())) n["${f.name}"] = "${(f.label ?? f.name)} is invalid"; } catch (_) {} }`);
-        }
-        if ((f.type === "date" || f.type === "datetime" || f.type === "daterange") && f.validators) {
-          if (typeof f.validators.minDate !== "undefined") {
-            writer.writeLine(`  if (!n["${f.name}"]) {`);
-            writer.writeLine(`    const applyCheck = (val: any) => { const d = Date.parse(val); const min = Date.parse("${f.validators.minDate}"); return (!isNaN(d) && !isNaN(min) && d < min); };`);
-            writer.writeLine(`    const fail = ${f.type === "daterange" ? `applyCheck(${varName}.start) || applyCheck(${varName}.end)` : `applyCheck(${varName})`};`);
-            writer.writeLine(`    if (fail) n["${f.name}"] = "${(f.label ?? f.name)} must be after ${f.validators.minDate}";`);
-            writer.writeLine(`  }`);
-          }
-          if (typeof f.validators.maxDate !== "undefined") {
-            writer.writeLine(`  if (!n["${f.name}"]) {`);
-            writer.writeLine(`    const applyCheck = (val: any) => { const d = Date.parse(val); const max = Date.parse("${f.validators.maxDate}"); return (!isNaN(d) && !isNaN(max) && d > max); };`);
-            writer.writeLine(`    const fail = ${f.type === "daterange" ? `applyCheck(${varName}.start) || applyCheck(${varName}.end)` : `applyCheck(${varName})`};`);
-            writer.writeLine(`    if (fail) n["${f.name}"] = "${(f.label ?? f.name)} must be before ${f.validators.maxDate}";`);
-            writer.writeLine(`  }`);
-          }
-        }
-        if (f.validators && f.validators.format === "email") {
-          writer.writeLine(`  if (!n["${f.name}"] && ${varName}) { const re = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/; if (!re.test(${varName}.toString())) n["${f.name}"] = "${(f.label ?? f.name)} must be a valid email"; }`);
-        }
-        if (f.validators && f.validators.format === "url") {
-          writer.writeLine(`  if (!n["${f.name}"] && ${varName}) { try { new URL(${varName}.toString()); } catch (_) { n["${f.name}"] = "${(f.label ?? f.name)} must be a valid URL"; } }`);
-        }
-        if (f.validators && f.validators.equalsField) {
-          writer.writeLine(`  if (!n["${f.name}"]) { const other = getFieldVal("${f.validators.equalsField}"); if (${varName} != other) n["${f.name}"] = "${(f.label ?? f.name)} must match ${f.validators.equalsField}"; }`);
-        }
-        if (f.validators && f.validators.notEqualsField) {
-          writer.writeLine(`  if (!n["${f.name}"]) { const other = getFieldVal("${f.validators.notEqualsField}"); if (${varName} == other) n["${f.name}"] = "${(f.label ?? f.name)} must differ from ${f.validators.notEqualsField}"; }`);
-        }
-        if (f.validators && f.validators.greaterThanField) {
-          writer.writeLine(`  if (!n["${f.name}"]) { const other = getFieldVal("${f.validators.greaterThanField}"); const lhs = Number(${varName}); const rhs = Number(other); if (!isNaN(lhs) && !isNaN(rhs) && lhs <= rhs) n["${f.name}"] = "${(f.label ?? f.name)} must be greater than ${f.validators.greaterThanField}"; }`);
-        }
-        if (f.validators && f.validators.lessThanField) {
-          writer.writeLine(`  if (!n["${f.name}"]) { const other = getFieldVal("${f.validators.lessThanField}"); const lhs = Number(${varName}); const rhs = Number(other); if (!isNaN(lhs) && !isNaN(rhs) && lhs >= rhs) n["${f.name}"] = "${(f.label ?? f.name)} must be less than ${f.validators.lessThanField}"; }`);
-        }
-        if (f.validators && Array.isArray(f.validators.custom)) {
+        const rules = f.loweredValidators ?? [];
+        if (rules.length === 0) continue;
+
+        writer.writeLine(`  // ${f.name} validation`);
+        for (const rule of rules) {
+          const msg = JSON.stringify(rule.message);
           writer.writeLine(`  if (!n["${f.name}"]) {`);
-          writer.writeLine(`    for (const rule of ${JSON.stringify(f.validators.custom)}) {`);
-          writer.writeLine(`      const ok = evalLogic(rule.logic, false);`);
-          writer.writeLine(`      if (!ok) { n["${f.name}"] = rule.message || "${(f.label ?? f.name)} is invalid"; break; }`);
-          writer.writeLine(`    }`);
+          switch (rule.type) {
+            case "required":
+              writer.writeLine(`    if (isEmptyVal(${varName})) n["${f.name}"] = ${msg};`);
+              break;
+            case "requiredIf":
+              writer.writeLine(`    if (evalLogic(${JSON.stringify(rule.logic)}, false) && isEmptyVal(${varName})) n["${f.name}"] = ${msg};`);
+              break;
+            case "min":
+              if (rule.params?.isDate) {
+                writer.writeLine(`    const d = Date.parse(${varName}); const min = Date.parse("${rule.params.value}");`);
+                writer.writeLine(`    if (!isNaN(d) && !isNaN(min) && d < min) n["${f.name}"] = ${msg};`);
+              } else {
+                writer.writeLine(`    if (Number(${varName}) < ${rule.params?.value}) n["${f.name}"] = ${msg};`);
+              }
+              break;
+            case "max":
+              if (rule.params?.isDate) {
+                writer.writeLine(`    const d = Date.parse(${varName}); const max = Date.parse("${rule.params.value}");`);
+                writer.writeLine(`    if (!isNaN(d) && !isNaN(max) && d > max) n["${f.name}"] = ${msg};`);
+              } else {
+                writer.writeLine(`    if (Number(${varName}) > ${rule.params?.value}) n["${f.name}"] = ${msg};`);
+              }
+              break;
+            case "minLength":
+              writer.writeLine(`    if (${varName}.toString().length < ${rule.params?.value}) n["${f.name}"] = ${msg};`);
+              break;
+            case "maxLength":
+              writer.writeLine(`    if (${varName}.toString().length > ${rule.params?.value}) n["${f.name}"] = ${msg};`);
+              break;
+            case "pattern":
+              writer.writeLine(`    try { const re = new RegExp(${JSON.stringify(rule.params?.value)}); if (!re.test(${varName}.toString())) n["${f.name}"] = ${msg}; } catch (_) {}`);
+              break;
+            case "format":
+              if (rule.params?.value === "email") {
+                writer.writeLine(`    if (${varName} && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(${varName}.toString())) n["${f.name}"] = ${msg};`);
+              } else if (rule.params?.value === "url") {
+                writer.writeLine(`    if (${varName}) { try { new URL(${varName}.toString()); } catch (_) { n["${f.name}"] = ${msg}; } }`);
+              }
+              break;
+            case "equalsField":
+              writer.writeLine(`    if (${varName} != getFieldVal("${rule.params?.value}")) n["${f.name}"] = ${msg};`);
+              break;
+            case "notEqualsField":
+              writer.writeLine(`    if (${varName} == getFieldVal("${rule.params?.value}")) n["${f.name}"] = ${msg};`);
+              break;
+            case "greaterThanField":
+              writer.writeLine(`    { const other = getFieldVal("${rule.params?.value}"); const lhs = Number(${varName}); const rhs = Number(other); if (!isNaN(lhs) && !isNaN(rhs) && lhs <= rhs) n["${f.name}"] = ${msg}; }`);
+              break;
+            case "lessThanField":
+              writer.writeLine(`    { const other = getFieldVal("${rule.params?.value}"); const lhs = Number(${varName}); const rhs = Number(other); if (!isNaN(lhs) && !isNaN(rhs) && lhs >= rhs) n["${f.name}"] = ${msg}; }`);
+              break;
+            case "custom":
+              writer.writeLine(`    if (!evalLogic(${JSON.stringify(rule.logic)}, false)) n["${f.name}"] = ${msg};`);
+              break;
+            case "uniqueIn":
+              writer.writeLine(`    if (${JSON.stringify(rule.params?.value)}.includes(${varName})) n["${f.name}"] = ${msg};`);
+              break;
+          }
           writer.writeLine(`  }`);
-        }
-        if (f.validators && Array.isArray(f.validators.uniqueIn) && f.validators.uniqueIn.length > 0) {
-          writer.writeLine(`  if (!n["${f.name}"] && ${JSON.stringify(f.validators.uniqueIn)}.includes(${varName})) { n["${f.name}"] = "${(f.label ?? f.name)} must be unique"; }`);
         }
       }
 
@@ -932,7 +923,7 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
         } else if (f.type === "signature") {
           writer.writeLine(`        <textarea className="${inputClassName}" name="${f.name}" value={${varName}} onChange={(e)=> set_${varName}(e.target.value)} placeholder="${f.placeholder ?? 'Paste signature data...'}" disabled={disabledVal} aria-label="${f.ariaLabel ?? label}" />`);
         } else {
-          const inputType = (["number","email","password","date","datetime","time","url","phone"].includes(f.type)) ? (f.type === "phone" ? "tel" : f.type) : "text";
+          const inputType = (["number", "email", "password", "date", "datetime", "time", "url", "phone"].includes(f.type)) ? (f.type === "phone" ? "tel" : f.type) : "text";
           if (f.type === "textarea") {
             writer.writeLine(`        <textarea className=\"${inputClassName}\" name=\"${f.name}\" value={${varName}} onChange={(e) => set_${varName}(e.target.value)} placeholder=\"${f.placeholder ?? ''}\" disabled={disabledVal} />`);
           } else if (f.type === "checkbox") {

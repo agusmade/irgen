@@ -1,5 +1,5 @@
 import type { DeclFrontendApp } from "../ir/decl/frontend.raw.schema.js";
-import type { FrontendIR, FrontendPwaConfig } from "../ir/domain/frontend.js";
+import type { FrontendIR, FrontendPwaConfig, FrontendField, LoweredValidationRule } from "../ir/domain/frontend.js";
 import { pascal } from "../utils/index.js";
 
 export type FrontendPolicies = {
@@ -39,12 +39,82 @@ function resolvePwaConfig(decl: DeclFrontendApp, policies?: any): FrontendPwaCon
   };
 }
 
+function lowerValidators(f: any): LoweredValidationRule[] {
+  const rules: LoweredValidationRule[] = [];
+  const v = f.validators;
+  if (!v) return rules;
+
+  const label = f.label ?? f.name;
+
+  if (v.required) {
+    rules.push({ id: `${f.name}_required`, type: "required", message: `${label} is required` });
+  }
+  if (v.requiredIf) {
+    rules.push({ id: `${f.name}_requiredIf`, type: "requiredIf", message: `${label} is required`, logic: v.requiredIf });
+  }
+  if (typeof v.min !== "undefined") {
+    rules.push({ id: `${f.name}_min`, type: "min", message: `${label} must be >= ${v.min}`, params: { value: v.min } });
+  }
+  if (typeof v.max !== "undefined") {
+    rules.push({ id: `${f.name}_max`, type: "max", message: `${label} must be <= ${v.max}`, params: { value: v.max } });
+  }
+  if (v.minDate) {
+    rules.push({ id: `${f.name}_minDate`, type: "min", message: `${label} must be after ${v.minDate}`, params: { value: v.minDate, isDate: true } });
+  }
+  if (v.maxDate) {
+    rules.push({ id: `${f.name}_maxDate`, type: "max", message: `${label} must be before ${v.maxDate}`, params: { value: v.maxDate, isDate: true } });
+  }
+  if (typeof v.minLength !== "undefined") {
+    rules.push({ id: `${f.name}_minLength`, type: "minLength", message: `${label} must have length >= ${v.minLength}`, params: { value: v.minLength } });
+  }
+  if (typeof v.maxLength !== "undefined") {
+    rules.push({ id: `${f.name}_maxLength`, type: "maxLength", message: `${label} must have length <= ${v.maxLength}`, params: { value: v.maxLength } });
+  }
+  if (v.pattern) {
+    rules.push({ id: `${f.name}_pattern`, type: "pattern", message: `${label} is invalid`, params: { value: v.pattern } });
+  }
+  if (v.format === "email") {
+    rules.push({ id: `${f.name}_email`, type: "format", message: `${label} must be a valid email`, params: { value: "email" } });
+  }
+  if (v.format === "url") {
+    rules.push({ id: `${f.name}_url`, type: "format", message: `${label} must be a valid URL`, params: { value: "url" } });
+  }
+  if (v.equalsField) {
+    rules.push({ id: `${f.name}_equals`, type: "equalsField", message: `${label} must match ${v.equalsField}`, params: { value: v.equalsField } });
+  }
+  if (v.notEqualsField) {
+    rules.push({ id: `${f.name}_notEquals`, type: "notEqualsField", message: `${label} must differ from ${v.notEqualsField}`, params: { value: v.notEqualsField } });
+  }
+  if (v.greaterThanField) {
+    rules.push({ id: `${f.name}_gt`, type: "greaterThanField", message: `${label} must be greater than ${v.greaterThanField}`, params: { value: v.greaterThanField } });
+  }
+  if (v.lessThanField) {
+    rules.push({ id: `${f.name}_lt`, type: "lessThanField", message: `${label} must be less than ${v.lessThanField}`, params: { value: v.lessThanField } });
+  }
+  if (Array.isArray(v.custom)) {
+    v.custom.forEach((c: any, idx: number) => {
+      rules.push({ id: `${f.name}_custom_${idx}`, type: "custom", message: c.message ?? `${label} is invalid`, logic: c.logic });
+    });
+  }
+  if (Array.isArray(v.uniqueIn)) {
+    rules.push({ id: `${f.name}_unique`, type: "uniqueIn", message: `${label} must be unique`, params: { value: v.uniqueIn } });
+  }
+
+  return rules;
+}
+
 export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): FrontendIR {
   const mapComponent = (c: any) => ({
     name: c.name,
     props: c.props,
     entityRef: c.entityRef,
-    form: c.form,
+    form: c.form ? {
+      ...c.form,
+      fields: (c.form.fields ?? []).map((f: any) => ({
+        ...f,
+        loweredValidators: lowerValidators(f)
+      }))
+    } : undefined,
     layout: c.layout,
     content: c.content,
     html: c.html,

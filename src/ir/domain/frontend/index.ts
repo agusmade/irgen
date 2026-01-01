@@ -35,6 +35,15 @@ export interface FrontendField {
   step?: number;
   defaultCurrency?: string;
   helpHtml?: string;
+  loweredValidators?: LoweredValidationRule[];
+}
+
+export interface LoweredValidationRule {
+  id: string;
+  type: "required" | "min" | "max" | "minLength" | "maxLength" | "pattern" | "format" | "equalsField" | "notEqualsField" | "greaterThanField" | "lessThanField" | "custom" | "uniqueIn" | "requiredIf";
+  message: string;
+  logic?: any; // for requiredIf or custom logic
+  params?: Record<string, any>;
 }
 
 export interface FrontendForm {

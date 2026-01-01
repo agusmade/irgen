@@ -75,31 +75,21 @@ export function ProductForm() {
   };
   const validate = () => {
     const n: Record<string,string> = {};
-    if (true) {
-      const v = id;
-      if (isEmptyVal(v)) n["id"] = "ID is required";
+    // id validation
+    if (!n["id"]) {
+      if (isEmptyVal(id)) n["id"] = "ID is required";
     }
-    if (!n["id"] && undefined !== undefined) {
-      const requiredDyn = evalLogic(undefined, false);
-      if (requiredDyn) { const v = id; if (isEmptyVal(v)) n["id"] = "ID is required"; }
+    // name validation
+    if (!n["name"]) {
+      if (isEmptyVal(name)) n["name"] = "Name is required";
     }
-    if (true) {
-      const v = name;
-      if (isEmptyVal(v)) n["name"] = "Name is required";
+    // price validation
+    if (!n["price"]) {
+      if (isEmptyVal(price)) n["price"] = "Price is required";
     }
-    if (!n["name"] && undefined !== undefined) {
-      const requiredDyn = evalLogic(undefined, false);
-      if (requiredDyn) { const v = name; if (isEmptyVal(v)) n["name"] = "Name is required"; }
+    if (!n["price"]) {
+      if (Number(price) < 0) n["price"] = "Price must be >= 0";
     }
-    if (true) {
-      const v = price;
-      if (isEmptyVal(v)) n["price"] = "Price is required";
-    }
-    if (!n["price"] && undefined !== undefined) {
-      const requiredDyn = evalLogic(undefined, false);
-      if (requiredDyn) { const v = price; if (isEmptyVal(v)) n["price"] = "Price is required"; }
-    }
-    if (!n["price"] && Number(price) < 0) n["price"] = "Price must be >= 0";
     set_errors(n);
     return Object.keys(n).length === 0;
   };
