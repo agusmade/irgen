@@ -48,12 +48,16 @@ Dev quickstart:
 ### 6. Multi-page Website Showcase - `irgen-web.dsl.ts`
 The most comprehensive example showing:
 - **Multi-page Architecture**: Home, Features, Documentation, Showcase, and CLI pages.
+- **Unified Documentation**: Consumes shared `DOCS_DATA` from `docs.dsl.ts` for professional, consistent content.
 - **Global UI Elements**: Navbar with global theme toggle and glassmorphism styling.
 - **Rich Content**: 20+ specialized components including AI Copilot chat simulation and native Syntax Highlighting.
-- **Responsive Layouts**: Premium adaptive grids and panels for a polished look.
 
 Output: `generated/irgen-web-full/`
 
-Dev quickstart:
-- `npx tsx src/cli.ts examples/irgen-web.dsl.ts generated/irgen-web-full --mode=frontend`
-- In `generated/irgen-web-full`: `npm install && npm run dev`
+### 7. Documentation Site - `docs.dsl.ts`
+A standalone, PWA-ready documentation site that serves as the source of truth for `irgen` help content.
+- **Dynamic Content**: Pages and components are generated from a structured `DOCS_DATA` provider.
+- **Rich Media**: Includes Mermaid architecture diagrams and technical code snippets.
+- **Target Parity**: Shares its content with the main website DSL.
+
+Output: `generated/docs/`

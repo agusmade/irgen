@@ -155,6 +155,8 @@ export const DeclPageSchema = z.object({
   type: z.literal("page"),
   name: z.string().min(1),
   path: z.string().min(1),
+  hideHeader: z.boolean().optional(),
+  description: z.string().optional(),
   components: z.array(DeclComponentSchema).default([]),
 });
 

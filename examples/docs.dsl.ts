@@ -1,156 +1,156 @@
 import { frontend } from "../src/dsl/frontend-runtime.js";
 
-frontend("irgen Docs", { pwa: { enabled: true, name: "irgen Docs", shortName: "IRDocs", startUrl: "/", scope: "/" } }, (app) => {
-  app.page("Home", { path: "/" }, (p) => {
-    p.component("Intro");
-    p.component("Highlights");
-    p.component("GettingStarted");
+/**
+ * Shared Documentation Data
+ * This structure is exported so that the main website (irgen-web.dsl.ts) 
+ * can import it and display the same documentation content.
+ */
+export const DOCS_DATA = {
+  sections: [
+    {
+      id: "intro",
+      title: "Introduction",
+      subtitle: "The future of robust code generation.",
+      hideHeader: true,
+      description: "Learn how irgen treats code generation as a compilation problem for maximum predictability.",
+      content: "irgen is a compiler-style code generation toolchain built around Intermediate Representation (IR). It follows the Generation Gap pattern to ensure that generated code remains maintainable and regeneratable without losing manual custom logic.",
+      hero: {
+        badge: "Core Philosophy",
+        title: "Architecture as a Compilation Problem",
+        subtitle: "irgen transforms high-level system descriptions into production-ready source code across multiple targets."
+      },
+      features: [
+        { title: "Deterministic", description: "IR-based transformations ensure the same input always produces the same reliable output.", icon: "CheckCircle" },
+        { title: "Policy-Driven", description: "Control architectural rules, styling, and logic behavior globally through centralized policies.", icon: "ShieldCheck" },
+        { title: "Multi-Target", description: "Emit optimized code for Backend, Frontend, Desktop (Electron), and beyond from a single source.", icon: "Layers" }
+      ]
+    },
+    {
+      id: "installation",
+      title: "Installation",
+      subtitle: "Get up and running in seconds.",
+      content: "Install irgen as a dependency in your project to start defining your system.",
+      code: {
+        language: "bash",
+        snippet: "npm install irgen\n# or\nyarn add irgen"
+      }
+    },
+    {
+      id: "dsl-guide",
+      title: "DSL Guide",
+      subtitle: "The language of architecture.",
+      content: "Describe your application using our intuitive TypeScript-based DSL. Focus on entities, services, and UI components while the engine handles the wiring.",
+      subsections: [
+        {
+          title: "Defining an Application",
+          content: "The app function is the entry point for backend definitions.",
+          code: {
+            language: "typescript",
+            snippet: "import { app } from \"irgen\";\n\napp(\"MyProject\", (be) => {\n  be.entity(\"User\", (e) => {\n    e.field(\"username\", \"string\", { unique: true });\n    e.field(\"email\", \"string\", { format: \"email\" });\n  });\n\n  be.service(\"UserService\", (s) => {\n    s.operation(\"register\", { input: \"User\", output: \"User\" });\n  });\n});"
+          }
+        },
+        {
+          title: "Defining a Frontend",
+          content: "The frontend function defines your web or desktop interface.",
+          code: {
+            language: "typescript",
+            snippet: "import { frontend } from \"irgen\";\n\nfrontend(\"AdminPanel\", (fe) => {\n  fe.page(\"Dashboard\", \"/\", (p) => {\n    p.component(\"UserList\", (c) => {\n      c.layout = { kind: \"panel\", title: \"Active Users\" };\n    });\n  });\n});"
+          }
+        }
+      ]
+    },
+    {
+      id: "architecture",
+      title: "Architecture & IR",
+      subtitle: "Under the hood of the irgen engine.",
+      content: "irgen uses a multi-stage compilation pipeline to ensure correctness and flexibility.",
+      features: [
+        { title: "Lowering Engine", description: "Transforms high-level Domain IR into target-specific instructions.", icon: "Cpu" },
+        { title: "Shared Libraries", description: "Common logic is extracted into a generated library for consistency across files.", icon: "Library" },
+        { title: "Context Isolation", description: "Hardened security for desktop targets using IPC whitelisting.", icon: "Lock" }
+      ],
+      code: {
+        language: "mermaid",
+        snippet: "graph TD\n  DSL[DSL] --> Bundle[DeclBundle]\n  Bundle --> Mapper[Domain Mapper]\n  Mapper --> IR[Domain IR]\n  IR --> Lowering[Lowering Engine]\n  Lowering --> TargetIR[Target IR]\n  TargetIR --> Emitter[Emitter]\n  Emitter --> Code[Source Code]"
+      }
+    },
+    {
+      id: "cli",
+      title: "CLI Reference",
+      subtitle: "Commanding the toolchain.",
+      content: "Orchestrate your generation workflow with powerful CLI flags.",
+      subsections: [
+        {
+          title: "Basic Commands",
+          code: {
+            language: "bash",
+            snippet: "# Generate all targets\nnpx tsx src/cli.ts examples/app.dsl.ts generated/output --targets=backend,frontend\n\n# Backend only mode\nnpx tsx src/cli.ts examples/app.dsl.ts generated/output --mode=backend"
+          }
+        },
+        {
+          title: "Policy Overrides",
+          content: "Override DSL settings directly from the terminal.",
+          code: {
+            language: "bash",
+            snippet: "npx tsx src/cli.ts examples/app.dsl.ts --policies='{\"backend\":{\"generateId\":\"uuid_v4\"}}'"
+          }
+        }
+      ]
+    }
+  ]
+};
+
+/**
+ * Standalone Documentation Site
+ */
+frontend("irgen Docs", {
+  pwa: { enabled: true, name: "irgen Docs", shortName: "IRDocs", startUrl: "/", scope: "/" }
+}, (app) => {
+
+  // Dynamically generate pages from DOCS_DATA
+  DOCS_DATA.sections.forEach(section => {
+    app.page(section.title, {
+      path: section.id === "intro" ? "/" : "/" + section.id,
+      hideHeader: (section as any).hideHeader,
+      description: (section as any).description
+    }, (p) => {
+
+      // Hero Section for each page
+      p.component(section.id + "Hero", (c) => {
+        c.hero(section.hero || {
+          title: section.title,
+          subtitle: section.subtitle
+        });
+      });
+
+      // Main Content
+      p.component(section.id + "Content", (c) => {
+        c.content = section.content;
+        if (section.features) {
+          c.features(section.features);
+        }
+        if (section.code) {
+          c.code(section.code.snippet, section.code.language);
+        }
+      });
+
+      // Subsections
+      if (section.subsections) {
+        section.subsections.forEach((sub, idx) => {
+          p.component(section.id + "Sub" + idx, (c) => {
+            c.layout = { kind: "panel", title: sub.title };
+            c.content = sub.content;
+            if (sub.code) {
+              c.code(sub.code.snippet, sub.code.language);
+            }
+          });
+        });
+      }
+    });
   });
 
-  app.page("CLI", { path: "/cli" }, (p) => {
-    p.component("CliUsage");
-    p.component("Policies");
-  });
-
-  app.page("Architecture", { path: "/architecture" }, (p) => {
-    p.component("PipelineFlow");
-    p.component("LoweringEngine");
-    p.component("SharedLib");
-  });
-
-  app.page("Frontend", { path: "/frontend" }, (p) => {
-    p.component("PwaGuide");
-    p.component("TailwindAndVite");
-    p.component("FormFeatures");
-    p.component("LogicOptimizations");
-    p.component("FrontendPolicies");
-    p.component("LayoutFeatures");
-  });
-
-  app.page("Backend", { path: "/backend" }, (p) => {
-    p.component("BackendOverview");
-    p.component("GenerationGap");
-  });
-
-  app.page("Extensions", { path: "/extensions" }, (p) => {
-    p.component("ExtensionSystem");
-    p.component("ElectronSample");
-  });
-
-  app.page("Feedback", { path: "/feedback" }, (p) => {
-    p.component("FeedbackForm");
-  });
-
-  app.component("Intro", (c) => {
-    c.prop("summary", "DSL -> IR -> Emitters generate backend+frontend with Generation Gap Pattern and Prisma, plus optional PWA.");
-    c.prop("ownership", "Generated code is owned by tool; user code preserved via Generation Gap scaffolding.");
-  });
-
-  app.component("Highlights", (c) => {
-    c.prop("backend", "Repositories, services with hooks, Prisma adapter, generated tests.");
-    c.prop("frontend", "React + Tailwind + router, forms with async selects, icons, optional PWA.");
-    c.prop("dx", "CLI orchestration via --targets=backend,frontend and policy overrides.");
-  });
-
-  app.component("GettingStarted", (c) => {
-    c.prop("install", "npm install");
-    c.prop("generate", "npx tsx src/cli.ts examples/docs.dsl.ts generated/docs --targets=backend,frontend");
-    c.prop("runFrontend", "cd generated/docs/frontend && npm install && npm run dev");
-  });
-
-  app.component("CliUsage", (c) => {
-    c.prop("listEmitters", "npx tsx src/cli.ts --emitters");
-    c.prop("backendOnly", "npx tsx src/cli.ts examples/app.dsl.ts generated/app --mode=backend");
-    c.prop("frontendOnly", "npx tsx src/cli.ts examples/frontend.dsl.ts generated/frontend --mode=frontend");
-    c.prop("fullstack", "npx tsx src/cli.ts examples/app.dsl.ts --targets=backend,frontend --outDir=gen/app");
-    c.prop("extensions", "npx tsx src/cli.ts --ext path/to/extension.ts");
-    c.prop("inspectIR", "npx tsx src/cli.ts ... --inspect-ir (prints lowered TargetIR)");
-  });
-
-  app.component("Policies", (c) => {
-    c.prop("concept", "Policies drive emitter decisions without logic embedding in IR.");
-    c.prop("backend", `Set in DSL meta/policies or override with --policies='{\"backend\":{\"generateId\":\"uuid_v4\"}}'`);
-    c.prop("frontend", `Supports styling (primaryColor) and framework (iconLibrary) config.`);
-  });
-
-  app.component("PipelineFlow", (c) => {
-    c.prop("stages", "DSL -> DeclBundle (Normalize) -> Mapper -> DomainIR -> Lowering -> TargetIR -> Emitter");
-    c.prop("agnosticism", "Mappers are target-agnostic; Lowering applies target-specific conventions.");
-  });
-
-  app.component("LoweringEngine", (c) => {
-    c.prop("purpose", "Transforms DomainIR (WHAT) into TargetIR (HOW) using Policies.");
-    c.prop("logicLowering", "Complex predicates (visibility, compute) are lowered into structured instructions with dependency tracking.");
-    c.prop("validationLowering", "DSL validators are lowered into a canonical rule set for the emitter.");
-  });
-
-  app.component("SharedLib", (c) => {
-    c.prop("concept", "Critical logic is moved from emitters to a shared generated library.");
-    c.prop("frontend", "src/lib/logic.ts (evalLogic, getByPath, isEmptyVal).");
-    c.prop("backend", "src/lib/id.ts, src/lib/logger.ts, etc.");
-  });
-
-  app.component("LogicOptimizations", (c) => {
-    c.prop("dependencyTracking", "Lowering extracts state dependencies from logical expressions.");
-    c.prop("optimizedHooks", "Generated useEffect hooks trigger ONLY when their specific dependencies change.");
-    c.prop("headless", "Emitter receives instructions, not scripts, ensuring static-site compatibility.");
-  });
-
-  app.component("FrontendPolicies", (c) => {
-    c.prop("styling", "Custom primary colors and border radius via policies.frontend.styling.");
-    c.prop("framework", "Choose icon libraries (lucide-react) or runtimes via policies.frontend.framework.");
-  });
-
-  app.component("GenerationGap", (c) => {
-    c.prop("concept", "Base classes/components are fully generated; implementations are scaffolded once.");
-    c.prop("preservation", "Manual changes in implementation files are PRESERVED during regeneration.");
-  });
-
-  app.component("ExtensionSystem", (c) => {
-    c.prop("capability", "Extensions can register mappers, emitters, and target mappings.");
-    c.prop("usage", "Load via CLI --ext or programmatic Codegen options.");
-  });
-
-  app.component("ElectronSample", (c) => {
-    c.prop("platform", "Generates main, preload, and IPC handlers for Electron apps.");
-    c.prop("security", "Hardened settings: contextIsolation, CSP guards, IPC whitelisting.");
-    c.prop("sharedIR", "Uses the same FrontendIR as the web/PWA target.");
-  });
-
-  app.component("PwaGuide", (c) => {
-    c.prop("enable", "Set pwa.enabled=true via CLI policies or DSL options.");
-    c.prop("outputs", "manifest.webmanifest, pwa-sw.js, icons/icon.svg (served from public/).");
-    c.prop("verify", "Check Application tab > Manifest and Service Workers after npm run dev.");
-  });
-
-  app.component("TailwindAndVite", (c) => {
-    c.prop("tailwind", "Tailwind config + PostCSS emitted; styles sourced from src/index.css.");
-    c.prop("vite", "Vite config with @vitejs/plugin-react; dev/build scripts available.");
-  });
-
-  app.component("FormFeatures", (c) => {
-    c.prop("fields", "text/number/select/textarea/checkbox/radio/date/datetime/time/url/phone/password/daterange, slider, currency, tags, file upload, signature");
-    c.prop("validation", "required/requiredIf, min/max, min/max length, pattern, compare fields, email/url, custom logic (JSONLogic-like)");
-    c.prop("logic", "visible/disabled/default/compute via sandboxed logic evaluator");
-    c.prop("ux", "async select with search/pagination/debounce, clearable selects, prefix/suffix/tooltip/helpHtml/className, loading/error states");
-    c.prop("actions", "submit pipeline with success/error UI, before/after hooks, onSuccess/onError, redirect, draft save");
-  });
-
-  app.component("LayoutFeatures", (c) => {
-    c.prop("containers", "row/column/panel/tabs with real child components");
-    c.prop("content", "static content/HTML blocks, CTA buttons with variants/icons");
-    c.prop("pwa", "optional PWA assets and service worker when enabled");
-  });
-
-  app.component("BackendOverview", (c) => {
-    c.prop("entities", "Define in DSL; operations create/get/list/update/remove generate repositories/services/controllers.");
-    c.prop("db", "Prisma adapter configurable via app.meta('db', { provider, url }).");
-    c.prop("hooks", "beforeCreate/afterCreate/etc for custom logic.");
-  });
-
-  app.component("FeedbackForm", (c) => {
-    c.field("name", "text", "Name", { required: true }, { icon: "User" });
-    c.field("email", "email", "Email", { required: true }, { icon: "Mail" });
-    c.field("message", "textarea", "Message", { required: true, minLength: 5 }, { icon: "MessageSquare", placeholder: "Share your thoughts" });
+  // Footer component
+  app.component("DocsFooter", (c) => {
+    c.html = "<div class=\"mt-20 border-t border-slate-200 dark:border-slate-800 pt-8 text-center text-slate-500 text-sm\"><p>© 2026 irgen Toolchain. Built for architectural excellence.</p></div>";
   });
 });

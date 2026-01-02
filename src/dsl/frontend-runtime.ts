@@ -41,13 +41,13 @@ function mergePolicy(target: string, value: Record<string, any>) {
 export function frontend(
   name: string,
   optsOrFn: FrontendOptions | ((a: {
-    page: (name: string, opts: { path: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
+    page: (name: string, opts: { path: string, hideHeader?: boolean, description?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
     component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
     meta: (key: string, value: unknown) => void;
     policy: (target: string, value: Record<string, any>) => void;
   }) => void),
   maybeFn?: (a: {
-    page: (name: string, opts: { path: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
+    page: (name: string, opts: { path: string, hideHeader?: boolean, description?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
     component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
     meta: (key: string, value: unknown) => void;
     policy: (target: string, value: Record<string, any>) => void;
@@ -57,7 +57,7 @@ export function frontend(
 
   const opts = (typeof optsOrFn === "function" ? {} : optsOrFn) ?? {};
   const fn = (typeof optsOrFn === "function" ? optsOrFn : maybeFn) as ((a: {
-    page: (name: string, opts: { path: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
+    page: (name: string, opts: { path: string, hideHeader?: boolean, description?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
     component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
     meta: (key: string, value: unknown) => void;
     policy: (target: string, value: Record<string, any>) => void;
@@ -83,7 +83,14 @@ export function frontend(
   fn({
     page(pName, opts, cb) {
       assert(CURRENT_FRONTEND, "page() harus di dalam frontend()");
-      const page: DeclPage = { type: "page", name: pName, path: opts.path, components: [] } as any;
+      const page: DeclPage = {
+        type: "page",
+        name: pName,
+        path: opts.path,
+        hideHeader: opts.hideHeader,
+        description: opts.description,
+        components: []
+      };
       if (typeof cb === "function") {
         cb({
           component(cName, cCb) {

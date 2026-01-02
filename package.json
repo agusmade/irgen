@@ -20,6 +20,7 @@
     "gen:docs": "tsx src/cli.ts --mode=frontend examples/docs.dsl.ts --outDir=generated/docs",
     "gen:backend-policy": "tsx src/cli.ts examples/backend-with-policy.dsl.ts --targets=backend --outDir=generated/backend-policy",
     "gen:electron-docs": "tsx src/cli.ts --targets=frontend,electron examples/electron-docs.dsl.ts --outDir=generated/electron-docs",
+    "gen:irgen-web": "tsx src/cli.ts --mode=frontend examples/irgen-web.dsl.ts --outDir=generated/irgen-web",
     "gen": "npm run gen:backend && npm run gen:frontend && npm run gen:fullstack && npm run gen:combined",
     "test:poc": "node scripts/poc-smoke.js",
     "test:golden": "node scripts/golden-test.js",

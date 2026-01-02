@@ -1,4 +1,5 @@
 import { frontend } from "../src/dsl/frontend-runtime.js";
+import { DOCS_DATA } from "./docs.dsl.js";
 
 frontend("irgen", {
   pwa: { enabled: true, name: "irgen", shortName: "irgen", startUrl: "/", scope: "/" },
@@ -10,7 +11,11 @@ frontend("irgen", {
 }, (app) => {
   // --- PAGES ---
 
-  app.page("Home", { path: "/" }, (p) => {
+  app.page("Home", {
+    path: "/",
+    hideHeader: true,
+    description: "Welcome to irgen, the compiler-style code generation toolchain."
+  }, (p) => {
     p.component("HeroSection");
     p.component("TrustedLogos");
     p.component("FeatureDeck");
@@ -21,7 +26,11 @@ frontend("irgen", {
     p.component("CtaSection");
   });
 
-  app.page("Features", { path: "/features" }, (p) => {
+  app.page("Features", {
+    path: "/features",
+    hideHeader: true,
+    description: "Explore the advanced capabilities of the irgen toolchain, from Generation Gap to Electron security."
+  }, (p) => {
     p.component("FeaturesHero");
     p.component("GenerationGapDetail");
     p.component("BackendCapabilities");
@@ -29,20 +38,30 @@ frontend("irgen", {
     p.component("ElectronSecurity");
   });
 
-  app.page("Docs", { path: "/docs" }, (p) => {
-    p.component("DocsHero");
-    p.component("InstallationGuide");
-    p.component("BasicDslExample");
-    p.component("AdvancedConfig");
+  app.page("Docs", {
+    path: "/docs",
+    description: "Comprehensive guides and references for mastering the irgen engine."
+  }, (p) => {
+    DOCS_DATA.sections.forEach(section => {
+      p.component(`SharedDocs_${section.id}`);
+    });
   });
 
-  app.page("Showcase", { path: "/showcase" }, (p) => {
+  app.page("Showcase", {
+    path: "/showcase",
+    hideHeader: true,
+    description: "Interactive demonstration of generated UI components and layouts."
+  }, (p) => {
     p.component("ShowcaseHero");
     p.component("KitchenSinkForm");
     p.component("LayoutDemo");
   });
 
-  app.page("CLI", { path: "/cli" }, (p) => {
+  app.page("CLI", {
+    path: "/cli",
+    hideHeader: true,
+    description: "Master the irgen CLI with this power-user reference guide."
+  }, (p) => {
     p.component("CliHero");
     p.component("CliUsage");
     p.component("PolicyOverrides");
@@ -179,57 +198,25 @@ frontend("irgen", {
     ], { title: "Hardened Desktop Shell" });
   });
 
-  // -- Docs Components --
+  // -- Docs Components (Shared) --
+  DOCS_DATA.sections.forEach(section => {
+    app.component(`SharedDocs_${section.id}`, (c) => {
+      c.layout = { kind: "panel", title: section.title };
+      c.content = section.content;
+      if (section.features) c.features(section.features);
+      if (section.code) c.code(section.code.snippet, section.code.language);
 
-  app.component("DocsHero", (c) => {
-    c.hero({
-      title: "Documentation",
-      subtitle: "Everything you need to know to master the irgen engine.",
+      // Also render subsections if present
+      if (section.subsections) {
+        section.subsections.forEach(sub => {
+          // Note: Since we are inside the same component, we might want to use HTML or just append content.
+          // For now, let's just append to content or use a nested layout if possible.
+          // The simplest is to just append content or use a simplified view.
+          c.content += `\n\n### ${sub.title}\n${sub.content || ""}`;
+          if (sub.code) c.code(sub.code.snippet, sub.code.language);
+        });
+      }
     });
-  });
-
-  app.component("InstallationGuide", (c) => {
-    c.html = `
-      <div class="max-w-3xl mx-auto space-y-8">
-        <section>
-          <h3 class="text-2xl font-bold mb-4">Installation</h3>
-          <div class="bg-slate-900 rounded-xl p-4 font-mono text-sm text-sky-400">
-            npm install irgen
-          </div>
-        </section>
-      </div>
-    `;
-  });
-
-  app.component("BasicDslExample", (c) => {
-    c.layout = { kind: "panel", title: "Your First DSL" };
-    c.content = "Define an application in a few lines of TypeScript.";
-    c.code(`import { app, frontend } from "irgen";
-
-frontend("MyWeb", { pwa: { enabled: true } }, (app) => {
-  app.page("Home", "/", (p) => {
-    p.component("Hero");
-  });
-});`, "typescript");
-  });
-
-  app.component("AdvancedConfig", (c) => {
-    c.html = `
-      <div class="max-w-3xl mx-auto py-12">
-        <h3 class="text-2xl font-bold mb-4">Advanced Configuration</h3>
-        <p class="text-slate-600 dark:text-slate-400 mb-6">Use policies to control the behavior of the engine and emitters.</p>
-        <div class="grid gap-4 md:grid-cols-2">
-          <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-            <h4 class="font-bold mb-2">Styling Policy</h4>
-            <p class="text-xs text-slate-500">Control primary colors, border radii, and font families globally.</p>
-          </div>
-          <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-            <h4 class="font-bold mb-2">Backend Policy</h4>
-            <p class="text-xs text-slate-500">Set ID generation strategies and logging adapters.</p>
-          </div>
-        </div>
-      </div>
-    `;
   });
 
   // -- Showcase Components --

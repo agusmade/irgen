@@ -118,6 +118,8 @@ export interface FrontendMarketing {
 export interface FrontendPage {
   name: string;
   path: string;
+  hideHeader?: boolean;
+  description?: string;
   components: FrontendComponent[];
 }
 

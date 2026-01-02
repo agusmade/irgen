@@ -172,7 +172,13 @@ export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): Fronten
     marketing: c.marketing,
   });
 
-  const pages = (decl.pages ?? []).map((p: any) => ({ name: p.name, path: p.path, components: (p.components ?? []).map(mapComponent) }));
+  const pages = (decl.pages ?? []).map((p: any) => ({
+    name: p.name,
+    path: p.path,
+    hideHeader: p.hideHeader,
+    description: p.description,
+    components: (p.components ?? []).map(mapComponent)
+  }));
   const components = (decl.components ?? []).map(mapComponent);
 
   return {

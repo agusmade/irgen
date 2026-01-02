@@ -4,7 +4,7 @@
 
 export function pascal(s: string) {
   return s
-    .replace(/[_\-\s]+/g, " ")
+    .replace(/[^a-zA-Z0-9]+/g, " ")
     .split(" ")
     .filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -19,7 +19,8 @@ export function camel(s: string) {
 export function kebab(s: string) {
   return s
     .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
-    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
     .toLowerCase();
 }
 

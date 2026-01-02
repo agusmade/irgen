@@ -6,6 +6,7 @@ import type { FrontendTargetIR } from "../../ir/target/frontend.js";
 import type { FrontendPolicy } from "../../ir/target/frontend.policy.js";
 import { emitterEngine } from "../engine.js";
 import { registerTargetEmitter } from "../registry.js";
+import { pascal, kebab } from "../../utils/string.js";
 
 function ensureDir(p: string) {
   fs.mkdirSync(p, { recursive: true });
@@ -193,7 +194,7 @@ if ('serviceWorker' in navigator) {
 
   // Import all pages
   ir.pages.forEach(p => {
-    appFile.addImportDeclaration({ moduleSpecifier: `./pages/${p.name.toLowerCase()}`, namedImports: [`${p.name}Page`] });
+    appFile.addImportDeclaration({ moduleSpecifier: `./pages/${kebab(p.name)}`, namedImports: [`${pascal(p.name)}Page`] });
   });
 
   const appFn = appFile.addFunction({ name: "App", isExported: true });
@@ -269,10 +270,10 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("        <main className=\"max-w-7xl mx-auto px-6 lg:px-10 py-12 md:py-20 animate-in fade-in duration-700\">");
     writer.writeLine("          <Routes>");
     ir.pages.forEach(p => {
-      writer.writeLine(`            <Route path=\"${p.path}\" element={<${p.name}Page />} />`);
+      writer.writeLine(`            <Route path=\"${p.path}\" element={<${pascal(p.name)}Page />} />`);
     });
     if (ir.pages.length > 0) {
-      writer.writeLine(`            <Route path=\"*\" element={<${ir.pages[0].name}Page />} />`);
+      writer.writeLine(`            <Route path=\"*\" element={<${pascal(ir.pages[0].name)}Page />} />`);
     }
     writer.writeLine("          </Routes>");
     writer.writeLine("        </main>");
@@ -476,7 +477,7 @@ try {
 function emitPage(project: Project, frontendDir: string, page: FrontendPage) {
   const dir = path.join(frontendDir, "pages");
   project.createDirectory(dir);
-  const filePath = path.join(dir, `${page.name.toLowerCase()}.tsx`);
+  const filePath = path.join(dir, `${kebab(page.name)}.tsx`);
   const sf = project.createSourceFile(filePath, "", { overwrite: true });
 
   sf.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React" });
@@ -484,26 +485,32 @@ function emitPage(project: Project, frontendDir: string, page: FrontendPage) {
 
   // import referenced components
   for (const c of page.components) {
-    sf.addImportDeclaration({ moduleSpecifier: `../components/${c.name.toLowerCase()}`, namedImports: [c.name] });
+    sf.addImportDeclaration({ moduleSpecifier: `../components/${kebab(c.name)}`, namedImports: [pascal(c.name)] });
   }
 
-  const compName = `${page.name}Page`;
+  const compName = `${pascal(page.name)}Page`;
   const fn = sf.addFunction({ name: compName, isExported: true });
   fn.setBodyText((writer) => {
     writer.writeLine("return (");
     writer.writeLine("  <div className=\"space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500\">");
-    writer.writeLine("    <header className=\"border-b border-slate-200 dark:border-slate-800 pb-10\">");
-    writer.writeLine(`      <div className=\"flex items-center gap-4 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-4\">`);
-    writer.writeLine(`         <div className=\"w-10 h-[1px] bg-slate-200 dark:bg-slate-800\"></div>`);
-    writer.writeLine(`         <span>Resource: ${page.name}</span>`);
-    writer.writeLine(`      </div>`);
-    writer.writeLine(`      <h1 className=\"text-5xl md:text-6xl font-black text-slate-950 dark:text-white tracking-tighter\">${page.name}</h1>`);
-    writer.writeLine(`      <p className=\"mt-4 text-slate-500 dark:text-slate-400 text-lg max-w-3xl leading-relaxed font-medium\">Manage your ${page.name.toLowerCase()} assets and application state in this unified view.</p>`);
-    writer.writeLine("    </header>");
+
+    if (!page.hideHeader) {
+      writer.writeLine("    <header className=\"border-b border-slate-200 dark:border-slate-800 pb-10\">");
+      writer.writeLine(`      <div className=\"flex items-center gap-4 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-4\">`);
+      writer.writeLine(`         <div className=\"w-10 h-[1px] bg-slate-200 dark:bg-slate-800\"></div>`);
+      writer.writeLine(`         <span>Resource: ${page.name}</span>`);
+      writer.writeLine(`      </div>`);
+      writer.writeLine(`      <h1 className=\"text-5xl md:text-6xl font-black text-slate-950 dark:text-white tracking-tighter\">${page.name}</h1>`);
+
+      const description = page.description || `Manage your ${page.name.toLowerCase()} assets and application state in this unified view.`;
+      writer.writeLine(`      <p className=\"mt-4 text-slate-500 dark:text-slate-400 text-lg max-w-3xl leading-relaxed font-medium\">${description}</p>`);
+      writer.writeLine("    </header>");
+    }
+
     writer.writeLine("    <div className=\"grid gap-12\">");
     for (const c of page.components) {
       writer.writeLine(`      <section className=\"relative shrink-0\">`);
-      writer.writeLine(`        <${c.name} />`);
+      writer.writeLine(`        <${pascal(c.name)} />`);
       writer.writeLine(`      </section>`);
     }
     writer.writeLine("    </div>");
@@ -515,7 +522,7 @@ function emitPage(project: Project, frontendDir: string, page: FrontendPage) {
 function emitComponent(project: Project, frontendDir: string, component: FrontendComponent, ir: FrontendTargetIR) {
   const dir = path.join(frontendDir, "components");
   project.createDirectory(dir);
-  const filePath = path.join(dir, `${component.name.toLowerCase()}.tsx`);
+  const filePath = path.join(dir, `${kebab(component.name)}.tsx`);
   const sf = project.createSourceFile(filePath, "", { overwrite: true });
 
   const hasIpcButton = Boolean((component as any).props && (component as any).props["ipcChannel"]);
@@ -549,14 +556,15 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
     for (const childName of childNames) {
       if (childName === component.name) continue; // avoid self-import
       if (!isValidIdent(childName)) continue; // skip placeholder labels
+      const safeChildName = pascal(childName);
       sf.addImportDeclaration({
-        moduleSpecifier: `./${childName.toLowerCase()}`,
-        namedImports: [childName],
+        moduleSpecifier: `./${kebab(childName)}`,
+        namedImports: [safeChildName],
       });
     }
   }
 
-  const compName = `${component.name}`;
+  const compName = `${pascal(component.name)}`;
   const fn = sf.addFunction({ name: compName, isExported: true });
 
   fn.setBodyText((writer) => {
