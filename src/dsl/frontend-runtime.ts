@@ -12,6 +12,17 @@ function assert(cond: unknown, msg: string): asserts cond {
 export type RuntimeComponent = DeclComponent & {
   field: (fieldName: string, type: string, label?: string, validators?: Record<string, any>, config?: any) => void;
   prop: (key: string, value: string) => void;
+  // helpers (these are functions in DSL, but they populate IR properties)
+  hero: (data: any) => void;
+  features: (items: any[], opts?: any) => void;
+  testimonials: (items: any[], opts?: any) => void;
+  faq: (items: any[], opts?: any) => void;
+  logos: (items: any[], opts?: any) => void;
+  cta: (title: string, subtitle?: string, actions?: any[]) => void;
+  stats: (items: any[], opts?: any) => void;
+  timeline: (items: any[], opts?: any) => void;
+  enableThemeToggle: () => void;
+  code: (snippet: string, language?: string, options?: { showLineNumbers?: boolean }) => void;
 };
 
 type FrontendOptions = {
@@ -87,6 +98,18 @@ export function frontend(
               comp.props = comp.props ?? {};
               comp.props[key] = value;
             };
+            comp.hero = function (data: any) { comp.marketing = { kind: "hero", ...data }; };
+            comp.features = function (items: any[], opts?: any) { comp.marketing = { kind: "features", items, ...opts }; };
+            comp.testimonials = function (items: any[], opts?: any) { comp.marketing = { kind: "testimonials", items, ...opts }; };
+            comp.faq = function (items: any[], opts?: any) { comp.marketing = { kind: "faq", items, ...opts }; };
+            comp.logos = function (items: any[], opts?: any) { comp.marketing = { kind: "logos", items, ...opts }; };
+            comp.cta = function (title: string, subtitle?: string, actions?: any[]) { comp.marketing = { kind: "cta", title, subtitle, actions }; };
+            comp.stats = function (items: any[], opts?: any) { comp.marketing = { kind: "stats", items, ...opts }; };
+            comp.timeline = function (items: any[], opts?: any) { comp.marketing = { kind: "timeline", items, ...opts }; };
+            comp.enableThemeToggle = function () { (comp as any).themeToggle = true; };
+            comp.code = function (snippet: string, language: string = "typescript", options?: { showLineNumbers?: boolean }) {
+              (comp as any).codeBlock = { snippet, language, showLineNumbers: options?.showLineNumbers ?? true };
+            };
 
             if (typeof cCb === "function") cCb(comp);
             page.components.push(comp);
@@ -103,22 +126,26 @@ export function frontend(
       // add convenience methods to the comp object for DSL users: field() and prop()
       comp.field = function (fieldName: string, type: string, label?: string, validators?: Record<string, any>, config?: any) {
         comp.form = comp.form ?? { fields: [] };
-        comp.form.fields.push({
-          name: fieldName,
-          type,
-          label,
-          validators,
-          ...config
-        });
+        comp.form.fields.push({ name: fieldName, type, label, validators, ...config });
       };
-
       comp.prop = function (key: string, value: string) {
         comp.props = comp.props ?? {};
         comp.props[key] = value;
       };
+      comp.hero = function (data: any) { comp.marketing = { kind: "hero", ...data }; };
+      comp.features = function (items: any[], opts?: any) { comp.marketing = { kind: "features", items, ...opts }; };
+      comp.testimonials = function (items: any[], opts?: any) { comp.marketing = { kind: "testimonials", items, ...opts }; };
+      comp.faq = function (items: any[], opts?: any) { comp.marketing = { kind: "faq", items, ...opts }; };
+      comp.logos = function (items: any[], opts?: any) { comp.marketing = { kind: "logos", items, ...opts }; };
+      comp.cta = function (title: string, subtitle?: string, actions?: any[]) { comp.marketing = { kind: "cta", title, subtitle, actions }; };
+      comp.stats = function (items: any[], opts?: any) { comp.marketing = { kind: "stats", items, ...opts }; };
+      comp.timeline = function (items: any[], opts?: any) { comp.marketing = { kind: "timeline", items, ...opts }; };
+      comp.enableThemeToggle = function () { (comp as any).themeToggle = true; };
+      comp.code = function (snippet: string, language: string = "typescript", options?: { showLineNumbers?: boolean }) {
+        (comp as any).codeBlock = { snippet, language, showLineNumbers: options?.showLineNumbers ?? true };
+      };
 
       if (typeof cb === "function") cb(comp);
-
       if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(comp);
     },
     meta(key: string, value: unknown) {

@@ -6,7 +6,7 @@ import { registerBuiltins, runMapper } from "./mappers/index.js";
 // Guard: require a modern Node (tsx/TS output uses optional chaining/nullish coalescing)
 const NODE_MAJOR = Number(process.versions.node.split(".")[0]);
 if (Number.isFinite(NODE_MAJOR) && NODE_MAJOR < 16) {
-  console.error(`ir-codegen requires Node.js >=16 (detected ${process.versions.node}). Please switch to a newer Node before running the CLI.`);
+  console.error(`irgen requires Node.js >=16 (detected ${process.versions.node}). Please switch to a newer Node before running the CLI.`);
   process.exit(1);
 }
 

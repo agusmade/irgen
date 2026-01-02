@@ -34,7 +34,7 @@ frontend("Electron Docs", {
   });
 
   app.component("Intro", (c) => {
-    c.prop("title", "IR Codegen Electron Example");
+    c.prop("title", "irgen Electron Example");
     c.prop("summary", "One DSL → Web/PWA + Electron shell. FrontendIR stays identical; Electron adds main/preload only.");
   });
 

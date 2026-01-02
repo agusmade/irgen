@@ -1,11 +1,13 @@
 # Architecture Overview (Current Implementation)
 
-Ringkasan arsitektur proyek *ir-codegen* — tujuan, alur transformasi (DSL → DeclIR → Lowering → Domain IR → Emitter), komponen utama, dan panduan singkat untuk memperluas atau menjalankan pipeline (backend & frontend dipisahkan).
+> **irgen treats code generation as a compilation problem.**
+>
+> Instead of generating code directly from templates, irgen transforms your system description through explicit IR stages—policy, domain, target, and emit—making multi-target generation deterministic, auditable, and maintainable over time.
 
 ---
 
-## 🔎 Tujuan singkat
-Proyek ini adalah generator kode minimal yang memungkinkan developer menulis DSL (TypeScript) untuk mendeskripsikan aplikasi (backend dan/atau frontend), lalu menjalankan pipeline yang menghasilkan kode TypeScript nyata (services, controllers, models, komponen React). Arsitektur dirancang agar komponen-komponen (DSL, IR, lowering, emitter) terpisah dan dapat dikembangkan secara independen.
+## 🧭 Overview (Philosophy)
+irgen exists to move complexity from developers to a well-defined compilation pipeline. It allows developers to describe their system in terms of **domain and policy**, letting the toolchain handle the structural and repetitive implementation details across multiple platforms.
 
 ---
 
@@ -127,6 +129,9 @@ flowchart TB
 - TargetIR: emitter-facing contracts (`src/ir/target/*`); both backend and frontend targets now hold resolved policies after target-lowering.
 - CLI target is scaffolded (Decl + mapper + target + `cli-fake` emitter producing `CLI.md`) and registered as a target.
 - Backend policies resolved in target lowering (generateId/loggerImpl/httpClient/formatter/db); backend emitter consumes policies from TargetIR.
+- **Frontend Policies & Theming**: Styling policies (primary colors, radius, fonts) flow into the React emitter. **Global Dark Mode** is implemented via a `themeToggle` property in components, resulting in a persistent state manager in `App.tsx` and adaptive Tailwind `dark:` variants across all templates.
+- **Multi-page & Routing**: Lowering transforms multiple `page` declarations into a `react-router-dom` configuration. The emitter generates a global Navbar and Footer to wrap these routes.
+- **Specialized Components**: New `marketing` sections and the **Syntax Highlighter** (`codeBlock`) use a policy-driven dependency tracker. The emitter detects these properties to conditionally inject third-party dependencies (like `react-syntax-highlighter`) into the generated `package.json`.
 - Electron target: lowering resolves window/security/packaging/auto-update/reliability policies; emitter renders `main.ts`, `preload.ts`, `ipc-handlers.ts`, `package.json`, `tsconfig.json`, and helper scripts with security guards, session restore, logging, crashReporter slot, auto-update wiring (status events to renderer, retry-on-fail), and IPC whitelist enforcement. Checklist: see `docs/ELECTRON-CHECKLIST.md`.
 
 ---

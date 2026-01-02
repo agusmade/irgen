@@ -87,6 +87,32 @@ export interface FrontendComponent {
   content?: string;
   html?: string;
   button?: { label: string; variant?: "primary" | "secondary" | "ghost"; icon?: string };
+  themeToggle?: boolean;
+  codeBlock?: { snippet: string; language: string; showLineNumbers?: boolean };
+  marketing?: FrontendMarketing;
+}
+
+export interface FrontendMarketing {
+  kind: "hero" | "features" | "testimonials" | "faq" | "logos" | "cta" | "stats" | "timeline";
+  title?: string;
+  subtitle?: string;
+  items?: {
+    title?: string;
+    description?: string;
+    icon?: string;
+    image?: string;
+    author?: string;
+    role?: string;
+    value?: string;
+    label?: string;
+  }[];
+  actions?: {
+    label: string;
+    href: string;
+    variant?: "primary" | "secondary" | "ghost";
+    icon?: string;
+  }[];
+  badge?: string;
 }
 
 export interface FrontendPage {

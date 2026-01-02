@@ -1,10 +1,19 @@
-# IR Codegen (Robust Fullstack Generator)
+# irgen (Robust Fullstack Generator)
 
-[![pipeline status](https://gitlab.com/agusmade/ir-codegen/-/badges/main/pipeline.svg)](https://gitlab.com/agusmade/ir-codegen/-/pipelines)
+[![pipeline status](https://gitlab.com/agusmade/irgen/-/badges/main/pipeline.svg)](https://gitlab.com/agusmade/irgen/-/pipelines)
 
-An advanced Domain Specific Language (DSL) to Intermediate Representation (IR) codegen framework. It transforms concise declarative code into production-ready, maintainable fullstack applications.
+> **Compiler-style code generation via Intermediate Representation.**
 
-Unlike typical scaffolders, **source code is owned by the tool**, while **user code is preserved** via the [Generation Gap Pattern](https://martinfowler.com/dslwip/GenerationGap.html).
+irgen is a compiler-style code generation toolchain built around Intermediate Representation (IR). You describe your system in terms of **domain and policy**, and irgen performs IR transformations to generate backend, frontend, desktop, mobile, and documentation targets for you.
+
+irgen is designed for developers who want architectural clarity without maintaining endless glue code. Unlike typical scaffolders, **source code is owned by the tool**, while **user code is preserved** via the [Generation Gap Pattern](https://martinfowler.com/dslwip/GenerationGap.html).
+
+### What irgen is NOT
+irgen focuses on **architecture and determinism**, not convenience shortcuts. irgen is **not**:
+- A framework or a library
+- A simple scaffolding tool
+- A template generator
+- An AI-driven code writer
 
 ## Key Features
 
@@ -16,12 +25,16 @@ Unlike typical scaffolders, **source code is owned by the tool**, while **user c
 - **Automated Testing**: Auto-generated `vitest` unit tests for services.
 
 ### Frontend (React/Vite)
-- **Single Page Application (SPA)**: Generates a complete React Router based app.
-- **Rich UI Components**: Forms covering text/number/select/textarea/checkbox/radio/date/datetime/time/url/phone/password/daterange, slider, currency, tags/chips, file upload, signature; static and async select with pagination/search/debounce; icons via `lucide-react`.
-- **Tailwind CSS**: Automated styling configuration (`tailwind.config.js`, `postcss.config.js`).
-- **Layout & Content**: Row/column/panel/tabs containers render real child components; static content/HTML blocks; CTA buttons with variants.
-- **Form Logic & UX**: JSONLogic-like visibility/disable/required-if, default/compute expressions, compare fields, min/max (number/date), email/url built-ins, custom validators, prefix/suffix/tooltip/helpHtml/className, async select loading/error/skeleton, clearable selects; **optimized dependency tracking** for efficient React rerenders.
-- **Submission Pipeline & Actions**: Optional POST with success/error messaging, confirm dialog, lifecycle hooks (before/after, onSuccess/onError), redirect, local draft save; mock submit when URL not set.
+- **Multi-page SPA Support**: Generates a complete React Router based app with support for complex multi-page sites (Home, Features, Docs, etc.).
+- **Global Dark Mode**: Built-in persistence (`localStorage`) and toggle in a sleek, glassmorphism Navbar.
+- **Rich UI Components**:
+  - **Forms**: text/number/select/textarea/checkbox/radio/date/datetime/time/url/phone/password/daterange, slider, currency, tags/chips, file upload, signature.
+  - **Marketing**: Responsive Hero, Features, Testimonials, FAQ, Logos, CTA, Stats, and Timeline sections.
+  - **Dev Tools**: Native **Syntax Highlighter** (`CodeBlock`) with automatic dependency management.
+- **Tailwind CSS**: Automated styling configuration and adaptive dark mode variant support for all components.
+- **Layout & Content**: Row/column/panel/tabs containers; smooth transitions and premium micro-interactions.
+- **Form Logic & UX**: JSONLogic-like predicates, dependency-tracked `useEffect` hooks, async select with debounce/pagination/search.
+- **Submission Pipeline**: lifecycle hooks, confirm dialogs, and draft persistence.
 
 ## Quick Start
 
@@ -40,8 +53,9 @@ We provide a script to generate all example projects into `generated/` folders:
 ### 3. Explore Outputs
 - **Backend Only**: `generated/backend-only/`
 - **Rich Frontend**: `generated/form-io/` (Run `npm install && npm run dev` inside to see the UI)
-- **Fullstack**: `generated/fullstack/` (backend and frontend are generated independently; install/run inside each target folder)
-- **Docs (PWA-ready)**: `generated/docs/` (from `examples/docs.dsl.ts`, run frontend with `npm run dev`)
+- **Multi-page Website**: `generated/irgen-web-full/` (from `examples/irgen-web.dsl.ts`)
+- **Fullstack**: `generated/fullstack/` (backend and frontend are generated independently)
+- **Docs (PWA-ready)**: `generated/docs/` (from `examples/docs.dsl.ts`)
 
 ## Manual Generation
 You can generate artifacts from a specific DSL file using the CLI:
@@ -61,21 +75,21 @@ npx tsx src/cli.ts examples/app.dsl.ts --targets=backend,frontend --outDir=gener
 ### Optional: enable PWA for frontend outputs
 - Opt-in via CLI policies:  
 `npx tsx src/cli.ts examples/fullstack.dsl.ts generated/fullstack --targets=backend,frontend`
-- This writes `manifest.webmanifest`, `icons/icon.svg`, and `pwa-sw.js`, then registers the service worker in the generated frontend entry. Defaults stay off unless you set `pwa.enabled=true` (recommended via the options argument to `frontend(...)` in your DSL; you can still override with `--policies='{"frontend":{"pwa":{"enabled":true,"name":"IR Codegen Docs","shortName":"IRDocs"}}}'` if you prefer CLI flags).
+- This writes `manifest.webmanifest`, `icons/icon.svg`, and `pwa-sw.js`, then registers the service worker in the generated frontend entry. Defaults stay off unless you set `pwa.enabled=true` (recommended via the options argument to `frontend(...)` in your DSL; you can still override with `--policies='{"frontend":{"pwa":{"enabled":true,"name":"irgen Docs","shortName":"IRDocs"}}}'` if you prefer CLI flags).
 - Frontend outputs now include a minimal Vite setup. After generation run `npm install` then `npm run dev` inside the frontend folder (e.g. `generated/fullstack/frontend`) to serve the app.
 - Backend and frontend packages are decoupled: backend outputs stay backend-only; frontend outputs ship their own `package.json` with React/router/Tailwind toolchain.
 
 ## JS Module API & Extensions
 - Import the DSL helpers directly:
   ```ts
-  import { app, frontend } from "ir-codegen";
+  import { app, frontend } from "irgen";
 
   app("My Backend", { policies: { backend: { generateId: "uuid_v4" } } }, (be) => { /* ... */ });
   frontend("My Frontend", { pwa: { enabled: true } }, (fe) => { /* ... */ });
   ```
 - Programmatic generation with extensions:
   ```ts
-  import { Codegen } from "ir-codegen";
+  import { Codegen } from "irgen";
   import myExtension from "./my-extension.js";
 
   const codegen = new Codegen({ extensions: [myExtension] });

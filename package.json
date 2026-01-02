@@ -1,7 +1,8 @@
 {
-  "name": "ir-codegen",
+  "name": "irgen",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
+  "description": "a policy-driven, IR-based code generation toolchain for backend, frontend, and beyond.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",

@@ -167,6 +167,9 @@ export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): Fronten
     content: c.content,
     html: c.html,
     button: c.button,
+    themeToggle: c.themeToggle,
+    codeBlock: c.codeBlock,
+    marketing: c.marketing,
   });
 
   const pages = (decl.pages ?? []).map((p: any) => ({ name: p.name, path: p.path, components: (p.components ?? []).map(mapComponent) }));

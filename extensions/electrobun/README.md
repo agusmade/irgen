@@ -13,7 +13,7 @@ npx tsx src/cli.ts --targets=electrobun --ext=extensions/electrobun/index.ts exa
 
 Programmatic:
 ```ts
-import { Codegen } from "ir-codegen";
+import { Codegen } from "irgen";
 import electrobunExt from "./extensions/electrobun/index.js";
 
 const cg = new Codegen({ extensions: [electrobunExt] });

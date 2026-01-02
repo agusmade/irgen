@@ -15,7 +15,7 @@
 - **CLI usage**: `npx tsx src/cli.ts --targets=<...> --ext=path/to/ext1.ts,path/to/ext2.ts <dsl>`.
 - **Programmatic usage**:
   ```ts
-  import { Codegen } from "ir-codegen";
+  import { Codegen } from "irgen";
   import myExt from "./my-extension.js";
 
   const cg = new Codegen({ extensions: [myExt] });

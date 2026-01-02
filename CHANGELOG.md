@@ -1,8 +1,31 @@
 # Changelog
 
-All notable changes to the `ir-codegen` project will be documented in this file.
+All notable changes to the `irgen` project will be documented in this file.
 
-## [Unreleased] - 2025-12-XX
+## [Unreleased] - 2026-01-01
+
+### Major Features (Phases 9-10)
+
+#### Frontend & UI
+- **Global Dark Mode**: Implemented a comprehensive dark mode system with a persistent toggle in the main Navbar, `localStorage` state persistence, and adaptive styling for all components (Forms, Marketing, Layouts).
+- **Multi-page SPA Support**: Added full support for complex, multi-page websites via `react-router-dom`, including a high-quality global Navbar and Footer.
+- **Marketing Component Expansion**: Introduced 20+ rich marketing and content components (Hero, Features, Testimonials, FAQ, Logos, CTA, Stats, Timeline) with professional dark mode variants.
+- **Native Syntax Highlighter**: Added a dedicated `CodeBlock` component and `code()` DSL helper, with automatic dependency management (injects `react-syntax-highlighter` into `package.json` only when needed).
+- **Layout Refinement**: Enhanced Tabs, Panels, and Grid components with premium aesthetics, smooth transitions, and better active states.
+
+#### CLI & Engine
+- **CLI Flag: `--outDir`**: Added support for specifying a custom output directory via flag or positional argument.
+- **Improved DSL Loading**: Solved relative import issues when loading DSLs through temporary transpile files by ensuring temp files reside in the same directory as the source.
+- **Robustness**: Fixed interpolation bugs in the React emitter and relaxed Zod validation for internal URLs in form submissions.
+- **Mapping & Lowering**: Updated mapping logic to preserve new component properties (like `codeBlock`) through the lowering pipeline.
+#### Rebranding & Identity
+- **Project Renaming**: Officially rebranded from `ir-codegen` to `irgen` for a modern, CLI-friendly identity (consistent with tools like `esbuild` and `vite`).
+- **New Positioning**: Reframed the toolchain as a "compiler-style code generation toolchain built around Intermediate Representation (IR)".
+- **Tagline Update**: Adopted "Compiler-style code generation via Intermediate Representation" as the primary tagline.
+- **Documentation Overhaul**: Updated `README.md` and `ARCHITECTURE.md` to reflect the new policy-driven, compiler-oriented philosophy.
+- **Example Refresh**: Updated `irgen-web.dsl.ts` with the new brand voice and positioning statements.
+
+## [0.1.0] - 2025-12-28
 
 ### Architecture/IR
 - Refined IR layering to match DeclIR → DomainIR → TargetIR: DSL schemas now live under `src/ir/decl/*`, DomainIR files are schema/policy-free, and TargetIR holds emitter-facing policies (backend target now carries `policies.backend.*`).

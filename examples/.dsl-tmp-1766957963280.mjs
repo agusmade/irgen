@@ -1,5 +1,5 @@
 import { frontend } from "../src/dsl/frontend-runtime.js";
-frontend("IR Codegen Docs", { pwa: { enabled: true, name: "IR Codegen Docs", shortName: "IRDocs", startUrl: "/", scope: "/" } }, (app) => {
+frontend("irgen Docs", { pwa: { enabled: true, name: "irgen Docs", shortName: "IRDocs", startUrl: "/", scope: "/" } }, (app) => {
     app.page("Home", { path: "/" }, (p) => {
         p.component("Intro");
         p.component("Highlights");

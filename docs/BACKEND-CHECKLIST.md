@@ -2,7 +2,7 @@
 
 **Status: scope ditetapkan, implementasi bertahap**
 
-Checklist ini mendefinisikan **apa saja yang harus diurusi** untuk backend REST v1 di *ir-codegen*.
+Checklist ini mendefinisikan **apa saja yang harus diurusi** untuk backend REST v1 di *irgen*.
 Centang **hanya** jika sudah benar-benar diimplementasikan dan diverifikasi.
 
 ---

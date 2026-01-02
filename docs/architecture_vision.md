@@ -1,6 +1,6 @@
-# Vision: Sustainable IR Codegen
+# Vision: Sustainable irgen
 
-Saat ini, `ir-codegen` bertindak sebagai purely **Boilerplate Generator** (sekali pakai). Untuk menjadikannya alat **Sustainable Development**, kita perlu mengubah arsitektur generasi kode agar mendukung siklus hidup aplikasi jangka panjang (CI/CD, perubahan requirement, maintenance).
+Saat ini, `irgen` bertindak sebagai purely **Boilerplate Generator** (sekali pakai). Untuk menjadikannya alat **Sustainable Development**, kita perlu mengubah arsitektur generasi kode agar mendukung siklus hidup aplikasi jangka panjang (CI/CD, perubahan requirement, maintenance).
 
 ## Core Philosophy: "Generated code is owned by the tool, User code is owned by the human."
 

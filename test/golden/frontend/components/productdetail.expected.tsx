@@ -5,8 +5,8 @@ import { evalLogic, getByPath, isEmptyVal } from "../lib/logic";
 export function ProductDetail() {
   return (
     <div className="p-6 bg-white shadow rounded-lg">
-      <h3 className="text-lg font-medium leading-6 text-gray-900">ProductDetail</h3>
-      <p className="mt-1 text-sm text-gray-500">Entity: Product</p>
+      <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">ProductDetail</h3>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Entity: Product</p>
     </div>
   );
 }

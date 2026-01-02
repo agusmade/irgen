@@ -92,8 +92,30 @@ export const DeclFormSchema = z.object({
     onSuccess: LogicExprSchema.optional(),
     onError: LogicExprSchema.optional(),
     redirect: z.string().optional(),
-    draftKey: z.string().optional(),
   }).optional(),
+});
+
+export const DeclMarketingSchema = z.object({
+  kind: z.enum(["hero", "features", "testimonials", "faq", "logos", "cta", "stats", "timeline"]),
+  title: z.string().optional(),
+  subtitle: z.string().optional(),
+  items: z.array(z.object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    icon: z.string().optional(),
+    image: z.string().optional(),
+    author: z.string().optional(),
+    role: z.string().optional(),
+    value: z.string().optional(),
+    label: z.string().optional(),
+  })).optional(),
+  actions: z.array(z.object({
+    label: z.string(),
+    href: z.string(),
+    variant: z.enum(["primary", "secondary", "ghost"]).optional(),
+    icon: z.string().optional(),
+  })).optional(),
+  badge: z.string().optional(),
 });
 
 export const DeclComponentSchema = z.object({
@@ -120,6 +142,13 @@ export const DeclComponentSchema = z.object({
     variant: z.enum(["primary", "secondary", "ghost"]).optional(),
     icon: z.string().optional(),
   }).optional(),
+  themeToggle: z.boolean().optional(),
+  codeBlock: z.object({
+    snippet: z.string(),
+    language: z.string().default("typescript"),
+    showLineNumbers: z.boolean().default(true),
+  }).optional(),
+  marketing: DeclMarketingSchema.optional(),
 });
 
 export const DeclPageSchema = z.object({
