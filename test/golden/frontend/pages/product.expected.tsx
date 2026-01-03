@@ -1,7 +1,7 @@
 import React from "react";
 import { useEffect, useState } from "react";
-import { ProductDetail } from "../components/productdetail";
-import { ProductCard } from "../components/productcard";
+import { ProductDetail } from "../components/product-detail";
+import { ProductCard } from "../components/product-card";
 
 export function ProductPage() {
   return (

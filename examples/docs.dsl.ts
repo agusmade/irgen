@@ -104,7 +104,24 @@ export const DOCS_DATA = {
  * Standalone Documentation Site
  */
 frontend("irgen Docs", {
-  pwa: { enabled: true, name: "irgen Docs", shortName: "IRDocs", startUrl: "/", scope: "/" }
+  pwa: { enabled: true, name: "irgen Docs", shortName: "IRDocs", startUrl: "/", scope: "/" },
+  policies: {
+    staticSite: {
+      outDir: "dist",
+      assets: { hashing: true },
+      enhancements: {
+        enabled: true,
+        features: ["sidebarToggle", "copyCode", "themeToggle", "tocScrollSpy", "search"],
+      },
+      codeHighlight: { mode: "pre", theme: "github-dark", addCopyButton: true },
+      search: { mode: "client_index", indexFile: "assets/search-index.json" },
+      seo: {
+        defaultTitle: "irgen Documentation",
+        titleTemplate: "%s · irgen",
+        defaultDescription: "Comprehensive guide to irgen's architecture-driven code generation toolchain.",
+      },
+    },
+  }
 }, (app) => {
 
   // Dynamically generate pages from DOCS_DATA

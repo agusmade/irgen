@@ -1,0 +1,16 @@
+{
+  "items": [
+    {
+      "title": "Home",
+      "description": "Enhanced static page.",
+      "url": "/",
+      "content": "Home Enhanced static page. Hero Progressive Enhancements Sidebar toggle, copy code, theme toggle, and search. CTA Try it now External links are marked safely. Docs Code const answer = 42;\nconsole.log(answer);"
+    },
+    {
+      "title": "Details",
+      "description": "TOC and search content.",
+      "url": "/details/",
+      "content": "Details TOC and search content. SectionOne Section one content for TOC. SectionTwo Section two content for TOC."
+    }
+  ]
+}

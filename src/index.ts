@@ -57,13 +57,27 @@ async function ensureTargetTransforms(targets: string[]) {
   if (targets.includes("electron")) {
     await import("./lowering/targets/to-electron.js");
   }
+  if (targets.includes("static-site")) {
+    await import("./lowering/targets/to-static-site.js");
+  }
 }
 
 function pickPolicy(src: any, target: string) {
   if (!src) return undefined;
   if (src[target]) return src[target];
+  // Also check for kebab-case and camelCase variations
+  const camelVariant = target.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+  const targetVariations = [
+    target,
+    target.replace(/-/g, ""),
+    target.replace(/([A-Z])/g, "-$1").toLowerCase(),
+    camelVariant,
+  ];
+  for (const variant of targetVariations) {
+    if (src[variant]) return src[variant];
+  }
   const keys = Object.keys(src);
-  const looksNamespaced = keys.some(k => ["backend", "frontend", "electron", "cli"].includes(k));
+  const looksNamespaced = keys.some(k => ["backend", "frontend", "electron", "cli", "static-site", "staticSite"].includes(k));
   return looksNamespaced ? undefined : src;
 }
 
@@ -89,7 +103,7 @@ export class Codegen {
   async generate(options: GenerateOptions) {
     const targets = options.targets ?? ["backend"];
     const outDir = options.outDir ?? "generated";
-    const prefer = targets.some(t => t === "frontend" || t === "electron") ? "frontend" : "backend";
+    const prefer = targets.some(t => t === "frontend" || t === "electron" || t === "static-site") ? "frontend" : "backend";
 
     registerBuiltins();
     await this.applyExtensions();
@@ -115,7 +129,7 @@ export class Codegen {
       const chosenEmitter =
         options.emitterMap?.[target] ??
         getEmitterForTarget(target) ??
-        (target === "backend" ? "backend-tsmorph" : target === "frontend" ? "frontend-tsmorph" : target === "electron" ? "electron-shell" : null);
+        (target === "backend" ? "backend-tsmorph" : target === "frontend" ? "frontend-tsmorph" : target === "electron" ? "electron-shell" : target === "static-site" ? "static-site-html" : null);
 
       if (chosenEmitter) {
         const multiple = targets.length > 1;

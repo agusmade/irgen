@@ -18,6 +18,12 @@ try {
   // ignore if already set
 }
 
+try {
+  registerTargetEmitter("static-site", "static-site-html", { force: false });
+} catch (e) {
+  // ignore if already set
+}
+
 export function getEmitterForTarget(target: string) {
   return mapping.get(target);
 }

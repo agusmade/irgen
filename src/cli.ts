@@ -71,14 +71,14 @@ async function main() {
   const normalizeModeToTargets = (m: string): string[] => {
     if (targetsFromFlag && targetsFromFlag.length > 0) return targetsFromFlag;
     if (m === "combined") return ["backend", "frontend"];
-    if (m === "frontend" || m === "backend" || m === "electron") return [m];
+    if (m === "frontend" || m === "backend" || m === "electron" || m === "static-site") return [m];
     if (m === "electrobun") return ["electrobun"];
     return ["backend"];
   };
   const targets = normalizeModeToTargets(mode);
 
   const defaultEntry = entry
-    ?? ((targets.includes("frontend") || targets.includes("electron") || targets.includes("electrobun"))
+    ?? ((targets.includes("frontend") || targets.includes("electron") || targets.includes("electrobun") || targets.includes("static-site"))
       ? "examples/frontend.dsl.ts"
       : "examples/app.dsl.ts");
   // normalise entries array (fallback to example DSL when not provided)
@@ -92,7 +92,7 @@ async function main() {
   const emitterMap = emitterMapFlag ? JSON.parse(emitterMapFlag.split("=")[1]) : undefined;
 
   // Aggregate all entries into DeclUnified (validation/normalization inside)
-  const prefer = targets.some(t => t === "frontend" || t === "electron" || t === "electrobun") ? "frontend" : "backend";
+  const prefer = targets.some(t => t === "frontend" || t === "electron" || t === "electrobun" || t === "static-site") ? "frontend" : "backend";
   const unified = await aggregateDecls(entriesArr, { prefer });
   if (inspectDecl) console.log("INSPECT-DECL:", JSON.stringify(unified, null, 2));
 
@@ -122,8 +122,19 @@ async function main() {
   const pickPolicy = (src: any, target: string) => {
     if (!src) return undefined;
     if (src[target]) return src[target];
+    // Also check for kebab-case and camelCase variations
+    const camelVariant = target.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const targetVariations = [
+      target,
+      target.replace(/-/g, ""),
+      target.replace(/([A-Z])/g, "-$1").toLowerCase(),
+      camelVariant,
+    ];
+    for (const variant of targetVariations) {
+      if (src[variant]) return src[variant];
+    }
     const keys = Object.keys(src);
-    const looksNamespaced = keys.some(k => ["backend", "frontend", "electron", "cli"].includes(k));
+    const looksNamespaced = keys.some(k => ["backend", "frontend", "electron", "cli", "static-site", "staticSite"].includes(k));
     return looksNamespaced ? undefined : src;
   };
   const policyForTarget = (target: string) => {
@@ -140,6 +151,7 @@ async function main() {
   if (targets.includes("backend")) await import("./lowering/targets/to-backend.js");
   if (targets.includes("frontend")) await import("./lowering/targets/to-frontend.js");
   if (targets.includes("electron")) await import("./lowering/targets/to-electron.js");
+  if (targets.includes("static-site")) await import("./lowering/targets/to-static-site.js");
 
   const { engine } = await import("./lowering/engine.js");
   const { emitterEngine } = await import("./emit/engine.js");
@@ -190,7 +202,7 @@ async function main() {
     const chosenEmitter =
       (emitterMap?.[target]) ??
       getEmitterForTarget(target) ??
-      (target === "backend" ? "backend-tsmorph" : target === "frontend" ? "frontend-tsmorph" : target === "electron" ? "electron-shell" : null);
+      (target === "backend" ? "backend-tsmorph" : target === "frontend" ? "frontend-tsmorph" : target === "electron" ? "electron-shell" : target === "static-site" ? "static-site-html" : null);
 
     if (!chosenEmitter) {
       console.warn(`no emitter mapping for target ${target}, skipping emit`);

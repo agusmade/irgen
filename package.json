@@ -17,10 +17,13 @@
     "gen:form-io": "tsx src/cli.ts --mode=frontend examples/form-io.dsl.ts --outDir=generated/form-io",
     "gen:fullstack": "tsx src/cli.ts examples/fullstack.dsl.ts --outDir=generated/fullstack",
     "gen:combined": "tsx src/cli.ts examples/app.dsl.ts --outDir=generated/app",
+    "gen:static-docs": "tsx src/cli.ts examples/docs.dsl.ts --targets=static-site --outDir=generated/static-docs",
     "gen:docs": "tsx src/cli.ts --mode=frontend examples/docs.dsl.ts --outDir=generated/docs",
     "gen:backend-policy": "tsx src/cli.ts examples/backend-with-policy.dsl.ts --targets=backend --outDir=generated/backend-policy",
     "gen:electron-docs": "tsx src/cli.ts --targets=frontend,electron examples/electron-docs.dsl.ts --outDir=generated/electron-docs",
     "gen:irgen-web": "tsx src/cli.ts --mode=frontend examples/irgen-web.dsl.ts --outDir=generated/irgen-web",
+    "gen:static-no-enhance": "tsx src/cli.ts examples/static-no-enhance.dsl.ts --targets=static-site --outDir=generated/static-no-enhance",
+    "gen:static-with-enhance": "tsx src/cli.ts examples/static-with-enhance.dsl.ts --targets=static-site --outDir=generated/static-with-enhance",
     "gen": "npm run gen:backend && npm run gen:frontend && npm run gen:fullstack && npm run gen:combined",
     "test:poc": "node scripts/poc-smoke.js",
     "test:golden": "node scripts/golden-test.js",
@@ -42,9 +45,13 @@
     "test:gen-frontend": "node scripts/gen-frontend.test.js",
     "test:golden:backend": "node scripts/backend-golden.test.js",
     "test:golden:electron": "node scripts/electron-golden.test.js",
+    "test:golden:static-site": "node scripts/static-site-golden.test.js",
     "test:ci": "npm run test:golden && npm run test:golden:backend && npm run test:golden:electron"
   },
   "dependencies": {
+    "minisearch": "^6.1.0",
+    "prismjs": "^1.29.0",
+    "shiki": "^1.10.1",
     "ts-morph": "^23.0.0",
     "zod": "^3.23.8"
   },

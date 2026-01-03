@@ -33,10 +33,10 @@ async function main() {
       { actual: "generated/frontend/src/index.css", expected: "test/golden/frontend/index.css.expected", type: "text" },
       { actual: "generated/frontend/src/lib/logic.ts", expected: "test/golden/frontend/lib/logic.expected.ts", type: "text" },
       { actual: "generated/frontend/src/pages/home.tsx", expected: "test/golden/frontend/pages/home.expected.tsx", type: "text" },
-      { actual: "generated/frontend/src/components/productcard.tsx", expected: "test/golden/frontend/components/productcard.expected.tsx", type: "text" },
+      { actual: "generated/frontend/src/components/product-card.tsx", expected: "test/golden/frontend/components/product-card.expected.tsx", type: "text" },
       { actual: "generated/frontend/src/pages/product.tsx", expected: "test/golden/frontend/pages/product.expected.tsx", type: "text" },
-      { actual: "generated/frontend/src/components/productdetail.tsx", expected: "test/golden/frontend/components/productdetail.expected.tsx", type: "text" },
-      { actual: "generated/frontend/src/components/productform.tsx", expected: "test/golden/frontend/components/productform.expected.tsx", type: "text" },
+      { actual: "generated/frontend/src/components/product-detail.tsx", expected: "test/golden/frontend/components/product-detail.expected.tsx", type: "text" },
+      { actual: "generated/frontend/src/components/product-form.tsx", expected: "test/golden/frontend/components/product-form.expected.tsx", type: "text" },
     ];
 
     let failures = 0;

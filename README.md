@@ -36,6 +36,12 @@ irgen focuses on **architecture and determinism**, not convenience shortcuts. ir
 - **Form Logic & UX**: JSONLogic-like predicates, dependency-tracked `useEffect` hooks, async select with debounce/pagination/search.
 - **Submission Pipeline**: lifecycle hooks, confirm dialogs, and draft persistence.
 
+### Static Site (HTML-first)
+- **HTML-only output**: emits final HTML (no React hydration), JS is strictly progressive enhancement.
+- **Policy-driven output**: routing, SEO/meta, assets, theming, and enhancements are controlled via `staticSite` policy.
+- **Optional enhancements**: sidebar toggle, copy code, theme toggle, TOC scroll spy, and client-side search.
+- **Build-time highlighting**: Shiki for pre-highlight, optional Prism runtime for client mode.
+
 ## Quick Start
 
 ### 1. Install Dependencies
@@ -56,6 +62,7 @@ We provide a script to generate all example projects into `generated/` folders:
 - **Multi-page Website**: `generated/irgen-web-full/` (from `examples/irgen-web.dsl.ts`)
 - **Fullstack**: `generated/fullstack/` (backend and frontend are generated independently)
 - **Docs (PWA-ready)**: `generated/docs/` (from `examples/docs.dsl.ts`)
+- **Static Docs (HTML-first)**: `generated/static-docs/` (from `examples/docs.dsl.ts` with `--targets=static-site`)
 
 ## Manual Generation
 You can generate artifacts from a specific DSL file using the CLI:
@@ -70,6 +77,9 @@ npx tsx src/cli.ts examples/form-io.dsl.ts generated/my-frontend --mode=frontend
 # Backend + Frontend (separate targets)
 npx tsx src/cli.ts examples/app.dsl.ts --targets=backend,frontend --outDir=generated/fullstack
 # -> backend in generated/fullstack/backend, frontend in generated/fullstack/frontend
+
+# Static-site (HTML-first)
+npx tsx src/cli.ts examples/docs.dsl.ts --targets=static-site --outDir=generated/static-docs
 ```
 
 ### Optional: enable PWA for frontend outputs

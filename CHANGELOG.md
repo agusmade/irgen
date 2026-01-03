@@ -6,6 +6,15 @@ All notable changes to the `irgen` project will be documented in this file.
 
 ### Major Features (Phases 9-10)
 
+#### Static-site (HTML-first)
+- **Static-site target**: HTML-first emitter with policy-driven routing, SEO, theming, and asset management.
+- **Progressive enhancements**: Optional sidebar toggle, copy-code, theme toggle, TOC scroll spy, and search.
+- **Code highlighting**: Build-time Shiki highlighting with optional Prism client runtime.
+- **SEO output**: `<title>`, description, canonical, OpenGraph, sitemap, and robots.txt.
+- **Assets**: CSS generation, hashing, public asset passthrough, font preload hints, and CSP meta support.
+- **Search**: Client-side search index + MiniSearch integration (fallback to basic search).
+- **Examples & tests**: Static-site DSL examples and golden test coverage.
+
 #### Frontend & UI
 - **Global Dark Mode**: Implemented a comprehensive dark mode system with a persistent toggle in the main Navbar, `localStorage` state persistence, and adaptive styling for all components (Forms, Marketing, Layouts).
 - **Multi-page SPA Support**: Added full support for complex, multi-page websites via `react-router-dom`, including a high-quality global Navbar and Footer.

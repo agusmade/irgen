@@ -65,4 +65,6 @@ export function registerBuiltins() {
   registerMapper("cli", cli, { force: true });
   // electron shares frontend DomainIR mapper
   registerMapper("electron", frontend, { force: true });
+  // static-site shares frontend DomainIR mapper (same as electron)
+  registerMapper("static-site", frontend, { force: true });
 }

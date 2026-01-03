@@ -1,0 +1,196 @@
+(() => {
+  const root = document.documentElement;
+  const CAP_SIDEBAR = true;
+  const CAP_COPY = true;
+  const CAP_THEME = true;
+  const CAP_TOC = true;
+  const CAP_SEARCH = true;
+
+  function on(el, ev, fn) {
+    if (!el) return;
+    el.addEventListener(ev, fn);
+  }
+
+  function toggleSidebar(btn) {
+    const isCollapsed = root.getAttribute("data-irgen-sidebar") === "collapsed";
+    const next = isCollapsed ? "" : "collapsed";
+    if (next) root.setAttribute("data-irgen-sidebar", next);
+    else root.removeAttribute("data-irgen-sidebar");
+    btn.setAttribute("aria-expanded", String(!isCollapsed));
+  }
+
+  function setupSidebarToggle() {
+    const btn = document.querySelector("[data-irgen-sidebar-toggle]");
+    on(btn, "click", () => toggleSidebar(btn));
+  }
+
+  function readThemePref() {
+    try {
+      return localStorage.getItem("irgen-theme");
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function writeThemePref(value) {
+    try {
+      localStorage.setItem("irgen-theme", value);
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  function detectSystemTheme() {
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+
+  function applyTheme(value) {
+    root.setAttribute("data-theme", value);
+  }
+
+  function setupThemeToggle() {
+    const btn = document.querySelector("[data-irgen-theme-toggle]");
+    if (!btn) return;
+    const pref = readThemePref();
+    const initial = pref || detectSystemTheme();
+    applyTheme(initial);
+    btn.setAttribute("aria-pressed", String(initial === "dark"));
+    on(btn, "click", () => {
+      const current = root.getAttribute("data-theme") === "dark" ? "dark" : "light";
+      const next = current === "dark" ? "light" : "dark";
+      applyTheme(next);
+      writeThemePref(next);
+      btn.setAttribute("aria-pressed", String(next === "dark"));
+    });
+  }
+
+  function setupTocScrollSpy() {
+    const toc = document.querySelector("[data-irgen-toc]");
+    if (!toc) return;
+    const links = Array.from(document.querySelectorAll("[data-irgen-toc-link]"));
+    if (!links.length) return;
+    const targets = links.map((link) => {
+      const id = link.getAttribute("data-irgen-toc-link");
+      const el = id ? document.getElementById(id) : null;
+      return { link, el, id };
+    }).filter((t) => t.el);
+
+    if (!targets.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      let activeId = null;
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          activeId = entry.target.getAttribute("id");
+          break;
+        }
+      }
+      if (!activeId) return;
+      targets.forEach((t) => {
+        if (!t.id) return;
+        t.link.classList.toggle("is-active", t.id === activeId);
+      });
+    }, { rootMargin: "0px 0px -70% 0px", threshold: [0, 1] });
+
+    targets.forEach((t) => observer.observe(t.el));
+    links.forEach((link) => {
+      on(link, "click", (e) => {
+        const href = link.getAttribute("href") || "";
+        if (!href.startsWith("#")) return;
+        const target = document.getElementById(href.slice(1));
+        if (!target) return;
+        e.preventDefault();
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  }
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    textarea.remove();
+    return Promise.resolve();
+  }
+
+  function setupCopyCode() {
+    const buttons = document.querySelectorAll("[data-irgen-copy-code]");
+    buttons.forEach((btn) => {
+      on(btn, "click", async () => {
+        const container = btn.closest(".irgen-code");
+        const code = container ? container.querySelector("code") : null;
+        const text = code ? code.textContent || "" : "";
+        if (!text) return;
+        try {
+          await copyText(text);
+          btn.textContent = "Copied";
+          setTimeout(() => { btn.textContent = "Copy"; }, 1200);
+        } catch (_) {
+          btn.textContent = "Failed";
+          setTimeout(() => { btn.textContent = "Copy"; }, 1200);
+        }
+      });
+    });
+  }
+
+  async function setupSearch() {
+    const root = document.querySelector("[data-irgen-search]");
+    if (!root) return;
+    const input = root.querySelector("[data-irgen-search-input]");
+    const results = root.querySelector("[data-irgen-search-results]");
+    if (!input || !results) return;
+    const indexUrl = root.getAttribute("data-irgen-search-index") || "assets/search-index.json";
+    let index = null;
+    try {
+      const resp = await fetch(indexUrl);
+      if (!resp.ok) return;
+      index = await resp.json();
+    } catch (_) {
+      return;
+    }
+
+    function render(items) {
+      if (!items.length) {
+        results.innerHTML = "";
+        results.classList.remove("is-open");
+        return;
+      }
+      const html = items.slice(0, 8).map((it) => {
+        const title = (it.title || "").toString();
+        const desc = (it.description || "").toString();
+        return `<a class="irgen-search-item" href="${it.url}"><strong>${title}</strong><span>${desc}</span></a>`;
+      }).join("");
+      results.innerHTML = html;
+      results.classList.add("is-open");
+    }
+
+    input.addEventListener("input", () => {
+      const q = input.value.trim().toLowerCase();
+      if (!q || !index || !Array.isArray(index.items)) {
+        render([]);
+        return;
+      }
+      const matches = index.items.filter((it) => {
+        const hay = `${it.title} ${it.description} ${it.content}`.toLowerCase();
+        return hay.includes(q);
+      });
+      render(matches);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    if (CAP_SIDEBAR) setupSidebarToggle();
+    if (CAP_COPY) setupCopyCode();
+    if (CAP_THEME) setupThemeToggle();
+    if (CAP_TOC) setupTocScrollSpy();
+    if (CAP_SEARCH) setupSearch();
+  });
+})();
