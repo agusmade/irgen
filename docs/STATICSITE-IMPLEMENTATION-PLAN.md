@@ -83,7 +83,7 @@ Dokumen ini menyusun urutan kerja untuk mengimplementasikan static-site target b
 
 - [x] Create emitter function signature: `emitStaticSite(ir: StaticSiteTargetIR, outDir: string)`
 - [x] Register emitter `"static-site-html"` dengan emitter engine
-- [x] Setup output directory structure (`dist/` atau sesuai policy)
+- [x] Setup output directory structure (root output atau sesuai policy)
 
 **Dependencies:** 1.1, 1.6  
 **Estimated Time:** 30 minutes

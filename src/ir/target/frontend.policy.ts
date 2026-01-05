@@ -13,6 +13,16 @@ export const FrontendFrameworkPolicySchema = z.object({
     runtime: z.enum(["vite", "none"]).default("vite"),
     router: z.enum(["react-router-dom", "none"]).default("react-router-dom"),
     iconLibrary: z.enum(["lucide-react", "none"]).default("lucide-react"),
+    rendering: z.object({
+        mode: z.enum(["csr", "ssg", "hybrid"]).default("csr"),
+        prerender: z.object({
+            enabled: z.boolean().default(false),
+            routes: z.union([z.literal("auto"), z.array(z.string())]).default("auto"),
+            outDir: z.string().default("dist"),
+            emitSitemap: z.boolean().default(false),
+            emitRobotsTxt: z.boolean().default(false),
+        }).default({}),
+    }).default({}),
 }).default({});
 
 export const FrontendPolicySchema = z.object({

@@ -7,6 +7,7 @@ type EnhancementCaps = {
   themeToggle: boolean;
   tocScrollSpy: boolean;
   search: boolean;
+  mermaid: boolean;
 };
 
 function buildEnhancementsJs(caps) {
@@ -18,6 +19,7 @@ function buildEnhancementsJs(caps) {
   const CAP_THEME = ${caps.themeToggle};
   const CAP_TOC = ${caps.tocScrollSpy};
   const CAP_SEARCH = ${caps.search};
+  const CAP_MERMAID = ${caps.mermaid};
 
   function on(el, ev, fn) {
     if (!el) return;
@@ -142,13 +144,39 @@ function buildEnhancementsJs(caps) {
         const code = container ? container.querySelector("code") : null;
         const text = code ? code.textContent || "" : "";
         if (!text) return;
+        const label = btn.querySelector(".irgen-button-label");
+        const setLabel = (value) => {
+          if (label) {
+            label.textContent = value;
+          } else {
+            btn.textContent = value;
+          }
+        };
         try {
           await copyText(text);
-          btn.textContent = "Copied";
-          setTimeout(() => { btn.textContent = "Copy"; }, 1200);
+          setLabel("Copied");
+          setTimeout(() => { setLabel("Copy"); }, 1200);
         } catch (_) {
-          btn.textContent = "Failed";
-          setTimeout(() => { btn.textContent = "Copy"; }, 1200);
+          setLabel("Failed");
+          setTimeout(() => { setLabel("Copy"); }, 1200);
+        }
+      });
+    });
+  }
+
+  function setupCopyAnchors() {
+    const buttons = document.querySelectorAll("[data-irgen-copy-anchor]");
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const anchor = btn.getAttribute("data-irgen-copy-anchor");
+        if (!anchor) return;
+        try {
+          const url = new URL(anchor, window.location.href).href;
+          await copyText(url);
+          btn.classList.add("is-copied");
+          setTimeout(() => { btn.classList.remove("is-copied"); }, 1200);
+        } catch (_) {
+          // no-op
         }
       });
     });
@@ -213,12 +241,26 @@ function buildEnhancementsJs(caps) {
     });
   }
 
+  function setupMermaid() {
+    if (!window.mermaid) return;
+    const theme = root.getAttribute("data-theme") === "dark" ? "dark" : "default";
+    window.mermaid.initialize({ startOnLoad: false, theme });
+    const nodes = document.querySelectorAll(".mermaid");
+    if (nodes.length) {
+      window.mermaid.run({ nodes });
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     if (CAP_SIDEBAR) setupSidebarToggle();
-    if (CAP_COPY) setupCopyCode();
+    if (CAP_COPY) {
+      setupCopyCode();
+      setupCopyAnchors();
+    }
     if (CAP_THEME) setupThemeToggle();
     if (CAP_TOC) setupTocScrollSpy();
     if (CAP_SEARCH) setupSearch();
+    if (CAP_MERMAID) setupMermaid();
   });
 })();
 `.trim();
@@ -227,7 +269,7 @@ function buildEnhancementsJs(caps) {
 export async function emitEnhancements(outDir: string, caps: EnhancementCaps): Promise<void> {
   const assetsDir = path.join(outDir, "assets");
   await fs.mkdir(assetsDir, { recursive: true });
-  if (!caps.sidebarToggle && !caps.copyCode && !caps.themeToggle && !caps.tocScrollSpy && !caps.search) return;
+  if (!caps.sidebarToggle && !caps.copyCode && !caps.themeToggle && !caps.tocScrollSpy && !caps.search && !caps.mermaid) return;
   const js = buildEnhancementsJs(caps);
   await fs.writeFile(path.join(assetsDir, "app.js"), `${js}\n`, "utf-8");
 }

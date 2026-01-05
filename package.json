@@ -24,6 +24,8 @@
     "gen:irgen-web": "tsx src/cli.ts --mode=frontend examples/irgen-web.dsl.ts --outDir=generated/irgen-web",
     "gen:static-no-enhance": "tsx src/cli.ts examples/static-no-enhance.dsl.ts --targets=static-site --outDir=generated/static-no-enhance",
     "gen:static-with-enhance": "tsx src/cli.ts examples/static-with-enhance.dsl.ts --targets=static-site --outDir=generated/static-with-enhance",
+    "gen:ssg": "tsx src/cli.ts examples/frontend-ssg-pure.dsl.ts --targets=frontend --outDir=generated/ssg",
+    "gen:hybrid": "tsx src/cli.ts examples/frontend-ssg.dsl.ts --targets=frontend --outDir=generated/hybrid",
     "gen": "npm run gen:backend && npm run gen:frontend && npm run gen:fullstack && npm run gen:combined",
     "test:poc": "node scripts/poc-smoke.js",
     "test:golden": "node scripts/golden-test.js",
@@ -49,6 +51,7 @@
     "test:ci": "npm run test:golden && npm run test:golden:backend && npm run test:golden:electron"
   },
   "dependencies": {
+    "mermaid": "^10.9.1",
     "minisearch": "^6.1.0",
     "prismjs": "^1.29.0",
     "shiki": "^1.10.1",

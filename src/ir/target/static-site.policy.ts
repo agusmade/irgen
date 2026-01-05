@@ -15,6 +15,7 @@ export const StaticSiteEnhancementFeatureSchema = z.enum([
   "tabs",
   "accordion",
   "search",
+  "mermaid",
 ]);
 
 export const StaticSiteEnhancementsPolicySchema = z.object({
@@ -86,12 +87,20 @@ export const StaticSiteSecurityPolicySchema = z.object({
   externalLinks: StaticSiteExternalLinksPolicySchema,
 }).default({});
 
+// Static Site Navbar Policy Schema
+export const StaticSiteNavbarPolicySchema = z.object({
+  links: z.array(z.object({
+    label: z.string(),
+    href: z.string(),
+  })).default([]),
+}).default({});
+
 // Main Static Site Policy Schema
 export const StaticSitePolicySchema = z.object({
   enabled: z.boolean().default(true),
   baseUrl: z.string().default("/"),
   trailingSlash: z.boolean().default(true),
-  outDir: z.string().default("dist"),
+  outDir: z.string().default("."),
   customCssPath: z.string().optional(),
   assets: StaticSiteAssetsPolicySchema,
   enhancements: StaticSiteEnhancementsPolicySchema,
@@ -100,6 +109,7 @@ export const StaticSitePolicySchema = z.object({
   seo: StaticSiteSeoPolicySchema,
   theme: StaticSiteThemePolicySchema,
   security: StaticSiteSecurityPolicySchema,
+  navbar: StaticSiteNavbarPolicySchema,
 }).default({});
 
 // Namespaced format for DSL usage

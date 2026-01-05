@@ -122,6 +122,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details on:
 - Generation Gap Pattern
 - Port & Adapters (Hexagonal)
 - Frontend Runtime & IR
+- Frontend SSG plan: [docs/FRONTEND-SSG-PLAN.md](docs/FRONTEND-SSG-PLAN.md)
 
 ## Roadmap
 - [x] Separation of Concerns (Generated vs User space)
@@ -130,3 +131,4 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details on:
 - [x] Extensibility Hooks
 - [x] Automated Testing
 - [x] Rich Frontend Components & Routing
+- [x] Frontend SSG/Hybrid (Vite prerender)

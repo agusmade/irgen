@@ -59,6 +59,7 @@ All notable changes to the `irgen` project will be documented in this file.
 - **Automated Testing**: Integrated `vitest` and auto-generated test files for services.
 
 #### Frontend
+- **SSG/Hybrid Rendering (React)**: Added Vite-based SSG pipeline with SSR bundle + prerender step, manifest-based CSS/JS injection, static HTML output in root `outDir`, and SPA fallback preserved as `index.spa.html`. Hybrid mode hydrates only when needed (currently all routes due to App shell theme toggle).
 - **Tailwind CSS**: Full integration with automated `tailwind.config.js` and `postcss.config.js` generation.
 - **Rich UI Components**:
   - Form fields now cover text/number/select/textarea/checkbox/radio/date/datetime/time/url/phone/password/daterange, slider, currency, tags/chips, file upload, signature.

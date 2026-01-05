@@ -13,6 +13,10 @@ function ensureDir(p: string) {
 }
 
 function emitFrontendPackageJson(outDir: string, ir: FrontendTargetIR) {
+  const policy = ir.policies.frontend;
+  const mode = policy.framework.rendering.mode;
+  const isSsg = mode === "ssg" || mode === "hybrid";
+
   const pkg: any = {
     name: ir?.appName ? `${ir.appName.toLowerCase()}-frontend` : "generated-frontend",
     version: "0.1.0",
@@ -22,7 +26,7 @@ function emitFrontendPackageJson(outDir: string, ir: FrontendTargetIR) {
       format: "prettier --write .",
       "build:css": "tailwindcss -i src/index.css -o dist/index.css --minify",
       dev: "vite",
-      build: "vite build",
+      build: isSsg ? "npm run build:ssg" : "vite build",
       preview: "vite preview",
     },
     dependencies: {
@@ -45,6 +49,12 @@ function emitFrontendPackageJson(outDir: string, ir: FrontendTargetIR) {
       "@vitejs/plugin-react": "^4.3.2",
     },
   };
+
+  if (isSsg) {
+    pkg.scripts["build:ssg"] = "vite build && npm run build:ssr && npm run prerender";
+    pkg.scripts["build:ssr"] = "vite build --ssr src/entry-server.tsx --outDir .ssg";
+    pkg.scripts["prerender"] = "node scripts/prerender.mjs";
+  }
 
   // Add syntax highlighter if needed
   const hasCode = ir.pages.some(p => p.components.some(c => c.codeBlock)) || ir.components.some(c => c.codeBlock);
@@ -129,21 +139,83 @@ self.addEventListener("fetch", (event) => {
   fs.writeFileSync(path.join(publicDir, "pwa-sw.js"), sw, "utf-8");
 }
 
-function emitViteConfig(project: Project, outDir: string) {
+function emitViteConfig(project: Project, outDir: string, policy: FrontendPolicy) {
+  const mode = policy.framework.rendering.mode;
+  const isSsg = mode === "ssg" || mode === "hybrid";
+  const buildOutDir = policy.framework.rendering.prerender.outDir;
+
   const config = `
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  base: "./",
+  base: "/",
   plugins: [react()],
+  resolve: {
+    dedupe: ["react", "react-dom", "react-router", "react-router-dom"],
+  },
   server: { port: 5173 },
   preview: { port: 4173 },
-  publicDir: "public",
+  publicDir: "public",${isSsg ? `
+  build: {
+    outDir: "${buildOutDir}",
+    manifest: true,
+  },
+  ssr: {
+    noExternal: ["react", "react-dom", "react-router", "react-router-dom"],
+  },` : ""}
 });
   `.trim();
 
   project.createSourceFile(path.join(outDir, "vite.config.ts"), config, { overwrite: true });
+}
+
+function isInteractiveComponent(component: FrontendComponent): boolean {
+  const hasIpcButton = Boolean((component as any).props && (component as any).props["ipcChannel"]);
+  return Boolean(
+    component.themeToggle ||
+    hasIpcButton ||
+    (component.form && component.form.fields && component.form.fields.length > 0) ||
+    component.layout?.kind === "tabs"
+  );
+}
+
+function inferInteractiveRoutes(ir: FrontendTargetIR, policy: FrontendPolicy): string[] {
+  if (policy.framework.rendering.mode !== "hybrid") return [];
+  // App shell uses interactive theme toggle, so hybrid requires hydration on all routes.
+  const appHasInteractivity = true;
+  if (appHasInteractivity) return ir.pages.map((page) => page.path);
+
+  const componentMap = new Map(ir.components.map((component) => [component.name, component]));
+  const collectRefs = (component: FrontendComponent) => {
+    const refs = new Set<string>();
+    if (component.layout?.items) {
+      component.layout.items.forEach((item) => refs.add(item));
+    }
+    component.layout?.tabs?.forEach((tab) => {
+      tab.items?.forEach((item) => refs.add(item));
+    });
+    return Array.from(refs);
+  };
+
+  const isPageInteractive = (page: FrontendPage) => {
+    const queue = [...page.components];
+    const visited = new Set<string>();
+    while (queue.length) {
+      const current = queue.shift();
+      if (!current) continue;
+      if (isInteractiveComponent(current)) return true;
+      for (const ref of collectRefs(current)) {
+        if (visited.has(ref)) continue;
+        visited.add(ref);
+        const child = componentMap.get(ref);
+        if (child) queue.push(child);
+      }
+    }
+    return false;
+  };
+
+  return ir.pages.filter((page) => isPageInteractive(page)).map((page) => page.path);
 }
 
 export function emitFrontend(project: Project, outDir: string, ir: FrontendTargetIR) {
@@ -151,31 +223,68 @@ export function emitFrontend(project: Project, outDir: string, ir: FrontendTarge
   ensureDir(frontendDir);
 
   const policy = ir.policies.frontend;
-  const primaryColor = policy.styling.theme.primaryColor;
+  const mode = policy.framework.rendering.mode;
+  const isSsg = mode === "ssg" || mode === "hybrid";
 
   emitFrontendPackageJson(outDir, ir);
   emitPwaAssets(outDir, ir);
-  emitViteConfig(project, outDir);
+  emitViteConfig(project, outDir, policy);
   emitSharedLogic(project, frontendDir);
 
-  // index file (Entry Point)
-  const idx = project.createSourceFile(path.join(frontendDir, "index.tsx"), "", { overwrite: true });
-  idx.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React" });
-  idx.addImportDeclaration({ moduleSpecifier: "react-dom/client", defaultImport: "ReactDOM" });
-  idx.addImportDeclaration({ moduleSpecifier: "./index.css" });
-  idx.addImportDeclaration({ moduleSpecifier: "./App", namedImports: ["App"] });
+  // client entry (CSR + optional hydration for hybrid)
+  const clientEntry = project.createSourceFile(path.join(frontendDir, "entry-client.tsx"), "", { overwrite: true });
+  clientEntry.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React" });
+  clientEntry.addImportDeclaration({
+    moduleSpecifier: "react-dom/client",
+    namedImports: mode === "hybrid" ? ["hydrateRoot", "createRoot"] : ["createRoot"],
+  });
+  clientEntry.addImportDeclaration({ moduleSpecifier: "react-router-dom", namedImports: ["BrowserRouter"] });
+  clientEntry.addImportDeclaration({ moduleSpecifier: "./index.css" });
+  clientEntry.addImportDeclaration({ moduleSpecifier: "./App", namedImports: ["App"] });
 
-  idx.addStatements(`
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+  if (mode === "hybrid") {
+    clientEntry.addStatements(`
+const rootElement = document.getElementById('root') as HTMLElement | null;
+if (rootElement) {
+  const modeFlag = rootElement.dataset.irgenInteractive;
+  if (modeFlag === "false") {
+    // no hydrate for static-only pages
+  } else if (modeFlag === "csr" || !modeFlag) {
+    const root = createRoot(rootElement);
+    root.render(
+      <React.StrictMode>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </React.StrictMode>
+    );
+  } else {
+    hydrateRoot(
+      rootElement,
+      <React.StrictMode>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </React.StrictMode>
+    );
+  }
+}
+    `.trim());
+  } else {
+    clientEntry.addStatements(`
+const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
 );
-  `.trim());
+    `.trim());
+  }
 
   if (ir.pwa?.enabled) {
-    idx.addStatements(`
+    clientEntry.addStatements(`
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/pwa-sw.js').catch(err => {
@@ -186,10 +295,176 @@ if ('serviceWorker' in navigator) {
     `.trim());
   }
 
-  // App.tsx (Router)
+  if (isSsg) {
+    const serverEntry = project.createSourceFile(path.join(frontendDir, "entry-server.tsx"), "", { overwrite: true });
+    serverEntry.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React" });
+    serverEntry.addImportDeclaration({ moduleSpecifier: "react-dom/server", namedImports: ["renderToString"] });
+    serverEntry.addImportDeclaration({ moduleSpecifier: "react-router-dom/server", namedImports: ["StaticRouter"] });
+    serverEntry.addImportDeclaration({ moduleSpecifier: "./App", namedImports: ["App"] });
+    serverEntry.addStatements(`
+export function render(url: string) {
+  const html = renderToString(
+    <React.StrictMode>
+      <StaticRouter location={url}>
+        <App />
+      </StaticRouter>
+    </React.StrictMode>
+  );
+  return { html };
+}
+    `.trim());
+
+    const templateHtml = `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    ${ir.pwa?.enabled ? `<link rel="manifest" href="/manifest.webmanifest" />` : ""}
+    ${ir.pwa?.enabled ? `<meta name="theme-color" content="${ir.pwa.themeColor}" />` : ""}
+    <!--app-head-->
+    <title>${ir.appName}</title>
+  </head>
+  <body>
+    <div id="root" data-irgen-interactive="false"><!--app-html--></div>
+  </body>
+</html>
+    `.trim();
+
+    const scriptDir = path.join(outDir, "scripts");
+    ensureDir(scriptDir);
+    fs.writeFileSync(path.join(outDir, "ssg-template.html"), templateHtml, "utf-8");
+
+    const prerenderRoutes = policy.framework.rendering.prerender.routes === "auto"
+      ? ir.pages.map((p) => p.path)
+      : policy.framework.rendering.prerender.routes;
+    const interactiveRoutes = inferInteractiveRoutes(ir, policy);
+    const prerenderScript = `
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.resolve(__dirname, "..");
+const outDir = path.resolve(rootDir, "${policy.framework.rendering.prerender.outDir}");
+const routes = ${JSON.stringify(prerenderRoutes)};
+const interactiveRoutes = new Set(${JSON.stringify(interactiveRoutes)});
+const mode = "${mode}";
+const emitSitemap = ${policy.framework.rendering.prerender.emitSitemap};
+const emitRobotsTxt = ${policy.framework.rendering.prerender.emitRobotsTxt};
+const siteUrl = process.env.SITE_URL || "http://localhost";
+
+function isDynamicRoute(route) {
+  return route.includes(":") || route.includes("*");
+}
+
+function routeToFilePath(route) {
+  if (route === "/") return "index.html";
+  const normalized = route.replace(/^\\//, "").replace(/\\/$/, "");
+  return path.join(normalized, "index.html");
+}
+
+function readManifest() {
+  const manifestPath = path.join(outDir, ".vite", "manifest.json");
+  const fallbackPath = path.join(outDir, "manifest.json");
+  const target = fs.existsSync(manifestPath) ? manifestPath : fallbackPath;
+  if (!fs.existsSync(target)) return null;
+  return JSON.parse(fs.readFileSync(target, "utf-8"));
+}
+
+function resolveEntry(manifest) {
+  if (!manifest) return null;
+  return manifest["src/entry-client.tsx"]
+    || manifest["index.html"]
+    || Object.values(manifest).find((entry) => entry && entry.isEntry);
+}
+
+function buildHead(entry, manifest, shouldHydrate) {
+  if (!entry) return "";
+  const tags = [];
+  if (entry.css) {
+    for (const css of entry.css) {
+      tags.push(\`<link rel="stylesheet" href="/\${css}">\`);
+    }
+  }
+  if (shouldHydrate && entry.imports) {
+    for (const imp of entry.imports) {
+      const file = manifest?.[imp]?.file ?? null;
+      if (file) tags.push(\`<link rel="modulepreload" href="/\${file}">\`);
+    }
+  }
+  if (shouldHydrate && entry.file) {
+    tags.push(\`<script type="module" src="/\${entry.file}"></script>\`);
+  }
+  return tags.join("\\n    ");
+}
+
+async function prerender() {
+  const templatePath = path.join(rootDir, "ssg-template.html");
+  const template = fs.readFileSync(templatePath, "utf-8");
+
+  const manifest = readManifest();
+  const entry = resolveEntry(manifest);
+  const { render } = await import(path.join(rootDir, ".ssg", "entry-server.js"));
+
+  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+
+  const spaFallback = path.join(outDir, "index.html");
+  if (fs.existsSync(spaFallback)) {
+    fs.copyFileSync(spaFallback, path.join(outDir, "index.spa.html"));
+  }
+
+  for (const route of routes) {
+    if (isDynamicRoute(route)) {
+      console.warn(\`Skipping dynamic route: \${route}\`);
+      continue;
+    }
+    const interactive = interactiveRoutes.has(route) && mode === "hybrid";
+    const { html } = render(route);
+    const head = buildHead(entry, manifest, interactive);
+    const finalHtml = template
+      .replace("<!--app-head-->", head)
+      .replace("<!--app-html-->", html)
+      .replace('data-irgen-interactive="false"', \`data-irgen-interactive="\${interactive}"\`);
+    const outFile = path.join(outDir, routeToFilePath(route));
+    fs.mkdirSync(path.dirname(outFile), { recursive: true });
+    fs.writeFileSync(outFile, finalHtml, "utf-8");
+  }
+
+  if (emitSitemap) {
+    const urls = routes
+      .filter((r) => !isDynamicRoute(r))
+      .map((route) => \`  <url><loc>\${new URL(route, siteUrl).href}</loc></url>\`)
+      .join("\\n");
+    const sitemap = \`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+\${urls}
+</urlset>\`;
+    fs.writeFileSync(path.join(outDir, "sitemap.xml"), sitemap, "utf-8");
+  }
+
+  if (emitRobotsTxt) {
+    const sitemapUrl = emitSitemap ? new URL("/sitemap.xml", siteUrl).href : null;
+    const robotsTxt = \`User-agent: *
+Allow: /
+\${sitemapUrl ? "\\nSitemap: " + sitemapUrl : ""}\`;
+    fs.writeFileSync(path.join(outDir, "robots.txt"), robotsTxt, "utf-8");
+  }
+}
+
+prerender().catch((err) => {
+  console.error("Prerender failed:", err);
+  process.exit(1);
+});
+    `.trim();
+
+    fs.writeFileSync(path.join(scriptDir, "prerender.mjs"), prerenderScript, "utf-8");
+  }
+
+  // App.tsx
   const appFile = project.createSourceFile(path.join(frontendDir, "App.tsx"), "", { overwrite: true });
   appFile.addImportDeclaration({ moduleSpecifier: "react", namedImports: ["useEffect", "useState"] });
-  appFile.addImportDeclaration({ moduleSpecifier: "react-router-dom", namedImports: ["BrowserRouter", "Routes", "Route", "Link"] });
+  appFile.addImportDeclaration({ moduleSpecifier: "react-router-dom", namedImports: ["Routes", "Route", "Link"] });
   appFile.addImportDeclaration({ moduleSpecifier: "lucide-react", namespaceImport: "Icons" });
 
   // Import all pages
@@ -218,8 +493,7 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("}, [isDark]);");
     writer.writeLine("");
     writer.writeLine("return (");
-    writer.writeLine("    <BrowserRouter>");
-    writer.writeLine("      <div className=\"min-h-screen bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-slate-900 selection:text-white transition-colors duration-300\">");
+    writer.writeLine("    <div className=\"min-h-screen bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-slate-900 selection:text-white transition-colors duration-300\">");
     writer.writeLine("        {/* Decorative background gradients */}");
     writer.writeLine("        <div className=\"fixed inset-0 -z-10 pointer-events-none opacity-40\">");
     writer.writeLine("          <div className=\"absolute top-0 left-1/4 w-96 h-96 bg-slate-200 rounded-full blur-3xl\"></div>");
@@ -290,11 +564,10 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("          </div>");
     writer.writeLine("        </footer>");
     writer.writeLine("      </div>");
-    writer.writeLine("    </BrowserRouter>");
     writer.writeLine("  );");
   });
 
-  // index.html
+  // index.html (SPA fallback / CSR entry)
   project.createSourceFile(path.join(outDir, "index.html"), `
 <!DOCTYPE html>
 <html lang="en">
@@ -306,8 +579,8 @@ if ('serviceWorker' in navigator) {
     <title>${ir.appName}</title>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/index.tsx"></script>
+    <div id="root" data-irgen-interactive="csr"></div>
+    <script type="module" src="/src/entry-client.tsx"></script>
   </body>
 </html>
   `.trim(), { overwrite: true });

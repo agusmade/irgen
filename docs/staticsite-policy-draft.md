@@ -11,7 +11,7 @@ export const defaultStaticSitePolicy = {
   trailingSlash: true, // output /docs/foo/index.html
 
   // Output / build contract
-  outDir: "dist",
+  outDir: ".", // output langsung ke folder target
   customCssPath: "path/to/custom.css", // optional: merge into generated CSS
   assets: {
     hashing: true, // cache busting: style.<hash>.css, app.<hash>.js

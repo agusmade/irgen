@@ -28,6 +28,7 @@ type AssetManifest = {
   prismJs?: string;
   appJs?: string;
   searchJs?: string;
+  mermaidJs?: string;
 };
 
 type EnhancementCaps = {
@@ -36,6 +37,7 @@ type EnhancementCaps = {
   themeToggle: boolean;
   tocScrollSpy: boolean;
   search: boolean;
+  mermaid: boolean;
 };
 
 const FALLBACK_RULES: Array<{ component: string; fallback: string }> = [
@@ -189,10 +191,17 @@ function nextHeadingId(text: string, ctx: RenderContext): string {
   return next === 1 ? base : `${base}-${next}`;
 }
 
-function renderHeading(level: number, text: string, ctx: RenderContext): string {
+function renderHeading(level: number, text: string, ctx: RenderContext, includeCopy: boolean = true): string {
   const id = nextHeadingId(text, ctx);
   ctx.headings.push({ level, text, id });
-  return `<h${level} id="${safeAttr(id)}">${safeText(text)}</h${level}>`;
+  const button = includeCopy
+    ? `<button class="irgen-heading-copy" type="button" data-irgen-copy-anchor="#${safeAttr(id)}" aria-label="Copy link to ${safeAttr(text)}">
+         <span class="irgen-icon" aria-hidden="true">
+           <svg viewBox="0 0 24 24" role="presentation"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 1 0-7.07-7.07L10.5 4.1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.93a5 5 0 0 0 7.07 7.07L13.5 19.9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+         </span>
+       </button>`
+    : "";
+  return `<h${level} id="${safeAttr(id)}" class="irgen-heading"><span class="irgen-heading-text">${safeText(text)}</span>${button}</h${level}>`;
 }
 
 function renderActionLinks(actions: any[], security: any): string {
@@ -235,7 +244,7 @@ function renderStatsTable(items: any[]): string {
 
 function renderMarketing(marketing: any, ctx: RenderContext, security: any): string {
   const kind = marketing?.kind ?? "generic";
-  const title = marketing.title ? renderHeading(2, marketing.title, ctx) : "";
+  const title = marketing.title ? renderHeading(2, marketing.title, ctx, false) : "";
   const subtitle = marketing.subtitle ? `<p>${safeText(marketing.subtitle)}</p>` : "";
   const badge = marketing.badge ? `<span class="irgen-badge">${safeText(marketing.badge)}</span>` : "";
   const actions = renderActionLinks(marketing.actions ?? [], security);
@@ -279,8 +288,17 @@ async function renderCodeBlock(
   const language = normalizeLang(codeBlock.language ?? "text");
   const snippet = codeBlock.snippet ?? "";
   const copyButton = addCopy
-    ? `<button class="irgen-copy-button" type="button" data-irgen-copy-code>Copy</button>`
+    ? `<button class="irgen-copy-button irgen-icon-button" type="button" data-irgen-copy-code>
+         <span class="irgen-icon" aria-hidden="true">
+           <svg viewBox="0 0 24 24" role="presentation"><path d="M9 9a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2V9z" stroke="currentColor" stroke-width="2" fill="none"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+         </span>
+         <span class="irgen-button-label">Copy</span>
+       </button>`
     : "";
+
+  if (language === "mermaid" && ir.policies.staticSite.enhancements?.features?.includes("mermaid")) {
+    return `<div class="irgen-code irgen-mermaid" data-irgen-code data-irgen-lang="mermaid">${copyButton}<pre class="mermaid">${escapeHtml(snippet)}</pre></div>`;
+  }
 
   if (mode === "pre") {
     const highlighted = await highlightCode(snippet, language, theme, warnings);
@@ -314,13 +332,19 @@ async function renderComponent(
     return parts.join("");
   };
 
+  const props = component.props ?? {};
+  const hideTitle = props.hideTitle === "true" || props.hideTitle === "1";
+  const customTitle = typeof props.title === "string" && props.title.trim().length > 0 ? props.title.trim() : "";
+  const headingText = hideTitle ? "" : (customTitle || component.name);
+  const heading = headingText ? renderHeading(2, headingText, ctx) : "";
+
   if (component.form && component.form.fields?.length) {
     warnings.push({
       code: "component_fallback",
       message: `Component "${component.name}" uses form; rendered as static placeholder.`,
       context: component.name,
     });
-    return `<section class="irgen-component"><h2>${escapeHtml(component.name)}</h2>${renderWarningBox("Form component rendered as static placeholder.")}</section>`;
+    return `<section class="irgen-component">${heading}${renderWarningBox("Form component rendered as static placeholder.")}</section>`;
   }
 
   if (component.themeToggle) {
@@ -329,7 +353,7 @@ async function renderComponent(
       message: `Component "${component.name}" uses themeToggle; rendered as static placeholder.`,
       context: component.name,
     });
-    return `<section class="irgen-component"><h2>${escapeHtml(component.name)}</h2>${renderWarningBox("Theme toggle rendered as static placeholder.")}</section>`;
+    return `<section class="irgen-component">${heading}${renderWarningBox("Theme toggle rendered as static placeholder.")}</section>`;
   }
 
   if (component.layout?.kind === "tabs") {
@@ -341,7 +365,7 @@ async function renderComponent(
     const tabs = component.layout.tabs ?? [];
     const tabHtmlParts: string[] = [];
     for (const t of tabs) {
-      const label = t.label ? renderHeading(3, t.label, ctx) : "";
+      const label = t.label ? renderHeading(3, t.label, ctx, false) : "";
       const content = t.content ? `<p>${escapeHtml(t.content)}</p>` : "";
       let items = "";
       if (Array.isArray(t.items)) {
@@ -382,10 +406,9 @@ async function renderComponent(
       message: `Component "${component.name}" has no renderable content; rendered as placeholder.`,
       context: component.name,
     });
-    return `<section class="irgen-component">${renderHeading(2, component.name, ctx)}${renderWarningBox("Component rendered as empty placeholder.")}</section>`;
+    return `<section class="irgen-component">${heading}${renderWarningBox("Component rendered as empty placeholder.")}</section>`;
   }
 
-  const heading = component.name ? renderHeading(2, component.name, ctx) : "";
   return `<section class="irgen-component">${heading}${partsHtml}</section>`;
 }
 
@@ -501,6 +524,17 @@ async function renderPage(
   const description = page.description || policy.seo?.defaultDescription || "";
   const themeMode = policy.theme?.mode ?? "auto";
   const htmlAttrs: string[] = ['lang="en"'];
+  const themeScript = `
+  <script>
+    (function() {
+      try {
+        var pref = localStorage.getItem("irgen-theme");
+        var theme = pref || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (_) {}
+    })();
+  </script>
+  `.trim();
   if (themeMode === "light" || themeMode === "dark") {
     htmlAttrs.push(`data-theme="${themeMode}"`);
   }
@@ -516,8 +550,25 @@ async function renderPage(
   const breadcrumbs = renderBreadcrumbs(baseUrl, page.path, trailingSlash, page.name);
   const searchIndexFile = policy.search?.indexFile ?? "assets/search-index.json";
   const searchIndexHref = relHref(filePath, searchIndexFile);
+  const mermaidJsHref = assets.mermaidJs ? assetHref(filePath, assets.mermaidJs) : "";
+  const navbarLinks = policy.navbar?.links ?? [];
+  const headerNav = navbarLinks.length
+    ? `<nav class="irgen-header-nav"><ul>${navbarLinks.map((link: any) => {
+        const href = link?.href ? safeAttr(link.href) : "#";
+        const label = safeText(link?.label ?? "Link");
+        const rel = isExternalUrl(String(link?.href ?? "")) ? buildExternalRel(policy.security) : "";
+        const relAttr = rel ? ` rel="${safeAttr(rel)}"` : "";
+        return `<li><a href="${href}"${relAttr}>${label}</a></li>`;
+      }).join("")}</ul></nav>`
+    : "";
   const searchBox = caps.search
-    ? `<div class="irgen-search" data-irgen-search data-irgen-search-index="${safeAttr(searchIndexHref)}"><input type="search" placeholder="Search..." aria-label="Search" data-irgen-search-input /><div class="irgen-search-results" data-irgen-search-results></div></div>`
+    ? `<div class="irgen-search" data-irgen-search data-irgen-search-index="${safeAttr(searchIndexHref)}">
+        <span class="irgen-search-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" role="presentation"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/><path d="M20 20L16.5 16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+        <input type="search" placeholder="Search..." aria-label="Search" data-irgen-search-input />
+        <div class="irgen-search-results" data-irgen-search-results></div>
+      </div>`
     : "";
   const preloadFonts = fontAssets.map((asset) => {
     const href = relHref(filePath, asset);
@@ -528,7 +579,17 @@ async function renderPage(
   for (const c of ir.components ?? []) componentsByName.set(c.name, c);
 
   const ctx: RenderContext = { headings: [], usedIds: new Map() };
-  const pageHeading = renderHeading(1, page.name, ctx);
+  const normalizeText = (input: string) => input.trim().toLowerCase();
+  const heroMatchesTitle = (page.components ?? []).some((component: any) => {
+    const hero = component?.marketing;
+    if (!hero || hero.kind !== "hero" || !hero.title) return false;
+    return normalizeText(hero.title) === normalizeText(page.name ?? "");
+  });
+  const pageHeading = page.hideHeader || heroMatchesTitle ? "" : renderHeading(1, page.name, ctx);
+  if (!pageHeading && heroMatchesTitle) {
+    // Preserve a single H1 in the document outline when hero title replaces page heading.
+    renderHeading(1, page.name, ctx, false);
+  }
   const bodyParts: string[] = [];
   for (const c of page.components ?? []) {
     bodyParts.push(await renderComponent(ir, c, componentsByName, ctx, warnings));
@@ -547,6 +608,7 @@ async function renderPage(
     description ? `  <meta name="description" content="${safeAttr(description)}" />` : "",
     canonicalUrl ? `  <link rel="canonical" href="${safeAttr(canonicalUrl)}" />` : "",
     `  <link rel="stylesheet" href="${safeAttr(cssHref)}" />`,
+    themeScript,
     includeClientHighlight && assets.prismCss ? `  <link rel="stylesheet" href="${safeAttr(prismCssHref)}" />` : "",
     preloadFonts,
     `  <title>${escapeHtml(title)}</title>`,
@@ -558,11 +620,24 @@ async function renderPage(
     "<body>",
     `  <a class="irgen-skip-link" href="#irgen-main">Skip to content</a>`,
     `  <header class="irgen-header">`,
-    `    <div class="irgen-site-title">${escapeHtml(ir.appName)}</div>`,
+    `    <div class="irgen-header-left">`,
+    `      <div class="irgen-site-title">${escapeHtml(ir.appName)}</div>`,
+    headerNav,
+    `    </div>`,
     `    <div class="irgen-header-actions">`,
     searchBox,
-    caps.sidebarToggle ? `      <button class="irgen-sidebar-toggle" type="button" data-irgen-sidebar-toggle aria-controls="irgen-sidebar" aria-expanded="true">Menu</button>` : "",
-    caps.themeToggle ? `      <button class="irgen-theme-toggle" type="button" data-irgen-theme-toggle aria-pressed="false">Theme</button>` : "",
+    caps.sidebarToggle ? `      <button class="irgen-sidebar-toggle irgen-icon-button" type="button" data-irgen-sidebar-toggle aria-controls="irgen-sidebar" aria-expanded="true">
+        <span class="irgen-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" role="presentation"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+        <span class="irgen-button-label">Menu</span>
+      </button>` : "",
+    caps.themeToggle ? `      <button class="irgen-theme-toggle irgen-icon-button" type="button" data-irgen-theme-toggle aria-pressed="false">
+        <span class="irgen-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" role="presentation"><path d="M12 3a1 1 0 0 1 1 1v1.5a1 1 0 1 1-2 0V4a1 1 0 0 1 1-1zM12 18.5a1 1 0 0 1 1 1V21a1 1 0 1 1-2 0v-1.5a1 1 0 0 1 1-1zM4 11a1 1 0 0 1 1 1h1.5a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1 1 1 0 0 1 1-1zm13.5 1a1 1 0 1 1 0-2H19a1 1 0 1 1 0 2h-1.5zM6.2 6.2a1 1 0 0 1 1.4 0l1.06 1.06a1 1 0 1 1-1.42 1.42L6.2 7.6a1 1 0 0 1 0-1.4zm10.6 10.6a1 1 0 0 1 1.4 0l1.06 1.06a1 1 0 1 1-1.42 1.42l-1.04-1.06a1 1 0 0 1 0-1.4zM6.2 17.8a1 1 0 0 1 0-1.4l1.06-1.06a1 1 0 1 1 1.42 1.42L7.6 17.8a1 1 0 0 1-1.4 0zm10.6-10.6a1 1 0 0 1 0-1.4l1.06-1.06a1 1 0 1 1 1.42 1.42l-1.04 1.04a1 1 0 0 1-1.4 0zM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z" fill="currentColor"/></svg>
+        </span>
+        <span class="irgen-button-label">Theme</span>
+      </button>` : "",
     `    </div>`,
     `  </header>`,
     `  <div class="irgen-layout-grid">`,
@@ -578,6 +653,7 @@ async function renderPage(
     includeClientHighlight && assets.prismJs ? `  <script defer src="${safeAttr(prismJsHref)}"></script>` : "",
     caps.search && assets.searchJs ? `  <script defer src="${safeAttr(searchJsHref)}"></script>` : "",
     emitAppJs && assets.appJs ? `  <script defer src="${safeAttr(appJsHref)}"></script>` : "",
+    caps.mermaid && assets.mermaidJs ? `  <script defer src="${safeAttr(mermaidJsHref)}"></script>` : "",
     "</body>",
     "</html>",
   ].join("\n");
@@ -764,12 +840,39 @@ async function copySearchLibrary(outDir: string): Promise<string | null> {
   }
 }
 
+async function copyMermaidLibrary(outDir: string): Promise<string | null> {
+  const candidates = [
+    path.resolve(process.cwd(), "node_modules", "mermaid", "dist", "mermaid.min.js"),
+  ];
+  for (const candidate of candidates) {
+    try {
+      const fs = await import("node:fs/promises");
+      await fs.access(candidate);
+      const outPath = path.join(outDir, "assets", "mermaid.min.js");
+      await fs.mkdir(path.dirname(outPath), { recursive: true });
+      await fs.copyFile(candidate, outPath);
+      return "mermaid.min.js";
+    } catch (_) {
+      // try next
+    }
+  }
+  return null;
+}
+
 export async function emitStaticSite(ir: StaticSiteTargetIR, outDir: string): Promise<void> {
   const policy = ir.policies.staticSite;
-  const finalOutDir = path.join(outDir, policy.outDir ?? "dist");
+  const policyOut = (policy.outDir ?? ".").trim();
+  const finalOutDir = policyOut === "." || policyOut === "" ? outDir : path.join(outDir, policyOut);
   const warnings: WarningEntry[] = [];
   const hasCode = (ir.pages ?? []).some((p) => (p.components ?? []).some((c: any) => c.codeBlock))
     || (ir.components ?? []).some((c: any) => c.codeBlock);
+  const hasMermaid = (ir.pages ?? []).some((p) => (p.components ?? []).some((c: any) => {
+    const lang = String(c?.codeBlock?.language ?? "").toLowerCase();
+    return lang === "mermaid";
+  })) || (ir.components ?? []).some((c: any) => {
+    const lang = String(c?.codeBlock?.language ?? "").toLowerCase();
+    return lang === "mermaid";
+  });
   const baseUrl = policy.baseUrl ?? "/";
   const trailingSlash = policy.trailingSlash ?? true;
   const sitemapBase = policy.seo?.canonicalBaseUrl ?? baseUrl;
@@ -781,8 +884,9 @@ export async function emitStaticSite(ir: StaticSiteTargetIR, outDir: string): Pr
     themeToggle: enhancementsEnabled && features.includes("themeToggle"),
     tocScrollSpy: enhancementsEnabled && features.includes("tocScrollSpy"),
     search: enhancementsEnabled && features.includes("search") && (policy.search?.mode ?? "none") === "client_index",
+    mermaid: enhancementsEnabled && features.includes("mermaid") && hasMermaid,
   };
-  const emitAppJs = caps.sidebarToggle || caps.copyCode || caps.themeToggle || caps.tocScrollSpy || caps.search;
+  const emitAppJs = caps.sidebarToggle || caps.copyCode || caps.themeToggle || caps.tocScrollSpy || caps.search || caps.mermaid;
 
   const fs = await import("node:fs/promises");
   await fs.mkdir(finalOutDir, { recursive: true });
@@ -823,6 +927,7 @@ export async function emitStaticSite(ir: StaticSiteTargetIR, outDir: string): Pr
     prismJs: prismJs || undefined,
     appJs: emitAppJs ? "app.js" : undefined,
     searchJs: undefined,
+    mermaidJs: undefined,
   };
 
   if (caps.search && policy.search?.mode === "client_index") {
@@ -837,12 +942,25 @@ export async function emitStaticSite(ir: StaticSiteTargetIR, outDir: string): Pr
     }
   }
 
+  if (caps.mermaid) {
+    const mermaidLib = await copyMermaidLibrary(finalOutDir);
+    if (mermaidLib) {
+      assets.mermaidJs = mermaidLib;
+    } else {
+      warnings.push({
+        code: "component_fallback",
+        message: "Mermaid asset not found; diagrams will render as plain code blocks.",
+      });
+    }
+  }
+
   if (policy.assets?.hashing) {
     assets.styleCss = await hashAndRenameAsset(finalOutDir, assets.styleCss);
     if (assets.prismCss) assets.prismCss = await hashAndRenameAsset(finalOutDir, assets.prismCss);
     if (assets.prismJs) assets.prismJs = await hashAndRenameAsset(finalOutDir, assets.prismJs);
     if (assets.appJs) assets.appJs = await hashAndRenameAsset(finalOutDir, assets.appJs);
     if (assets.searchJs) assets.searchJs = await hashAndRenameAsset(finalOutDir, assets.searchJs);
+    if (assets.mermaidJs) assets.mermaidJs = await hashAndRenameAsset(finalOutDir, assets.mermaidJs);
   }
 
   const fontAssets = await collectFontAssets(finalOutDir);
