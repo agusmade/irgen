@@ -38,20 +38,23 @@ export const quickStartSection: DocSection = {
     {
       title: "Generate Outputs",
       content: [
-        "Run the CLI for the targets you need. Static-site and React SSG are",
-        "policy-driven within the frontend target.",
+        "Run the CLI for the targets you need. Static-site is a separate target,",
+        "while React SSG is a rendering mode within the frontend target.",
       ].join(" "),
       code: {
         language: "bash",
         snippet: [
           "npx tsx src/cli.ts examples/app.dsl.ts --targets=backend,frontend",
-          "npx tsx src/cli.ts examples/docs.dsl.ts --targets=static-site --outDir=generated/docs",
+          "npx tsx src/cli.ts examples/docs.dsl.ts --targets=static-site --outDir=generated/static-docs",
         ].join("\n"),
       },
     },
     {
       title: "Read Next",
-      content: "Architecture -> Policies -> Frontend -> Static Site -> React SSG -> Contributing.",
+      content: [
+        "Architecture -> Policies -> Backend -> Frontend -> Static Site ->",
+        "React SSG -> Electron -> Extensions -> Contributing.",
+      ].join(" "),
     },
   ],
 };

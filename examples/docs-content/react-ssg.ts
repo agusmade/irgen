@@ -6,8 +6,9 @@ export const reactSsgSection: DocSection = {
   subtitle: "Prerendered HTML with React authoring.",
   description: "SSG is a rendering mode of the React target, not a separate target.",
   content: [
-    "React SSG renders HTML at build time while keeping CSR for runtime behavior.",
-    "It avoids SSR runtime and produces static files suitable for any static host.",
+    "React SSG renders HTML at build time and writes static files suitable for any",
+    "static host. mode=\"ssg\" emits non-hydrated HTML, while mode=\"hybrid\" hydrates",
+    "only when interactivity is required.",
   ].join(" "),
   code: {
     language: "mermaid",

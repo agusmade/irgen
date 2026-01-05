@@ -51,15 +51,30 @@ export const frontendSection: DocSection = {
     {
       title: "SSG",
       content: [
-        "SSG renders at build time to produce static HTML. React remains the authoring",
-        "model and runtime behavior stays CSR.",
+        "SSG renders at build time to produce static HTML. mode=\"ssg\" ships non-hydrated",
+        "pages, while mode=\"hybrid\" hydrates only when interactivity is required.",
       ].join(" "),
     },
     {
       title: "Static Site",
       content: [
         "Static Site is a separate target that produces HTML-first output with optional",
-        "progressive enhancement and no React runtime.",
+        "progressive enhancement and no React runtime. It has its own staticSite",
+        "policy block, separate from frontend.",
+      ].join(" "),
+    },
+    {
+      title: "PWA",
+      content: [
+        "PWA settings belong to the frontend target. They configure manifests and",
+        "installability for web outputs without changing the DSL.",
+      ].join(" "),
+    },
+    {
+      title: "Electron vs Frontend",
+      content: [
+        "Electron is a separate target with its own policy block. Frontend focuses",
+        "on web outputs; Electron has distinct security and packaging concerns.",
       ].join(" "),
     },
     {

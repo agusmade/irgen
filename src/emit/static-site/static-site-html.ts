@@ -336,7 +336,7 @@ async function renderComponent(
   const hideTitle = props.hideTitle === "true" || props.hideTitle === "1";
   const customTitle = typeof props.title === "string" && props.title.trim().length > 0 ? props.title.trim() : "";
   const headingText = hideTitle ? "" : (customTitle || component.name);
-  const heading = headingText ? renderHeading(2, headingText, ctx) : "";
+  const renderDefaultHeading = () => headingText ? renderHeading(2, headingText, ctx) : "";
 
   if (component.form && component.form.fields?.length) {
     warnings.push({
@@ -344,6 +344,7 @@ async function renderComponent(
       message: `Component "${component.name}" uses form; rendered as static placeholder.`,
       context: component.name,
     });
+    const heading = renderDefaultHeading();
     return `<section class="irgen-component">${heading}${renderWarningBox("Form component rendered as static placeholder.")}</section>`;
   }
 
@@ -353,6 +354,7 @@ async function renderComponent(
       message: `Component "${component.name}" uses themeToggle; rendered as static placeholder.`,
       context: component.name,
     });
+    const heading = renderDefaultHeading();
     return `<section class="irgen-component">${heading}${renderWarningBox("Theme toggle rendered as static placeholder.")}</section>`;
   }
 
@@ -406,9 +408,11 @@ async function renderComponent(
       message: `Component "${component.name}" has no renderable content; rendered as placeholder.`,
       context: component.name,
     });
+    const heading = renderDefaultHeading();
     return `<section class="irgen-component">${heading}${renderWarningBox("Component rendered as empty placeholder.")}</section>`;
   }
 
+  const heading = renderDefaultHeading();
   return `<section class="irgen-component">${heading}${partsHtml}</section>`;
 }
 

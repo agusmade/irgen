@@ -25,8 +25,9 @@ export const staticSiteSection: DocSection = {
     {
       title: "Why It Is a Separate Target",
       content: [
-        "React SSG still assumes a JS runtime and hydration. Static Site exists for",
-        "content that must remain readable and durable without client frameworks.",
+        "React SSG uses React tooling and bundles even when pages are not hydrated.",
+        "Static Site exists for content that must remain readable and durable without",
+        "client frameworks or runtime assumptions.",
       ].join(" "),
     },
     {
