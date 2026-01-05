@@ -60,8 +60,9 @@ try {
     }).optional(),
   }).passthrough();
 
+  const strictBackendSchema = BackendPolicySchema.removeDefault().strict();
   engine.registerTransform("backend-target", (ir: BackendIR, policies?: any) => backendDomainToTarget(ir, policies));
-  engine.registerPolicySchema("backend-target", z.union([BackendPolicySchema.strict(), legacySchema]));
+  engine.registerPolicySchema("backend-target", z.union([strictBackendSchema, legacySchema]));
 } catch (e) {
   // ignore double registration in test runs
 }
