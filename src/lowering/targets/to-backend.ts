@@ -61,7 +61,7 @@ try {
   }).passthrough();
 
   engine.registerTransform("backend-target", (ir: BackendIR, policies?: any) => backendDomainToTarget(ir, policies));
-  engine.registerPolicySchema("backend-target", z.union([BackendPolicySchema, legacySchema]));
+  engine.registerPolicySchema("backend-target", z.union([BackendPolicySchema.strict(), legacySchema]));
 } catch (e) {
   // ignore double registration in test runs
 }
