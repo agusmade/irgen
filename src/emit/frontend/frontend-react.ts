@@ -295,6 +295,13 @@ if ('serviceWorker' in navigator) {
     `.trim());
   }
 
+  // compatibility entry for legacy tooling/tests
+  project.createSourceFile(
+    path.join(frontendDir, "index.tsx"),
+    `import "./entry-client";`,
+    { overwrite: true },
+  );
+
   if (isSsg) {
     const serverEntry = project.createSourceFile(path.join(frontendDir, "entry-server.tsx"), "", { overwrite: true });
     serverEntry.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React" });
