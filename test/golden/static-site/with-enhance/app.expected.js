@@ -5,6 +5,7 @@
   const CAP_THEME = true;
   const CAP_TOC = true;
   const CAP_SEARCH = true;
+  const CAP_MERMAID = false;
 
   function on(el, ev, fn) {
     if (!el) return;
@@ -129,13 +130,39 @@
         const code = container ? container.querySelector("code") : null;
         const text = code ? code.textContent || "" : "";
         if (!text) return;
+        const label = btn.querySelector(".irgen-button-label");
+        const setLabel = (value) => {
+          if (label) {
+            label.textContent = value;
+          } else {
+            btn.textContent = value;
+          }
+        };
         try {
           await copyText(text);
-          btn.textContent = "Copied";
-          setTimeout(() => { btn.textContent = "Copy"; }, 1200);
+          setLabel("Copied");
+          setTimeout(() => { setLabel("Copy"); }, 1200);
         } catch (_) {
-          btn.textContent = "Failed";
-          setTimeout(() => { btn.textContent = "Copy"; }, 1200);
+          setLabel("Failed");
+          setTimeout(() => { setLabel("Copy"); }, 1200);
+        }
+      });
+    });
+  }
+
+  function setupCopyAnchors() {
+    const buttons = document.querySelectorAll("[data-irgen-copy-anchor]");
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const anchor = btn.getAttribute("data-irgen-copy-anchor");
+        if (!anchor) return;
+        try {
+          const url = new URL(anchor, window.location.href).href;
+          await copyText(url);
+          btn.classList.add("is-copied");
+          setTimeout(() => { btn.classList.remove("is-copied"); }, 1200);
+        } catch (_) {
+          // no-op
         }
       });
     });
@@ -149,12 +176,21 @@
     if (!input || !results) return;
     const indexUrl = root.getAttribute("data-irgen-search-index") || "assets/search-index.json";
     let index = null;
+    let mini = null;
     try {
       const resp = await fetch(indexUrl);
       if (!resp.ok) return;
       index = await resp.json();
     } catch (_) {
       return;
+    }
+
+    if (window.MiniSearch && index && Array.isArray(index.items)) {
+      mini = new window.MiniSearch({
+        fields: ["title", "description", "content"],
+        storeFields: ["title", "description", "url"],
+      });
+      mini.addAll(index.items);
     }
 
     function render(items) {
@@ -178,6 +214,11 @@
         render([]);
         return;
       }
+      if (mini) {
+        const matches = mini.search(q, { prefix: true, fuzzy: 0.2 });
+        render(matches);
+        return;
+      }
       const matches = index.items.filter((it) => {
         const hay = `${it.title} ${it.description} ${it.content}`.toLowerCase();
         return hay.includes(q);
@@ -186,11 +227,25 @@
     });
   }
 
+  function setupMermaid() {
+    if (!window.mermaid) return;
+    const theme = root.getAttribute("data-theme") === "dark" ? "dark" : "default";
+    window.mermaid.initialize({ startOnLoad: false, theme });
+    const nodes = document.querySelectorAll(".mermaid");
+    if (nodes.length) {
+      window.mermaid.run({ nodes });
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     if (CAP_SIDEBAR) setupSidebarToggle();
-    if (CAP_COPY) setupCopyCode();
+    if (CAP_COPY) {
+      setupCopyCode();
+      setupCopyAnchors();
+    }
     if (CAP_THEME) setupThemeToggle();
     if (CAP_TOC) setupTocScrollSpy();
     if (CAP_SEARCH) setupSearch();
+    if (CAP_MERMAID) setupMermaid();
   });
 })();

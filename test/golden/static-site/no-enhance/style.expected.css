@@ -1,12 +1,12 @@
 :root {
   --bg: #f8fafc;
-  --fg: #0f172a;
+  --fg: #0b1220;
   --muted: #64748b;
   --border: #e2e8f0;
   --accent: #2563eb;
   --code-bg: #0f172a;
   --panel: #ffffff;
-  --shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
 }
 
 html[data-theme="dark"] {
@@ -15,7 +15,7 @@ html[data-theme="dark"] {
   --muted: #94a3b8;
   --border: #1f2937;
   --accent: #38bdf8;
-  --code-bg: #0f172a;
+  --code-bg: #0b1220;
   --panel: #0f172a;
   --shadow: 0 20px 50px rgba(15, 23, 42, 0.45);
 }
@@ -40,7 +40,8 @@ body {
   font-family: "Space Grotesk", "Manrope", "Inter", "Segoe UI", sans-serif;
   color: var(--fg);
   background: var(--bg);
-  line-height: 1.7;
+  line-height: 1.75;
+  font-size: 17px;
 }
 
 .irgen-skip-link {
@@ -70,9 +71,9 @@ a:hover {
 
 header.irgen-header,
 footer.irgen-footer {
-  border-bottom: 1px solid var(--border);
-  padding: 1.25rem 1.5rem;
-  background: var(--bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  padding: 1rem 1.5rem;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
 }
 
 header.irgen-header {
@@ -83,27 +84,83 @@ header.irgen-header {
   position: sticky;
   top: 0;
   z-index: 5;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(16px);
+}
+
+.irgen-header-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.irgen-header-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.irgen-header-nav a {
+  color: var(--muted);
+  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+}
+
+.irgen-header-nav a:hover {
+  color: var(--fg);
+  text-decoration: none;
+  background: color-mix(in srgb, var(--panel) 85%, var(--border));
 }
 
 .irgen-header-actions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .irgen-search {
-  margin: 0 0 1.5rem 0;
   position: relative;
+}
+
+.irgen-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  width: 1rem;
+  height: 1rem;
+  pointer-events: none;
+}
+
+.irgen-search-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .irgen-search input[type="search"] {
   width: min(420px, 100%);
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  padding: 0.55rem 0.9rem 0.55rem 2.2rem;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 999px;
   background: var(--panel);
   color: var(--fg);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.irgen-search input[type="search"]:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.irgen-search input[type="search"]:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .irgen-search-results {
@@ -150,18 +207,17 @@ footer.irgen-footer {
 }
 
 .irgen-site-title {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .irgen-layout-grid {
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);
-  gap: 2.5rem;
-  padding: 2.5rem 1.75rem 3rem;
-  max-width: 1100px;
+  gap: 2.75rem;
+  padding: 2.75rem 2rem 4rem;
+  max-width: 1440px;
   margin: 0 auto;
 }
 
@@ -174,8 +230,12 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
 }
 
 .irgen-sidebar {
-  border-right: 1px solid var(--border);
-  padding-right: 1rem;
+  border-right: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  padding-right: 1.25rem;
+  position: sticky;
+  top: 5.5rem;
+  max-height: calc(100vh - 6.5rem);
+  overflow: auto;
 }
 
 .irgen-nav ul {
@@ -189,8 +249,8 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
 .irgen-nav a {
   color: var(--muted);
   font-weight: 600;
-  padding: 0.4rem 0.6rem;
-  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
+  border-radius: 10px;
   display: block;
 }
 
@@ -208,6 +268,7 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
   border-radius: 999px;
   font-size: 0.85rem;
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .irgen-theme-toggle {
@@ -218,12 +279,89 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
   border-radius: 999px;
   font-size: 0.85rem;
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.irgen-icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.irgen-icon-button:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
+}
+
+.irgen-icon-button:active {
+  transform: translateY(0);
+}
+
+.irgen-icon {
+  width: 1rem;
+  height: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.irgen-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.irgen-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  scroll-margin-top: 6rem;
+}
+
+.irgen-heading-text {
+  flex: 1 1 auto;
+}
+
+.irgen-heading-copy {
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  color: var(--muted);
+  padding: 0.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.15s ease, transform 0.15s ease, color 0.15s ease;
+}
+
+.irgen-heading:hover .irgen-heading-copy,
+.irgen-heading-copy:focus-visible {
+  opacity: 1;
+  transform: translateY(0);
+  color: var(--fg);
+}
+
+.irgen-heading-copy.is-copied {
+  color: var(--accent);
 }
 
 .irgen-main h1 {
   margin-top: 0;
-  font-size: 2.3rem;
-  letter-spacing: -0.02em;
+  font-size: clamp(2.2rem, 2.8vw, 3.1rem);
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+
+.irgen-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.irgen-main > * {
+  grid-column: 1;
 }
 
 .irgen-breadcrumbs ol {
@@ -242,12 +380,18 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
 }
 
 .irgen-toc {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
   margin: 0 0 1.5rem 0;
-  background: var(--panel);
-  box-shadow: var(--shadow);
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  grid-column: 2;
+  grid-row: 1 / span 6;
+  position: sticky;
+  top: 5.5rem;
+  max-height: calc(100vh - 6.5rem);
+  overflow: auto;
 }
 
 .irgen-toc h2 {
@@ -276,23 +420,23 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
 }
 
 .irgen-component {
-  margin: 1.5rem 0;
-  padding: 1.25rem 1.5rem;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--panel);
-  box-shadow: var(--shadow);
+  margin: 1rem 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .irgen-component h2 {
   margin-top: 0;
-  font-size: 1.25rem;
+  font-size: 1.4rem;
+  letter-spacing: -0.02em;
 }
 
 .irgen-warning {
   padding: 0.75rem 1rem;
-  border: 1px dashed var(--border);
-  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  border: 1px dashed color-mix(in srgb, var(--border) 85%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
   color: var(--fg);
   font-size: 0.95rem;
 }
@@ -300,6 +444,69 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
 .irgen-marketing ul,
 .irgen-marketing ol {
   padding-left: 1.25rem;
+}
+
+.irgen-hero {
+  padding: 2rem 2.25rem;
+  border-radius: 18px;
+  background: linear-gradient(120deg, rgba(37, 99, 235, 0.08), rgba(37, 99, 235, 0.02));
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  margin-bottom: 1.75rem;
+}
+
+.irgen-hero h2 {
+  font-size: clamp(2.4rem, 3.2vw, 3.4rem);
+  letter-spacing: -0.03em;
+  margin-bottom: 0.65rem;
+}
+
+.irgen-hero p {
+  font-size: 1.1rem;
+  color: var(--muted);
+  max-width: 52rem;
+}
+
+.irgen-hero .irgen-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: color-mix(in srgb, var(--accent) 70%, var(--fg));
+  margin-bottom: 0.85rem;
+}
+
+.irgen-marketing .irgen-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.irgen-marketing .irgen-list li {
+  position: relative;
+  padding-left: 1.75rem;
+  color: var(--fg);
+}
+
+.irgen-marketing .irgen-list li::before {
+  content: "";
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 85%, transparent);
+  position: absolute;
+  left: 0;
+  top: 0.35rem;
+}
+
+.irgen-marketing .irgen-list li span {
+  color: var(--muted);
+  margin-left: 0.35rem;
 }
 
 .irgen-actions {
@@ -311,12 +518,12 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
 
 .irgen-action-link {
   display: inline-block;
-  padding: 0.5rem 0.85rem;
+  padding: 0.55rem 1rem;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   color: var(--fg);
-  background: var(--panel);
-  box-shadow: var(--shadow);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
 }
 
 .irgen-table {
@@ -347,6 +554,13 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
   border-radius: 6px;
   font-size: 0.75rem;
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.irgen-copy-button:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
 }
 
 .irgen-code pre {
@@ -358,8 +572,8 @@ pre {
   padding: 1rem;
   overflow: auto;
   border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--code-bg) 80%, var(--border));
-  margin: 1rem 0;
+  border: 1px solid color-mix(in srgb, var(--code-bg) 70%, var(--border));
+  margin: 0.75rem 0;
 }
 
 code {
@@ -389,6 +603,20 @@ code:not(pre code) {
     border-bottom: 1px solid var(--border);
     padding-right: 0;
     padding-bottom: 1rem;
+  }
+
+  .irgen-main {
+    grid-template-columns: 1fr;
+  }
+
+  .irgen-main > * {
+    grid-column: 1;
+  }
+
+  .irgen-toc {
+    position: static;
+    grid-column: 1;
+    grid-row: auto;
   }
 }
 :root { --accent: #3b82f6; }

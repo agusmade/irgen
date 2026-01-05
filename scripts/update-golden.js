@@ -59,7 +59,7 @@ function main() {
 
   for (const [s, d] of mapping) {
     if (d.endsWith("js-off.expected.html")) {
-      copyIfExists(s, d, (html) => html.replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script>/gi, ""));
+      copyIfExists(s, d, (html) => html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ""));
     } else {
       copyIfExists(s, d);
     }
