@@ -5,6 +5,9 @@
     "moduleResolution": "Bundler",
     "outDir": "dist",
     "rootDir": ".",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -13,7 +16,6 @@
     ]
   },
   "include": [
-    "src/**/*.ts",
-    "examples/**/*.ts"
+    "src/**/*.ts"
   ]
 }

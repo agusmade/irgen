@@ -10,7 +10,7 @@ type EnhancementCaps = {
   mermaid: boolean;
 };
 
-function buildEnhancementsJs(caps) {
+function buildEnhancementsJs(caps: EnhancementCaps) {
   return `
 (() => {
   const root = document.documentElement;

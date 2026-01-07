@@ -404,7 +404,7 @@ Semua itu bisa **ditambah tanpa mengubah object ini** secara destruktif.
 ## Cara pakai (CLI contoh)
 
 ```bash
-npx tsx src/cli.ts examples/app.dsl.ts generated/backend \
+npx irgen examples/app.dsl.ts generated/backend \
   --targets=backend \
   --policies=backend-policy.json
 ```

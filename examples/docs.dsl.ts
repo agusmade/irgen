@@ -62,15 +62,17 @@ frontend("irgen Docs", {
         c.prop("hideTitle", "true");
       });
 
-      if (section.features) {
+      const features = section.features;
+      if (features?.length) {
         p.component(section.id + "Features", (c) => {
-          c.features(section.features);
+          c.features(features);
         });
       }
 
-      if (section.code) {
+      const code = section.code;
+      if (code) {
         p.component(section.id + "Code", (c) => {
-          c.code(section.code.snippet, section.code.language);
+          c.code(code.snippet, code.language);
           c.prop("hideTitle", "true");
         });
       }

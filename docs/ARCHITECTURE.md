@@ -118,7 +118,9 @@ flowchart TB
 - The pipeline separates *authoring* (developer DSL, optional schemas/assets) from *code generation* (emitters).
 - A **Unified DeclIR** captures the declarations from any source in a canonical format.
 - **Domain mappers** convert the DeclIR into domain-specific IRs (BackendIR, FrontendIR, CLIIR). Each DomainIR is tailored to what generators in that domain need.
-- Frontend SSG design notes (implemented): `docs/FRONTEND-SSG-PLAN.md`
+- **Frontend & Static Site Support**: 
+  - **Frontend SSG**: Fully implemented via Vite prerendering (`mode: "ssg" | "hybrid"`). See `docs/FRONTEND-SSG-PLAN.md`.
+  - **Static Site Target**: Dedicated target for documentation/content sites with search and progressive enhancement. See `docs/STATICSITE-IMPLEMENTATION-PLAN.md`.
 - The **Lowering Pipeline** applies policies and conventions to the DomainIR to produce TargetIRs (e.g., ReactIR, NestIR) — this is where choices such as `GENERATE_ID` implementations are decided.
 - Backend and frontend targets are independent: enabling one does not auto-enable the other, and each emitter writes its own package/tooling (backend stays backend-only; frontend ships React/router/Tailwind).
 - **Emitters** use AST builders (no string templates), printers and file emitters to write the final project scaffolding and code.
@@ -133,6 +135,8 @@ flowchart TB
 - **Frontend Policies & Theming**: Styling policies (primary colors, radius, fonts) flow into the React emitter. **Global Dark Mode** is implemented via a `themeToggle` property in components, resulting in a persistent state manager in `App.tsx` and adaptive Tailwind `dark:` variants across all templates.
 - **Multi-page & Routing**: Lowering transforms multiple `page` declarations into a `react-router-dom` configuration. The emitter generates a global Navbar and Footer to wrap these routes.
 - **Specialized Components**: New `marketing` sections and the **Syntax Highlighter** (`codeBlock`) use a policy-driven dependency tracker. The emitter detects these properties to conditionally inject third-party dependencies (like `react-syntax-highlighter`) into the generated `package.json`.
+- **SSG & Prerendering**: Frontend emitter includes logic to generate a custom `prerender.mjs` script and `entry-server.tsx` when `mode="ssg"` or `mode="hybrid"`. This enables build-time static HTML generation without requiring a separate framework meta-dependency.
+- **Static Site Target**: A specialized emitter (`src/emit/static-site`) that generates pure HTML/CSS sites with progressive enhancement (JavaScript optional). Uses the same `FrontendIR` but lowers to a `StaticSiteTargetIR` with focus on accessibility, SEO, and content rendering.
 - Electron target: lowering resolves window/security/packaging/auto-update/reliability policies; emitter renders `main.ts`, `preload.ts`, `ipc-handlers.ts`, `package.json`, `tsconfig.json`, and helper scripts with security guards, session restore, logging, crashReporter slot, auto-update wiring (status events to renderer, retry-on-fail), and IPC whitelist enforcement. Checklist: see `docs/ELECTRON-CHECKLIST.md`.
 
 ---

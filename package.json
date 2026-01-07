@@ -2,10 +2,23 @@
   "name": "irgen",
   "version": "0.1.0",
   "private": false,
+  "license": "MIT",
   "description": "a policy-driven, IR-based code generation toolchain for backend, frontend, and beyond.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "type": "module",
+  "bin": {
+    "irgen": "dist/src/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "dev": "tsx src/cli.ts examples/app.dsl.ts",
     "build": "tsc -p tsconfig.json",
@@ -48,13 +61,20 @@
     "test:golden:backend": "node scripts/backend-golden.test.js",
     "test:golden:electron": "node scripts/electron-golden.test.js",
     "test:golden:static-site": "node scripts/static-site-golden.test.js",
-    "test:ci": "npm run test:golden && npm run test:golden:backend && npm run test:golden:electron"
+    "test:ci": "npm run test:golden && npm run test:golden:backend && npm run test:golden:electron",
+    "prepublishOnly": "npm run build"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "dependencies": {
     "mermaid": "^10.9.1",
     "minisearch": "^6.1.0",
     "prismjs": "^1.29.0",
     "shiki": "^1.10.1",
+    "tsx": "^4.19.2",
     "ts-morph": "^23.0.0",
     "zod": "^3.23.8"
   },
@@ -63,7 +83,6 @@
     "jsonwebtoken": "^9.0.3",
     "prettier": "^2.8.8",
     "rimraf": "^6.0.1",
-    "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   }
 }

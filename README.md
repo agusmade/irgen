@@ -69,22 +69,22 @@ You can generate artifacts from a specific DSL file using the CLI:
 
 ```bash
 # General Backend
-npx tsx src/cli.ts examples/app.dsl.ts generated/my-app --mode=backend
+npx irgen examples/app.dsl.ts generated/my-app --mode=backend
 
 # Frontend (FormIO style)
-npx tsx src/cli.ts examples/form-io.dsl.ts generated/my-frontend --mode=frontend
+npx irgen examples/form-io.dsl.ts generated/my-frontend --mode=frontend
 
 # Backend + Frontend (separate targets)
-npx tsx src/cli.ts examples/app.dsl.ts --targets=backend,frontend --outDir=generated/fullstack
+npx irgen examples/app.dsl.ts --targets=backend,frontend --outDir=generated/fullstack
 # -> backend in generated/fullstack/backend, frontend in generated/fullstack/frontend
 
 # Static-site (HTML-first)
-npx tsx src/cli.ts examples/docs.dsl.ts --targets=static-site --outDir=generated/static-docs
+npx irgen examples/docs.dsl.ts --targets=static-site --outDir=generated/static-docs
 ```
 
 ### Optional: enable PWA for frontend outputs
 - Opt-in via CLI policies:  
-`npx tsx src/cli.ts examples/fullstack.dsl.ts generated/fullstack --targets=backend,frontend`
+`npx irgen examples/fullstack.dsl.ts generated/fullstack --targets=backend,frontend`
 - This writes `manifest.webmanifest`, `icons/icon.svg`, and `pwa-sw.js`, then registers the service worker in the generated frontend entry. Defaults stay off unless you set `pwa.enabled=true` (recommended via the options argument to `frontend(...)` in your DSL; you can still override with `--policies='{"frontend":{"pwa":{"enabled":true,"name":"irgen Docs","shortName":"IRDocs"}}}'` if you prefer CLI flags).
 - Frontend outputs now include a minimal Vite setup. After generation run `npm install` then `npm run dev` inside the frontend folder (e.g. `generated/fullstack/frontend`) to serve the app.
 - Backend and frontend packages are decoupled: backend outputs stay backend-only; frontend outputs ship their own `package.json` with React/router/Tailwind toolchain.
@@ -113,9 +113,13 @@ npx tsx src/cli.ts examples/docs.dsl.ts --targets=static-site --outDir=generated
     ctx.registerMapper("my-target", (decl) => {/* ... */}, { force: true });
   };
   ```
-- CLI can load extensions too: `npx tsx src/cli.ts ./myapp.ts --targets=backend,frontend --ext=./my-extension.ts`
+- CLI can load extensions too: `npx irgen ./myapp.ts --targets=backend,frontend --ext=./my-extension.ts`
 - Electron target: IPC whitelist and handler stubs can be declared in the DSL via `policies.electron.ipc` (whitelist + `handlers`), and the emitter generates `ipc-handlers.ts` wired to `main.ts`, `preload.ts`, and `load-file.js`. Electron shell includes security hardening (contextIsolation/nodeIntegration off, navigation/CSP guards), session restore (window state persisted to userData), crash reporting slot, auto-update wiring with renderer status events (`auto-update-status`), and optional retry on failure.
 - Extension namespacing & order: built-ins register first; extensions load in order. Use `ctx.namespace("myExt")` to prefix registrations (e.g., `myExt:frontend`) to avoid collisions. See `docs/EXTENSIONS.md` for details.
+
+Notes:
+- Published CLI (`npx irgen`) can load `.dsl.ts` (and its `.ts` imports) directly using the built-in tsx loader.
+- For local development inside this repo, you can still run `npx tsx src/cli.ts ...` if preferred.
 
 ## Architecture
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details on:

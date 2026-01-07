@@ -19,17 +19,17 @@ export const quickStartSection: DocSection = {
   code: {
     language: "typescript",
     snippet: [
-      "import { app, frontend } from \"irgen\";",
+      'import { app, frontend } from "irgen";',
       "",
-      "app(\"MyService\", (be) => {",
-      "  be.entity(\"User\", (e) => {",
-      "    e.field(\"email\", \"string\", { format: \"email\" });",
+      'app("MyService", (be) => {',
+      '  be.entity("User", (e) => {',
+      '    e.field("email", "string", { format: "email" });',
       "  });",
       "});",
       "",
-      "frontend(\"AdminPanel\", (fe) => {",
-      "  fe.page(\"Home\", { path: \"/\" }, (p) => {",
-      "    p.component(\"UserList\");",
+      'frontend("AdminPanel", (fe) => {',
+      '  fe.page("Home", { path: "/" }, (p) => {',
+      '    p.component("UserList");',
       "  });",
       "});",
     ].join("\n"),
@@ -44,16 +44,41 @@ export const quickStartSection: DocSection = {
       code: {
         language: "bash",
         snippet: [
-          "npx tsx src/cli.ts examples/app.dsl.ts --targets=backend,frontend",
-          "npx tsx src/cli.ts examples/docs.dsl.ts --targets=static-site --outDir=generated/static-docs",
+          "npx irgen examples/app.dsl.ts --targets=backend,frontend",
+          "npx irgen examples/docs.dsl.ts --targets=static-site --outDir=generated/static-docs",
         ].join("\n"),
       },
     },
     {
-      title: "Read Next",
+      title: "Install the CLI",
       content: [
-        "Architecture -> Policies -> Backend -> Frontend -> Static Site ->",
-        "React SSG -> Electron -> Extensions -> Contributing.",
+        "Use the published CLI for reproducible builds. The CLI uses the tsx loader",
+        "to run .dsl.ts files (including imported .ts modules) without extra setup.",
+      ].join(" "),
+      code: {
+        language: "bash",
+        snippet: [
+          "npm install -g irgen",
+          "irgen --version",
+        ].join("\n"),
+      },
+    },
+
+    // ✅ New / improved: “Docs Home vibe” without adding a new root page
+    {
+      title: "Next Steps",
+      content: [
+        "If you want the mental model first, read Architecture and Policies.",
+        "If you want to go target-by-target, start with Backend and Frontend.",
+        "If you are here for documentation websites, jump to Static Site and React SSG.",
+      ].join(" "),
+    },
+    {
+      title: "Suggested Reading Order",
+      content: [
+        "Install & CLI → CLI Reference → DSL Reference → Architecture → Policies →",
+        "Policy Reference → Backend → Frontend → Static Site → React SSG → Electron →",
+        "Extensions → Output Structure → Troubleshooting → Release Notes → Contributing.",
       ].join(" "),
     },
   ],

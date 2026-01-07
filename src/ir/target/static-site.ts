@@ -18,3 +18,4 @@ export interface StaticSiteTargetIR extends FrontendIR {
   policies: StaticSitePolicies;
 }
 
+

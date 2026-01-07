@@ -21,18 +21,20 @@ function cleanDir(p: string) {
 
 function getBackendPolicies(ir: BackendTargetIR) {
   const p: any = (ir as any)?.policies ?? {};
-  const backend = BackendPolicySchema.parse(p.backend ?? p ?? {});
+  const rawBackend = p.backend ?? p ?? {};
+  const backend = BackendPolicySchema.parse(rawBackend);
+  const legacy = rawBackend as any;
   const core = backend.core ?? {};
   return {
     ...backend,
     core,
     // legacy fields fallback for emitters still reading old keys
-    generateId: backend.generateId ?? core.generateId,
-    loggerImpl: backend.loggerImpl ?? core.loggerImpl,
-    httpClient: backend.httpClient ?? core.httpClient,
-    formatter: backend.formatter ?? core.formatter,
-    db: backend.db ?? core.db,
-    idProvider: backend.idProvider ?? (core.generateId === "shortid" ? "shortId" : "newId"),
+    generateId: legacy.generateId ?? core.generateId,
+    loggerImpl: legacy.loggerImpl ?? core.loggerImpl,
+    httpClient: legacy.httpClient ?? core.httpClient,
+    formatter: legacy.formatter ?? core.formatter,
+    db: legacy.db ?? core.db,
+    idProvider: legacy.idProvider ?? (core.generateId === "shortid" ? "shortId" : "newId"),
   };
 }
 

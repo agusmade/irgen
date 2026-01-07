@@ -139,3 +139,4 @@ export function normalizeStaticSitePolicy(input: unknown): StaticSitePolicy {
   }
   return parsed;
 }
+

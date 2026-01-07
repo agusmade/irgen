@@ -27,7 +27,7 @@ This document summarizes the small emitter pipeline I implemented as part of Pha
 - **`--emitter=<name>`** — runs a single registered emitter by name. You can pass a DSL entry and outDir as positional args, for example:
 
   ```bash
-  npx tsx src/cli.ts examples/app.dsl.ts generated --emitter=backend-tsmorph
+  npx irgen examples/app.dsl.ts generated --emitter=backend-tsmorph
   ```
 
   The CLI will try to infer the IR mode from the emitter name (contains `backend` or `frontend`) unless you pass `--mode=backend|frontend` explicitly.

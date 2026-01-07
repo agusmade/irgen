@@ -12,7 +12,8 @@
 - **Namespacing/conflicts**:
   - Prefer namespaced registrations to avoid collisions (`ctx.namespace("myExt").registerMapper("frontend", ...)` → mapper name `myExt:frontend`).
   - If you register a name that already exists and `force` is not set, registration will throw; use namespacing instead of `force` where possible.
-- **CLI usage**: `npx tsx src/cli.ts --targets=<...> --ext=path/to/ext1.ts,path/to/ext2.ts <dsl>`.
+- **CLI usage**: `npx irgen --targets=<...> --ext=path/to/ext1.ts,path/to/ext2.ts <dsl>`.  
+  `.ts` extension files work because the CLI registers the tsx loader at runtime.
 - **Programmatic usage**:
   ```ts
   import { Codegen } from "irgen";

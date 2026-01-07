@@ -1,16 +1,28 @@
+#!/usr/bin/env node
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { aggregateDecls } from "./dsl/aggregator.js";
 import { registerBuiltins, runMapper } from "./mappers/index.js";
 
-// Guard: require a modern Node (tsx/TS output uses optional chaining/nullish coalescing)
+// Guard: require a modern Node (tsx loader relies on module.register)
 const NODE_MAJOR = Number(process.versions.node.split(".")[0]);
-if (Number.isFinite(NODE_MAJOR) && NODE_MAJOR < 16) {
-  console.error(`irgen requires Node.js >=16 (detected ${process.versions.node}). Please switch to a newer Node before running the CLI.`);
+if (Number.isFinite(NODE_MAJOR) && NODE_MAJOR < 18) {
+  console.error(`irgen requires Node.js >=18 (detected ${process.versions.node}). Please switch to a newer Node before running the CLI.`);
   process.exit(1);
 }
 
 async function main() {
+  if (process.argv.includes("--version") || process.argv.includes("-v")) {
+    console.log("irgen 0.1.0");
+    process.exit(0);
+  }
+
+  try {
+    const { register } = await import("tsx/esm/api");
+    register();
+  } catch (err) {
+    console.warn("tsx loader unavailable; falling back to manual TS transpile where supported.", err instanceof Error ? err.message : err);
+  }
   const modeFlag = process.argv.find(a => a.startsWith("--mode=")) ?? "--mode=backend";
   const mode = modeFlag.split("=")[1];
 
