@@ -95,6 +95,13 @@ export const StaticSiteNavbarPolicySchema = z.object({
   })).default([]),
 }).default({});
 
+export const StaticSiteSidebarPolicySchema = z.object({
+  groups: z.array(z.object({
+    label: z.string(),
+    items: z.array(z.string()),
+  })).default([]),
+}).default({});
+
 // Main Static Site Policy Schema
 export const StaticSitePolicySchema = z.object({
   enabled: z.boolean().default(true),
@@ -110,6 +117,7 @@ export const StaticSitePolicySchema = z.object({
   theme: StaticSiteThemePolicySchema,
   security: StaticSiteSecurityPolicySchema,
   navbar: StaticSiteNavbarPolicySchema,
+  sidebar: StaticSiteSidebarPolicySchema,
 }).default({});
 
 // Namespaced format for DSL usage
@@ -139,4 +147,3 @@ export function normalizeStaticSitePolicy(input: unknown): StaticSitePolicy {
   }
   return parsed;
 }
-

@@ -35,8 +35,8 @@ export async function aggregateDecls(entries: string[], opts?: { prefer?: "front
     }
 
     if (!loadedDecl) {
-      console.warn("unable to load DSL entry, skipping:", e, lastError instanceof Error ? lastError.message : lastError);
-      continue;
+      const msg = lastError instanceof Error ? lastError.message : String(lastError ?? "unknown error");
+      throw new Error(`Failed to load DSL entry "${e}": ${msg}`);
     }
 
     loaded.push({ app: loadedDecl, meta: loadedDecl?.meta });

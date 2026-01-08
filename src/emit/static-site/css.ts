@@ -247,7 +247,7 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 0.35rem;
+  gap: 0 0.35rem;
 }
 
 .irgen-nav a {
@@ -262,6 +262,26 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
   color: var(--fg);
   background: color-mix(in srgb, var(--panel) 85%, var(--border));
   text-decoration: none;
+}
+
+.irgen-nav .irgen-nav-group {
+  margin-top: 1rem;
+}
+
+.irgen-nav .irgen-nav-group > span {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  padding: 0.35rem 0.6rem;
+}
+
+.irgen-nav .irgen-nav-group > ul {
+  margin-top: 0.4rem;
+  padding-left: 0.25rem;
+  display: grid;
+  gap: 0 0.25rem;
 }
 
 .irgen-sidebar-toggle {
@@ -360,7 +380,7 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
 .irgen-main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
-  gap: 2.5rem;
+  gap: 0 2.5rem;
   align-items: start;
 }
 
@@ -424,11 +444,49 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
 }
 
 .irgen-component {
-  margin: 1rem 0;
+  margin: 0 0;
   padding: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.irgen-markdown {
+  color: var(--fg);
+}
+
+.irgen-markdown p {
+  margin: 0 0 1rem;
+  line-height: 1.7;
+}
+
+.irgen-markdown ul,
+.irgen-markdown ol {
+  padding-left: 1.25rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.irgen-markdown li {
+  margin: 0.35rem 0;
+}
+
+.irgen-markdown a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.irgen-markdown a:hover {
+  border-bottom-color: color-mix(in srgb, var(--accent) 75%, transparent);
+}
+
+.irgen-markdown code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--code-bg) 70%, var(--panel));
+  color: var(--fg);
 }
 
 .irgen-component h2 {
@@ -513,11 +571,39 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
   margin-left: 0.35rem;
 }
 
+.irgen-marketing.irgen-features.irgen-align-center {
+  text-align: center;
+}
+
+.irgen-marketing.irgen-features.irgen-align-center .irgen-list {
+  justify-content: center;
+}
+
+.irgen-marketing.irgen-features.irgen-align-center .irgen-list li {
+  text-align: center;
+}
+
+.irgen-marketing.irgen-features.irgen-align-center .irgen-icon {
+  margin: 0 auto 0.75rem auto;
+}
+
 .irgen-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 1rem;
+}
+
+.irgen-callout-links {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+}
+
+.irgen-callout-links .irgen-actions {
+  margin-top: 0;
 }
 
 .irgen-action-link {
@@ -528,6 +614,142 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
   color: var(--fg);
   background: color-mix(in srgb, var(--panel) 92%, transparent);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.irgen-agent-chat {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+html[data-theme="dark"] .irgen-agent-chat {
+  background: rgba(15, 23, 42, 0.6);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.3);
+}
+
+.irgen-chat-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.irgen-chat-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.irgen-chat-row:last-child {
+  margin-bottom: 0;
+}
+
+.irgen-chat-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: #0f172a;
+}
+
+.irgen-chat-agent .irgen-chat-avatar {
+  background: #0ea5e9;
+}
+
+.irgen-chat-bubble {
+  flex: 1;
+  border-radius: 18px;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-line;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.irgen-chat-agent .irgen-chat-bubble {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0f172a;
+  border: 1px solid rgba(14, 165, 233, 0.2);
+}
+
+html[data-theme="dark"] .irgen-chat-bubble {
+  background: rgba(30, 41, 59, 0.6);
+  color: #cbd5f5;
+}
+
+html[data-theme="dark"] .irgen-chat-agent .irgen-chat-bubble {
+  color: #e0f2fe;
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.irgen-cli-usage {
+  max-width: 820px;
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+}
+
+.irgen-cli-usage h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.irgen-cli-command {
+  background: #0f172a;
+  color: #4ade80;
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 14px;
+  overflow-x: auto;
+}
+
+.irgen-cli-command code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.irgen-cli-options {
+  display: grid;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.irgen-cli-option {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #fff;
+}
+
+html[data-theme="dark"] .irgen-cli-option {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.irgen-cli-flag {
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--fg);
+}
+
+.irgen-cli-desc {
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
 }
 
 .irgen-table {
@@ -545,6 +767,7 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
 
 .irgen-code {
   position: relative;
+  margin: 0 0 1rem 0;
 }
 
 .irgen-copy-button {

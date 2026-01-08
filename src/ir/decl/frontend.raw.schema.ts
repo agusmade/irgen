@@ -97,6 +97,7 @@ export const DeclFormSchema = z.object({
 
 export const DeclMarketingSchema = z.object({
   kind: z.enum(["hero", "features", "testimonials", "faq", "logos", "cta", "stats", "timeline"]),
+  align: z.enum(["left", "center"]).optional(),
   title: z.string().optional(),
   subtitle: z.string().optional(),
   items: z.array(z.object({
@@ -124,6 +125,22 @@ export const DeclComponentSchema = z.object({
   props: z.record(z.string()).optional(),
   form: DeclFormSchema.optional(),
   entityRef: z.string().optional(),
+  agentChat: z.object({
+    title: z.string().optional(),
+    messages: z.array(z.object({
+      role: z.enum(["user", "agent"]),
+      label: z.string().optional(),
+      content: z.string(),
+    })).default([]),
+  }).optional(),
+  cliUsage: z.object({
+    title: z.string().optional(),
+    command: z.string(),
+    options: z.array(z.object({
+      flag: z.string(),
+      description: z.string(),
+    })).optional(),
+  }).optional(),
   layout: z.object({
     kind: z.enum(["row", "column", "panel", "tabs"]),
     title: z.string().optional(),
@@ -136,7 +153,6 @@ export const DeclComponentSchema = z.object({
     })).optional(),
   }).optional(),
   content: z.string().optional(),
-  html: z.string().optional(),
   button: z.object({
     label: z.string(),
     variant: z.enum(["primary", "secondary", "ghost"]).optional(),
@@ -157,6 +173,8 @@ export const DeclPageSchema = z.object({
   path: z.string().min(1),
   hideHeader: z.boolean().optional(),
   description: z.string().optional(),
+  docsLayout: z.boolean().optional(),
+  docsGroupLabel: z.string().optional(),
   components: z.array(DeclComponentSchema).default([]),
 });
 

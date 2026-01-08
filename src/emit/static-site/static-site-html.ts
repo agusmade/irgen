@@ -22,6 +22,14 @@ type RenderContext = {
   usedIds: Map<string, number>;
 };
 
+type LinkContext = {
+  baseUrl: string;
+  trailingSlash: boolean;
+  pagePath: string;
+  pagePaths: Map<string, string>;
+  security?: any;
+};
+
 type AssetManifest = {
   styleCss: string;
   prismCss?: string;
@@ -204,6 +212,164 @@ function renderHeading(level: number, text: string, ctx: RenderContext, includeC
   return `<h${level} id="${safeAttr(id)}" class="irgen-heading"><span class="irgen-heading-text">${safeText(text)}</span>${button}</h${level}>`;
 }
 
+function resolveMarkdownLink(raw: string, linkCtx: LinkContext): { href: string; rel?: string } {
+  const trimmed = raw.trim();
+  if (/^(mailto:|tel:)/i.test(trimmed) || isExternalUrl(trimmed)) {
+    const rel = buildExternalRel(linkCtx.security);
+    return { href: trimmed, rel: rel || undefined };
+  }
+  if (trimmed.startsWith("#")) return { href: trimmed };
+  let [pathPart, hash] = trimmed.split("#");
+  if (!pathPart) pathPart = linkCtx.pagePath;
+  if (!pathPart.startsWith("/")) pathPart = `/${pathPart}`;
+  if (pathPart.endsWith(".md")) pathPart = pathPart.slice(0, -3);
+  const normalized = normalizeRoutePath(pathPart);
+  const targetPath = linkCtx.pagePaths.get(normalized) ?? normalized;
+  let href = toHref(linkCtx.baseUrl, targetPath, linkCtx.trailingSlash);
+  if (hash) href += `#${hash}`;
+  return { href };
+}
+
+function renderInlineText(text: string, linkCtx: LinkContext): string {
+  const parts: string[] = [];
+  const linkRe = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  const renderNoLinks = (value: string) => {
+    const parts: string[] = [];
+    const codeRe = /`([^`]+)`/g;
+    let last = 0;
+    let codeMatch: RegExpExecArray | null;
+    while ((codeMatch = codeRe.exec(value)) !== null) {
+      const plain = escapeHtml(value.slice(last, codeMatch.index))
+        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+      parts.push(plain);
+      parts.push(`<code>${escapeHtml(codeMatch[1])}</code>`);
+      last = codeMatch.index + codeMatch[0].length;
+    }
+    const tail = escapeHtml(value.slice(last))
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+    parts.push(tail);
+    return parts.join("");
+  };
+
+  while ((match = linkRe.exec(text)) !== null) {
+    parts.push(renderNoLinks(text.slice(lastIndex, match.index)));
+    const label = renderNoLinks(match[1]);
+    const { href, rel } = resolveMarkdownLink(match[2], linkCtx);
+    const relAttr = rel ? ` rel="${safeAttr(rel)}"` : "";
+    parts.push(`<a href="${safeAttr(href)}"${relAttr}>${label}</a>`);
+    lastIndex = match.index + match[0].length;
+  }
+
+  parts.push(renderNoLinks(text.slice(lastIndex)));
+  return parts.join("");
+}
+
+async function renderMarkdown(
+  input: string,
+  ir: StaticSiteTargetIR,
+  ctx: RenderContext,
+  warnings: WarningEntry[],
+  linkCtx: LinkContext,
+): Promise<string> {
+  const text = String(input ?? "");
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const htmlParts: string[] = [];
+  let paragraph: string[] = [];
+  let listItems: string[] = [];
+  let listType: "ul" | "ol" | null = null;
+  let inCode = false;
+  let codeLang = "";
+  let codeLines: string[] = [];
+
+  const flushParagraph = () => {
+    if (!paragraph.length) return;
+    const body = renderInlineText(paragraph.join(" "), linkCtx);
+    htmlParts.push(`<p>${body}</p>`);
+    paragraph = [];
+  };
+
+  const flushList = () => {
+    if (!listType || !listItems.length) {
+      listType = null;
+      listItems = [];
+      return;
+    }
+    const items = listItems.map((item) => `<li>${renderInlineText(item, linkCtx)}</li>`).join("");
+    htmlParts.push(`<${listType}>${items}</${listType}>`);
+    listType = null;
+    listItems = [];
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.replace(/\s+$/, "");
+    const fenceMatch = line.match(/^```(\w+)?\s*$/);
+    if (inCode) {
+      if (fenceMatch) {
+        const snippet = codeLines.join("\n");
+        htmlParts.push(await renderCodeBlock(ir, { snippet, language: codeLang }, warnings));
+        inCode = false;
+        codeLang = "";
+        codeLines = [];
+      } else {
+        codeLines.push(rawLine);
+      }
+      continue;
+    }
+
+    if (fenceMatch) {
+      flushParagraph();
+      flushList();
+      inCode = true;
+      codeLang = fenceMatch[1] ?? "text";
+      continue;
+    }
+
+    if (!line.trim()) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+    if (headingMatch) {
+      flushParagraph();
+      flushList();
+      const levelRaw = headingMatch[1].length;
+      const textValue = headingMatch[2].trim();
+      const level = levelRaw === 1 ? 2 : 3;
+      htmlParts.push(renderHeading(level, textValue, ctx));
+      continue;
+    }
+
+    const orderedMatch = line.match(/^\d+\.\s+(.*)$/);
+    const unorderedMatch = line.match(/^[-*]\s+(.*)$/);
+    if (orderedMatch || unorderedMatch) {
+      flushParagraph();
+      const nextType = orderedMatch ? "ol" : "ul";
+      if (listType && listType !== nextType) flushList();
+      listType = nextType;
+      listItems.push((orderedMatch ?? unorderedMatch)![1].trim());
+      continue;
+    }
+
+    paragraph.push(line.trim());
+  }
+
+  if (inCode) {
+    const snippet = codeLines.join("\n");
+    htmlParts.push(await renderCodeBlock(ir, { snippet, language: codeLang || "text" }, warnings));
+  }
+
+  flushParagraph();
+  flushList();
+
+  return `<div class="irgen-markdown">${htmlParts.join("\n")}</div>`;
+}
+
 function renderActionLinks(actions: any[], security: any): string {
   if (!Array.isArray(actions) || actions.length === 0) return "";
   const links = actions.map((a: any) => {
@@ -255,7 +421,8 @@ function renderMarketing(marketing: any, ctx: RenderContext, security: any): str
   }
   if (kind === "features" || kind === "logos" || kind === "testimonials") {
     const list = renderItemList(items, false);
-    return `<section class="irgen-marketing irgen-${kind}">${title}${subtitle}${list}${actions}</section>`;
+    const align = marketing.align === "center" ? " irgen-align-center" : "";
+    return `<section class="irgen-marketing irgen-${kind}${align}">${title}${subtitle}${list}${actions}</section>`;
   }
   if (kind === "faq") {
     const list = renderItemList(items, false);
@@ -270,7 +437,7 @@ function renderMarketing(marketing: any, ctx: RenderContext, security: any): str
     return `<section class="irgen-marketing irgen-stats">${title}${subtitle}${table}</section>`;
   }
   if (kind === "cta") {
-    return `<section class="irgen-marketing irgen-cta">${title}${subtitle}${actions}</section>`;
+    return `<section class="irgen-marketing irgen-callout-links">${actions}</section>`;
   }
 
   const list = renderItemList(items, false);
@@ -318,11 +485,15 @@ async function renderComponent(
   componentsByName: Map<string, any>,
   ctx: RenderContext,
   warnings: WarningEntry[],
+  linkCtx: LinkContext,
 ): Promise<string> {
+  if (component.html) {
+    throw new Error(`static-site emitter does not allow component.html (component: ${component.name}). Use markdown in component.content instead.`);
+  }
+
   const renderContentParts = async (): Promise<string> => {
     const parts: string[] = [];
-    if (component.content) parts.push(`<p>${escapeHtml(component.content)}</p>`);
-    if (component.html) parts.push(`<div>${escapeHtml(component.html)}</div>`);
+    if (component.content) parts.push(await renderMarkdown(component.content, ir, ctx, warnings, linkCtx));
     if (component.codeBlock) {
       parts.push(await renderCodeBlock(ir, component.codeBlock, warnings));
     }
@@ -368,13 +539,13 @@ async function renderComponent(
     const tabHtmlParts: string[] = [];
     for (const t of tabs) {
       const label = t.label ? renderHeading(3, t.label, ctx, false) : "";
-      const content = t.content ? `<p>${escapeHtml(t.content)}</p>` : "";
+      const content = t.content ? await renderMarkdown(t.content, ir, ctx, warnings, linkCtx) : "";
       let items = "";
       if (Array.isArray(t.items)) {
         const itemParts: string[] = [];
         for (const n of t.items) {
           const child = componentsByName.get(n);
-          itemParts.push(child ? await renderComponent(ir, child, componentsByName, ctx, warnings) : renderWarningBox(`Missing component: ${n}`));
+          itemParts.push(child ? await renderComponent(ir, child, componentsByName, ctx, warnings, linkCtx) : renderWarningBox(`Missing component: ${n}`));
         }
         items = itemParts.join("");
       }
@@ -390,7 +561,7 @@ async function renderComponent(
     const itemParts: string[] = [];
     for (const n of component.layout.items ?? []) {
       const child = componentsByName.get(n);
-      itemParts.push(child ? await renderComponent(ir, child, componentsByName, ctx, warnings) : renderWarningBox(`Missing component: ${n}`));
+      itemParts.push(child ? await renderComponent(ir, child, componentsByName, ctx, warnings, linkCtx) : renderWarningBox(`Missing component: ${n}`));
     }
     const items = itemParts.join("");
     return `<section class="irgen-component irgen-layout">${title}${contentParts}${items}</section>`;
@@ -398,6 +569,31 @@ async function renderComponent(
 
   if (component.marketing) {
     return `<section class="irgen-component">${renderMarketing(component.marketing, ctx, ir.policies.staticSite.security)}</section>`;
+  }
+
+  if (component.agentChat) {
+    const title = component.agentChat.title ?? "AI Copilot Integration";
+    const messages = Array.isArray(component.agentChat.messages) ? component.agentChat.messages : [];
+    const items = messages.map((msg: any) => {
+      const role = msg.role === "agent" ? "agent" : "user";
+      const label = msg.label ?? (role === "agent" ? "A" : "U");
+      const content = msg.content ? escapeHtml(String(msg.content)) : "";
+      return `<div class="irgen-chat-row irgen-chat-${role}"><div class="irgen-chat-avatar">${escapeHtml(String(label))}</div><div class="irgen-chat-bubble">${content}</div></div>`;
+    }).join("");
+    return `<section class="irgen-component"><div class="irgen-agent-chat"><div class="irgen-chat-title">${escapeHtml(String(title))}</div>${items}</div></section>`;
+  }
+
+  if (component.cliUsage) {
+    const title = component.cliUsage.title ?? "Standard Usage";
+    const command = component.cliUsage.command ? escapeHtml(String(component.cliUsage.command)) : "";
+    const options = Array.isArray(component.cliUsage.options) ? component.cliUsage.options : [];
+    const optionItems = options.map((opt: any) => {
+      const flag = opt?.flag ? escapeHtml(String(opt.flag)) : "";
+      const desc = opt?.description ? escapeHtml(String(opt.description)) : "";
+      return `<div class="irgen-cli-option"><div class="irgen-cli-flag">${flag}</div><div class="irgen-cli-desc">${desc}</div></div>`;
+    }).join("");
+    const optionsBlock = optionItems ? `<div class="irgen-cli-options">${optionItems}</div>` : "";
+    return `<section class="irgen-component"><div class="irgen-cli-usage"><h3>${escapeHtml(String(title))}</h3><pre class="irgen-cli-command"><code>${command}</code></pre>${optionsBlock}</div></section>`;
   }
 
   const partsHtml = await renderContentParts();
@@ -547,10 +743,33 @@ async function renderPage(
   const canonicalBase = policy.seo?.canonicalBaseUrl;
   const canonicalUrl = canonicalBase ? toHref(canonicalBase, page.path, trailingSlash) : null;
   const cspValue = policy.security?.csp?.enabled ? (policy.security?.csp?.value ?? "default-src 'self'; base-uri 'self'; object-src 'none'") : null;
-  const navItems = pagesForNav.map((p) => {
+  const pageByPath = new Map<string, any>();
+  const pageById = new Map<string, any>();
+  for (const p of pagesForNav) {
+    const normalized = normalizeRoutePath(p.path);
+    pageByPath.set(normalized, p);
+    const id = normalized.replace(/^\/|\/$/g, "");
+    if (id) pageById.set(id, p);
+  }
+  const renderNavItem = (p: any) => {
     const href = toHref(baseUrl, p.path, trailingSlash);
     return `<li><a href="${safeAttr(href)}">${escapeHtml(p.name)}</a></li>`;
-  }).join("");
+  };
+  const sidebarGroups = policy.sidebar?.groups ?? [];
+  const navItems = sidebarGroups.length
+    ? sidebarGroups.map((group) => {
+        const items = (group.items ?? []).map((item: string) => {
+          const normalized = normalizeRoutePath(item);
+          const byPath = pageByPath.get(normalized);
+          if (byPath) return renderNavItem(byPath);
+          const byId = pageById.get(item.replace(/^\/|\/$/g, ""));
+          if (byId) return renderNavItem(byId);
+          return "";
+        }).filter(Boolean).join("");
+        if (!items) return "";
+        return `<li class="irgen-nav-group"><span>${escapeHtml(group.label)}</span><ul>${items}</ul></li>`;
+      }).filter(Boolean).join("")
+    : pagesForNav.map(renderNavItem).join("");
   const breadcrumbs = renderBreadcrumbs(baseUrl, page.path, trailingSlash, page.name);
   const searchIndexFile = policy.search?.indexFile ?? "assets/search-index.json";
   const searchIndexHref = relHref(filePath, searchIndexFile);
@@ -583,6 +802,18 @@ async function renderPage(
   for (const c of ir.components ?? []) componentsByName.set(c.name, c);
 
   const ctx: RenderContext = { headings: [], usedIds: new Map() };
+  const pagePaths = new Map<string, string>();
+  for (const p of pagesForNav) {
+    const normalized = normalizeRoutePath(p.path);
+    pagePaths.set(normalized, p.path);
+  }
+  const linkCtx: LinkContext = {
+    baseUrl,
+    trailingSlash,
+    pagePath: page.path,
+    pagePaths,
+    security: policy.security,
+  };
   const normalizeText = (input: string) => input.trim().toLowerCase();
   const heroMatchesTitle = (page.components ?? []).some((component: any) => {
     const hero = component?.marketing;
@@ -596,7 +827,7 @@ async function renderPage(
   }
   const bodyParts: string[] = [];
   for (const c of page.components ?? []) {
-    bodyParts.push(await renderComponent(ir, c, componentsByName, ctx, warnings));
+    bodyParts.push(await renderComponent(ir, c, componentsByName, ctx, warnings, linkCtx));
   }
   const bodyContent = bodyParts.join("");
   const toc = buildToc(ctx);
@@ -731,10 +962,23 @@ function collectComponentText(component: any): string {
   const parts: string[] = [];
   if (component.name) parts.push(String(component.name));
   if (component.content) parts.push(String(component.content));
-  if (component.html) parts.push(stripTags(String(component.html)));
   if (component.codeBlock?.snippet) parts.push(String(component.codeBlock.snippet));
   if (component.button?.label) parts.push(String(component.button.label));
   if (component.layout?.title) parts.push(String(component.layout.title));
+  if (component.agentChat?.title) parts.push(String(component.agentChat.title));
+  if (Array.isArray(component.agentChat?.messages)) {
+    for (const msg of component.agentChat.messages) {
+      if (msg?.content) parts.push(String(msg.content));
+    }
+  }
+  if (component.cliUsage?.title) parts.push(String(component.cliUsage.title));
+  if (component.cliUsage?.command) parts.push(String(component.cliUsage.command));
+  if (Array.isArray(component.cliUsage?.options)) {
+    for (const opt of component.cliUsage.options) {
+      if (opt?.flag) parts.push(String(opt.flag));
+      if (opt?.description) parts.push(String(opt.description));
+    }
+  }
   if (component.marketing?.title) parts.push(String(component.marketing.title));
   if (component.marketing?.subtitle) parts.push(String(component.marketing.subtitle));
   if (Array.isArray(component.marketing?.items)) {
@@ -1026,4 +1270,3 @@ try {
 } catch (e) {
   // ignore if already registered
 }
-

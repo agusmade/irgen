@@ -71,11 +71,47 @@ async function main() {
     }
   }
 
-  if (showEmitters) {
-    await importAllEmitters();
+  async function importEmitterModule(relPath: string) {
+    const asUrl = (p: string) => new URL(p, import.meta.url).href;
+    try {
+      await import(asUrl(relPath));
+      return { ok: true as const, err: null as unknown };
+    } catch (err) {
+      return { ok: false as const, err };
+    }
+  }
+
+  async function ensureEmitterRegistration(targets: string[]) {
+    if (!targets.includes("frontend")) return;
     const { emitterEngine } = await import("./emit/engine.js");
-    console.log("Registered emitters:", emitterEngine.listEmitters().join(", "));
-    process.exit(0);
+    if (emitterEngine.getEmitter("frontend-tsmorph")) return;
+
+    let lastErr: unknown = null;
+    let lastAttempt: string | null = null;
+    try {
+      const res = await importEmitterModule("./emit/frontend/frontend-react.js");
+      lastAttempt = "./emit/frontend/frontend-react.js";
+      if (!res.ok) {
+        throw res.err ?? new Error("frontend-react.js import failed");
+      }
+    } catch (err) {
+      lastErr = err;
+      try {
+        const res = await importEmitterModule("./emit/frontend/frontend-react.ts");
+        lastAttempt = "./emit/frontend/frontend-react.ts";
+        if (!res.ok) {
+          throw res.err ?? new Error("frontend-react.ts import failed");
+        }
+      } catch (err2) {
+        lastErr = err2;
+      }
+    }
+
+    if (!emitterEngine.getEmitter("frontend-tsmorph")) {
+      const msg = lastErr instanceof Error ? lastErr.message : String(lastErr ?? "unknown error");
+      const attempt = lastAttempt ? ` (${lastAttempt})` : "";
+      throw new Error(`failed to register frontend emitter${attempt}: ${msg}`);
+    }
   }
 
   const targetsFlag = process.argv.find(a => a.startsWith("--targets=")) ?? null;
@@ -88,6 +124,14 @@ async function main() {
     return ["backend"];
   };
   const targets = normalizeModeToTargets(mode);
+
+  if (showEmitters) {
+    await importAllEmitters();
+    await ensureEmitterRegistration(targets);
+    const { emitterEngine } = await import("./emit/engine.js");
+    console.log("Registered emitters:", emitterEngine.listEmitters().join(", "));
+    process.exit(0);
+  }
 
   const defaultEntry = entry
     ?? ((targets.includes("frontend") || targets.includes("electron") || targets.includes("electrobun") || targets.includes("static-site"))
@@ -158,6 +202,7 @@ async function main() {
 
   // ensure emitters and transforms are registered
   await importAllEmitters();
+  await ensureEmitterRegistration(targets);
 
   // ensure target lowering transforms are registered when available
   if (targets.includes("backend")) await import("./lowering/targets/to-backend.js");

@@ -152,6 +152,8 @@ export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): Fronten
     name: c.name,
     props: c.props,
     entityRef: c.entityRef,
+    agentChat: c.agentChat,
+    cliUsage: c.cliUsage,
     form: c.form ? {
       ...c.form,
       fields: (c.form.fields ?? []).map((f: any) => ({
@@ -165,7 +167,6 @@ export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): Fronten
     } : undefined,
     layout: c.layout,
     content: c.content,
-    html: c.html,
     button: c.button,
     themeToggle: c.themeToggle,
     codeBlock: c.codeBlock,
@@ -177,6 +178,8 @@ export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): Fronten
     path: p.path,
     hideHeader: p.hideHeader,
     description: p.description,
+    docsLayout: p.docsLayout,
+    docsGroupLabel: p.docsGroupLabel,
     components: (p.components ?? []).map(mapComponent)
   }));
   const components = (decl.components ?? []).map(mapComponent);

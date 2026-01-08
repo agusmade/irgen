@@ -146,6 +146,9 @@ Sumber: `src/ir/target/static-site.policy.ts`
   - `externalLinks.noreferrer` (boolean)
 - `staticSite.navbar`
   - `links` = array of `{ label: string, href: string }`
+- `staticSite.sidebar`
+  - `groups` = array of `{ label: string, items: string[] }`
+    - `items` accepts route paths (e.g. `"/policies/"`) or page ids (e.g. `"policies"`).
 
 ## Electron Policies (`electron`)
 

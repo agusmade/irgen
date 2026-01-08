@@ -1,5 +1,14 @@
 import { frontend } from "../src/dsl/frontend-runtime.js";
-import { DOCS_DATA } from "./docs.dsl.js";
+import { DOCS_SECTIONS } from "./docs-content/index.js";
+
+const DOCS_DATA = {
+  sections: DOCS_SECTIONS,
+};
+
+const safeComponentName = (value: string): string => {
+  const cleaned = value.replace(/[^A-Za-z0-9_]/g, "_");
+  return /^[A-Za-z_]/.test(cleaned) ? cleaned : `_${cleaned}`;
+};
 
 frontend("irgen", {
   pwa: { enabled: true, name: "irgen", shortName: "irgen", startUrl: "/", scope: "/" },
@@ -38,12 +47,84 @@ frontend("irgen", {
     p.component("ElectronSecurity");
   });
 
-  app.page("Docs", {
-    path: "/docs",
-    description: "Comprehensive guides and references for mastering the irgen engine."
-  }, (p) => {
-    DOCS_DATA.sections.forEach(section => {
-      p.component(`SharedDocs_${section.id}`);
+  // Docs pages (split per section for sidebar + TOC)
+  DOCS_DATA.sections.forEach((section, index) => {
+    app.page(section.title, {
+      path: section.id === "quick-start" ? "/docs" : `/docs/${section.id}`,
+      hideHeader: (section as any).hideHeader ?? true,
+      description: (section as any).description ?? "Documentation",
+      docsLayout: true,
+      docsGroupLabel: index === 0 ? "Docs" : undefined,
+    }, (p) => {
+      const emitBlock = (block: any, idx: number, prefix: string, scope: "page" | "app"): string => {
+        const name = safeComponentName(`${prefix}Block${idx}`);
+        const defineComponent = (cb: (c: any) => void) => {
+          if (scope === "page") {
+            p.component(name, cb);
+          } else {
+            app.component(name, cb);
+          }
+        };
+        if (block.type === "paragraph") {
+          defineComponent((c) => {
+            c.content = block.text;
+            c.prop("hideTitle", "true");
+          });
+          return name;
+        }
+        if (block.type === "code") {
+          defineComponent((c) => {
+            c.code(block.snippet, block.language);
+            c.prop("hideTitle", "true");
+          });
+          return name;
+        }
+        if (block.type === "features") {
+          defineComponent((c) => {
+            c.features(block.items, { align: "center" });
+            c.prop("hideTitle", "true");
+          });
+          return name;
+        }
+        if (block.type === "hero") {
+          defineComponent((c) => {
+            c.hero({
+              badge: block.badge,
+              title: block.title,
+              subtitle: block.subtitle
+            });
+            c.prop("hideTitle", "true");
+          });
+          return name;
+        }
+        if (block.type === "calloutLinks") {
+          defineComponent((c) => {
+            const links = (block.links ?? []).map((link: any) => ({
+              label: link.label,
+              href: link.href,
+            }));
+            c.cta("", "", links);
+            c.prop("hideTitle", "true");
+          });
+          return name;
+        }
+        if (block.type === "section") {
+          const childNames = (block.blocks ?? [])
+            .map((child: any, childIdx: number) =>
+              emitBlock(child, childIdx, `${name}Child`, "app"),
+            )
+            .filter((childName: string) => !!childName);
+          p.component(name, (c) => {
+            c.layout = { kind: "panel", title: block.title, items: childNames };
+          });
+          return name;
+        }
+        return name;
+      };
+
+      section.content.forEach((block: any, idx: number) => {
+        emitBlock(block, idx, section.id, "page");
+      });
     });
   });
 
@@ -99,7 +180,7 @@ frontend("irgen", {
       { title: "Compiler-Style IR", description: "Transform system descriptions through explicit IR stages—ensuring multi-target consistency and determinism.", icon: "Cpu" },
       { title: "Policy-Driven", description: "Control architectural rules and emitter behavior globally without touching manual implementation code.", icon: "ShieldCheck" },
       { title: "Generation Gap", description: "Hard separation between generated plumbing and your manual logic. Regenerate with zero conflicts.", icon: "Layers" }
-    ], { title: "Engineered for Architectural Clarity", subtitle: "Stop building scaffolds. Use a toolchain that handles complexity like a compiler." });
+    ], { title: "Engineered for Architectural Clarity", subtitle: "Stop building scaffolds. Use a toolchain that handles complexity like a compiler.", align: "center"});
   });
 
   app.component("PipelineRow", (c) => {
@@ -112,28 +193,21 @@ frontend("irgen", {
   });
 
   app.component("AgentChat", (c) => {
-    c.html = `
-      <div class="max-w-2xl mx-auto rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-8 shadow-2xl">
-        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 text-center">AI Copilot Integration</p>
-        <div class="space-y-6">
-          <div class="flex gap-4">
-            <div class="h-10 w-10 shrink-0 rounded-full bg-slate-900 flex items-center justify-center text-sm font-bold text-white">U</div>
-            <div class="flex-1 rounded-2xl bg-slate-50 dark:bg-slate-800/50 p-4 text-sm text-slate-600 dark:text-slate-300 shadow-sm">
-              "Create a user management dashboard with a multi-step registration form and automated PWA configuration."
-            </div>
-          </div>
-          <div class="flex gap-4">
-            <div class="h-10 w-10 shrink-0 rounded-full bg-sky-500 flex items-center justify-center text-sm font-bold text-white">A</div>
-            <div class="flex-1 rounded-2xl bg-sky-50 dark:bg-sky-900/20 p-4 text-sm text-sky-900 dark:text-sky-100 shadow-sm border border-sky-100/50 dark:border-sky-500/10">
-              Generating DSL for <span class="font-bold">DashboardApp</span>...<br/>
-              - Lowering <span class="font-mono">UserForm</span> with visibility logic<br/>
-              - Injecting <span class="font-mono">PwaPolicy</span><br/>
-              - Ready to emit React + Prisma hooks.
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+    c.agentChat({
+      title: "AI Copilot Integration",
+      messages: [
+        {
+          role: "user",
+          label: "U",
+          content: "Create a user management dashboard with a multi-step registration form and automated PWA configuration."
+        },
+        {
+          role: "agent",
+          label: "A",
+          content: "Generating DSL for DashboardApp...\n- Lowering UserForm with visibility logic\n- Injecting PwaPolicy\n- Ready to emit React + Prisma hooks."
+        }
+      ]
+    });
   });
 
   app.component("Testimonials", (c) => {
@@ -171,7 +245,7 @@ frontend("irgen", {
       { title: "Base Classes", description: "Automatically generated and always up-to-date with your DSL.", icon: "Box" },
       { title: "Hook Methods", description: "Pre-defined interceptors for business logic like beforeCreate/afterDelete.", icon: "Anchor" },
       { title: "Clean Inheritance", description: "Your custom code lives in separate files, making version control a breeze.", icon: "GitBranch" }
-    ], { title: "The Generation Gap Pattern", subtitle: "Never face a merge conflict with a generator again." });
+    ], { title: "The Generation Gap Pattern", subtitle: "Never face a merge conflict with a generator again.", align: "center"});
   });
 
   app.component("BackendCapabilities", (c) => {
@@ -179,7 +253,7 @@ frontend("irgen", {
       { title: "Prisma Integration", description: "Type-safe database access with automated schema generation.", icon: "Database" },
       { title: "Repository Pattern", description: "Encapsulated data logic with built-in support for relationships.", icon: "Table" },
       { title: "Service Layer", description: "Robust business logic housing with dependency injection.", icon: "Cpu" }
-    ], { title: "Powerful Backend Emitter" });
+    ], { title: "Powerful Backend Emitter", align: "center"});
   });
 
   app.component("FrontendRichness", (c) => {
@@ -187,7 +261,7 @@ frontend("irgen", {
       { title: "Dynamic Forms", description: "Visibility logic, validation, and async data source binding.", icon: "FileText" },
       { title: "PWA Support", description: "One-click Service Worker, manifest, and icon generation.", icon: "Smartphone" },
       { title: "Navigation Engine", description: "Automated React Router setup with breadcrumbs and layout nesting.", icon: "Map" }
-    ], { title: "Premium Frontend Emitter" });
+    ], { title: "Premium Frontend Emitter", align: "center"});
   });
 
   app.component("ElectronSecurity", (c) => {
@@ -195,28 +269,7 @@ frontend("irgen", {
       { title: "Context Isolation", description: "Hardened renderer with zero direct access to Node.js APIs.", icon: "ShieldCheck" },
       { title: "IPC Whitelists", description: "Strictly defined communication channels between main and renderer.", icon: "MessageSquare" },
       { title: "Auto-Updates", description: "Built-in wiring for seamless application delivery.", icon: "RefreshCw" }
-    ], { title: "Hardened Desktop Shell" });
-  });
-
-  // -- Docs Components (Shared) --
-  DOCS_DATA.sections.forEach(section => {
-    app.component(`SharedDocs_${section.id}`, (c) => {
-      c.layout = { kind: "panel", title: section.title };
-      c.content = section.content;
-      if (section.features) c.features(section.features);
-      if (section.code) c.code(section.code.snippet, section.code.language);
-
-      // Also render subsections if present
-      if (section.subsections) {
-        section.subsections.forEach(sub => {
-          // Note: Since we are inside the same component, we might want to use HTML or just append content.
-          // For now, let's just append to content or use a nested layout if possible.
-          // The simplest is to just append content or use a simplified view.
-          c.content += `\n\n### ${sub.title}\n${sub.content || ""}`;
-          if (sub.code) c.code(sub.code.snippet, sub.code.language);
-        });
-      }
-    });
+    ], { title: "Hardened Desktop Shell", align: "center"});
   });
 
   // -- Showcase Components --
@@ -262,24 +315,14 @@ frontend("irgen", {
   });
 
   app.component("CliUsage", (c) => {
-    c.html = `
-      <div class="max-w-3xl mx-auto space-y-6">
-        <h3 class="text-2xl font-bold">Standard Usage</h3>
-        <div class="bg-slate-900 rounded-xl p-4 font-mono text-sm text-green-400">
-          npx tsx src/cli.ts examples/app.dsl.ts generated/output --mode=frontend
-        </div>
-        <div class="grid gap-4 mt-8">
-          <div class="p-6 border border-slate-100 dark:border-slate-800 rounded-2xl">
-            <h4 class="font-bold mb-2">--targets</h4>
-            <p class="text-sm text-slate-500 italic">"backend,frontend,electron"</p>
-          </div>
-          <div class="p-6 border border-slate-100 dark:border-slate-800 rounded-2xl">
-            <h4 class="font-bold mb-2">--mode</h4>
-            <p class="text-sm text-slate-500 italic">"fullstack", "backend", or "frontend"</p>
-          </div>
-        </div>
-      </div>
-    `;
+    c.cliUsage({
+      title: "Standard Usage",
+      command: "npx tsx src/cli.ts examples/app.dsl.ts generated/output --mode=frontend",
+      options: [
+        { flag: "--targets", description: "backend,frontend,electron" },
+        { flag: "--mode", description: "fullstack, backend, or frontend" }
+      ]
+    });
   });
 
   app.component("PolicyOverrides", (c) => {

@@ -3,11 +3,13 @@ export type DocCodeBlock = {
   snippet: string;
 };
 
-export type DocSubsection = {
-  title: string;
-  content?: string;
-  code?: DocCodeBlock;
-};
+export type DocContentBlock =
+  | { type: "paragraph"; text: string }
+  | { type: "code"; language: string; snippet: string }
+  | { type: "features"; items: Array<{ title: string; description: string; icon?: string }> }
+  | { type: "hero"; badge?: string; title: string; subtitle?: string }
+  | { type: "section"; title: string; blocks: DocContentBlock[] }
+  | { type: "calloutLinks"; links: Array<{ label: string; href: string }> };
 
 export type DocSection = {
   id: string;
@@ -15,13 +17,5 @@ export type DocSection = {
   subtitle: string;
   description?: string;
   hideHeader?: boolean;
-  content?: string;
-  hero?: {
-    badge?: string;
-    title: string;
-    subtitle?: string;
-  };
-  features?: Array<{ title: string; description: string; icon?: string }>;
-  code?: DocCodeBlock;
-  subsections?: DocSubsection[];
+  content: DocContentBlock[];
 };

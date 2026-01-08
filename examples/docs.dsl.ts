@@ -35,6 +35,37 @@ frontend("irgen Docs", {
           { label: "Website", href: "https://irgen.dev" },
           { label: "GitHub", href: "https://github.com" }
         ]
+      },
+      sidebar: {
+        groups: [
+          {
+            label: "Overview",
+            items: [
+              "/",
+              "/install-cli/",
+              "/cli-reference/",
+              "/dsl-reference/",
+              "/architecture/",
+              "/policies/"
+            ]
+          },
+          {
+            label: "Reference",
+            items: [
+              "/policy-reference/",
+              "/backend/",
+              "/frontend/",
+              "/static-site/",
+              "/react-ssg/",
+              "/electron/",
+              "/extensions/",
+              "/output-structure/",
+              "/troubleshooting/",
+              "/release-notes/",
+              "/contributing/"
+            ]
+          }
+        ]
       }
     },
   }
@@ -47,53 +78,78 @@ frontend("irgen Docs", {
       hideHeader: (section as any).hideHeader,
       description: (section as any).description
     }, (p) => {
-
-      // Hero Section for each page
-      p.component(section.id + "Hero", (c) => {
-        c.hero(section.hero || {
-          title: section.title,
-          subtitle: section.subtitle
-        });
-      });
-
-      // Main Content
-      p.component(section.id + "Content", (c) => {
-        c.content = section.content;
-        c.prop("hideTitle", "true");
-      });
-
-      const features = section.features;
-      if (features?.length) {
-        p.component(section.id + "Features", (c) => {
-          c.features(features);
-        });
-      }
-
-      const code = section.code;
-      if (code) {
-        p.component(section.id + "Code", (c) => {
-          c.code(code.snippet, code.language);
-          c.prop("hideTitle", "true");
-        });
-      }
-
-      // Subsections
-      if (section.subsections) {
-        section.subsections.forEach((sub, idx) => {
-          p.component(section.id + "Sub" + idx, (c) => {
-            c.layout = { kind: "panel", title: sub.title };
-            c.content = sub.content;
-            if (sub.code) {
-              c.code(sub.code.snippet, sub.code.language);
-            }
+      const emitBlock = (block: any, idx: number, prefix: string, scope: "page" | "app"): string => {
+        const name = `${prefix}Block${idx}`;
+        const defineComponent = (cb: (c: any) => void) => {
+          if (scope === "page") {
+            p.component(name, cb);
+          } else {
+            app.component(name, cb);
+          }
+        };
+        if (block.type === "paragraph") {
+          defineComponent((c) => {
+            c.content = block.text;
+            c.prop("hideTitle", "true");
           });
-        });
-      }
+          return name;
+        }
+        if (block.type === "code") {
+          defineComponent((c) => {
+            c.code(block.snippet, block.language);
+            c.prop("hideTitle", "true");
+          });
+          return name;
+        }
+        if (block.type === "features") {
+          defineComponent((c) => {
+            c.features(block.items);
+            c.prop("hideTitle", "true");
+          });
+          return name;
+        }
+        if (block.type === "hero") {
+          defineComponent((c) => {
+            c.hero({
+              badge: block.badge,
+              title: block.title,
+              subtitle: block.subtitle
+            });
+            c.prop("hideTitle", "true");
+          });
+          return name;
+        }
+        if (block.type === "calloutLinks") {
+          defineComponent((c) => {
+            const links = (block.links ?? []).map((link: any) => ({
+              label: link.label,
+              href: link.href,
+            }));
+            c.cta("", "", links);
+            c.prop("hideTitle", "true");
+          });
+          return name;
+        }
+        if (block.type === "section") {
+          const childNames = (block.blocks ?? []).map((child: any, childIdx: number) =>
+            emitBlock(child, childIdx, `${name}Child`, "app"),
+          );
+          p.component(name, (c) => {
+            c.layout = { kind: "panel", title: block.title, items: childNames };
+          });
+          return name;
+        }
+        return name;
+      };
+
+      section.content.forEach((block: any, idx: number) => {
+        emitBlock(block, idx, section.id, "page");
+      });
     });
   });
 
   // Footer component
   app.component("DocsFooter", (c) => {
-    c.html = "<div class=\"mt-20 border-t border-slate-200 dark:border-slate-800 pt-8 text-center text-slate-500 text-sm\"><p>© 2026 irgen Toolchain. Built for architectural excellence.</p></div>";
+    c.content = "© 2026 irgen Toolchain. Built for architectural excellence.";
   });
 });

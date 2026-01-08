@@ -243,7 +243,7 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 0.35rem;
+  gap: 0 0.35rem;
 }
 
 .irgen-nav a {
@@ -356,7 +356,7 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
 .irgen-main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
-  gap: 2.5rem;
+  gap: 0 2.5rem;
   align-items: start;
 }
 
@@ -420,11 +420,49 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
 }
 
 .irgen-component {
-  margin: 1rem 0;
+  margin: 0 0;
   padding: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.irgen-markdown {
+  color: var(--fg);
+}
+
+.irgen-markdown p {
+  margin: 0 0 1rem;
+  line-height: 1.7;
+}
+
+.irgen-markdown ul,
+.irgen-markdown ol {
+  padding-left: 1.25rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.irgen-markdown li {
+  margin: 0.35rem 0;
+}
+
+.irgen-markdown a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.irgen-markdown a:hover {
+  border-bottom-color: color-mix(in srgb, var(--accent) 75%, transparent);
+}
+
+.irgen-markdown code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--code-bg) 70%, var(--panel));
+  color: var(--fg);
 }
 
 .irgen-component h2 {
@@ -516,6 +554,18 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
   margin-top: 1rem;
 }
 
+.irgen-callout-links {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+}
+
+.irgen-callout-links .irgen-actions {
+  margin-top: 0;
+}
+
 .irgen-action-link {
   display: inline-block;
   padding: 0.55rem 1rem;
@@ -541,6 +591,7 @@ html[data-irgen-sidebar="collapsed"] .irgen-sidebar {
 
 .irgen-code {
   position: relative;
+  margin: 0 0 1rem 0;
 }
 
 .irgen-copy-button {

@@ -13,6 +13,8 @@ export type RuntimeComponent = DeclComponent & {
   field: (fieldName: string, type: string, label?: string, validators?: Record<string, any>, config?: any) => void;
   prop: (key: string, value: string) => void;
   // helpers (these are functions in DSL, but they populate IR properties)
+  agentChat: (data: { title?: string; messages: Array<{ role: "user" | "agent"; label?: string; content: string }> }) => void;
+  cliUsage: (data: { title?: string; command: string; options?: Array<{ flag: string; description: string }> }) => void;
   hero: (data: any) => void;
   features: (items: any[], opts?: any) => void;
   testimonials: (items: any[], opts?: any) => void;
@@ -38,16 +40,41 @@ function mergePolicy(target: string, value: Record<string, any>) {
   CURRENT_FRONTEND.meta.policies = { ...existing, [target]: { ...(existing[target] ?? {}), ...value } };
 }
 
+const RUNTIME_HELPERS = [
+  "field",
+  "prop",
+  "agentChat",
+  "cliUsage",
+  "hero",
+  "features",
+  "testimonials",
+  "faq",
+  "logos",
+  "cta",
+  "stats",
+  "timeline",
+  "enableThemeToggle",
+  "code",
+];
+
+function stripRuntimeHelpers(comp: Record<string, any>) {
+  for (const key of RUNTIME_HELPERS) {
+    if (typeof comp[key] === "function") {
+      delete comp[key];
+    }
+  }
+}
+
 export function frontend(
   name: string,
   optsOrFn: FrontendOptions | ((a: {
-    page: (name: string, opts: { path: string, hideHeader?: boolean, description?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
+    page: (name: string, opts: { path: string, hideHeader?: boolean, description?: string, docsLayout?: boolean, docsGroupLabel?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
     component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
     meta: (key: string, value: unknown) => void;
     policy: (target: string, value: Record<string, any>) => void;
   }) => void),
   maybeFn?: (a: {
-    page: (name: string, opts: { path: string, hideHeader?: boolean, description?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
+    page: (name: string, opts: { path: string, hideHeader?: boolean, description?: string, docsLayout?: boolean, docsGroupLabel?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
     component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
     meta: (key: string, value: unknown) => void;
     policy: (target: string, value: Record<string, any>) => void;
@@ -89,6 +116,8 @@ export function frontend(
         path: opts.path,
         hideHeader: opts.hideHeader,
         description: opts.description,
+        docsLayout: opts.docsLayout,
+        docsGroupLabel: opts.docsGroupLabel,
         components: []
       };
       if (typeof cb === "function") {
@@ -105,6 +134,12 @@ export function frontend(
               comp.props = comp.props ?? {};
               comp.props[key] = value;
             };
+            comp.agentChat = function (data: { title?: string; messages: Array<{ role: "user" | "agent"; label?: string; content: string }> }) {
+              (comp as any).agentChat = data;
+            };
+            comp.cliUsage = function (data: { title?: string; command: string; options?: Array<{ flag: string; description: string }> }) {
+              (comp as any).cliUsage = data;
+            };
             comp.hero = function (data: any) { comp.marketing = { kind: "hero", ...data }; };
             comp.features = function (items: any[], opts?: any) { comp.marketing = { kind: "features", items, ...opts }; };
             comp.testimonials = function (items: any[], opts?: any) { comp.marketing = { kind: "testimonials", items, ...opts }; };
@@ -119,6 +154,10 @@ export function frontend(
             };
 
             if (typeof cCb === "function") cCb(comp);
+            stripRuntimeHelpers(comp as any);
+            if ((comp as any).html) {
+              throw new Error(`component.html is not allowed (component: ${comp.name}). Use component.content with Markdown instead.`);
+            }
             page.components.push(comp);
             if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(comp);
           }
@@ -139,6 +178,12 @@ export function frontend(
         comp.props = comp.props ?? {};
         comp.props[key] = value;
       };
+      comp.agentChat = function (data: { title?: string; messages: Array<{ role: "user" | "agent"; label?: string; content: string }> }) {
+        (comp as any).agentChat = data;
+      };
+      comp.cliUsage = function (data: { title?: string; command: string; options?: Array<{ flag: string; description: string }> }) {
+        (comp as any).cliUsage = data;
+      };
       comp.hero = function (data: any) { comp.marketing = { kind: "hero", ...data }; };
       comp.features = function (items: any[], opts?: any) { comp.marketing = { kind: "features", items, ...opts }; };
       comp.testimonials = function (items: any[], opts?: any) { comp.marketing = { kind: "testimonials", items, ...opts }; };
@@ -153,6 +198,10 @@ export function frontend(
       };
 
       if (typeof cb === "function") cb(comp);
+      stripRuntimeHelpers(comp as any);
+      if ((comp as any).html) {
+        throw new Error(`component.html is not allowed (component: ${comp.name}). Use component.content with Markdown instead.`);
+      }
       if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(comp);
     },
     meta(key: string, value: unknown) {

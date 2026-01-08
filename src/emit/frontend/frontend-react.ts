@@ -9,6 +9,148 @@ import { registerTargetEmitter } from "../registry.js";
 import { pascal, kebab } from "../../utils/string.js";
 import { emitSsgSupport } from "./ssg.js";
 
+function hasMarkdownCodeBlocks(ir: FrontendTargetIR): boolean {
+  const hasFence = (text?: string) => typeof text === "string" && /```/.test(text);
+  const checkComponent = (component: FrontendComponent | undefined) => {
+    if (!component) return false;
+    if (hasFence(component.content)) return true;
+    if (component.layout?.tabs?.some((tab) => hasFence(tab.content))) return true;
+    return false;
+  };
+
+  for (const page of ir.pages ?? []) {
+    for (const comp of page.components ?? []) {
+      if (checkComponent(comp as any)) return true;
+    }
+  }
+
+  for (const comp of ir.components ?? []) {
+    if (checkComponent(comp as any)) return true;
+  }
+
+  return false;
+}
+
+function hasMarkdownMermaid(ir: FrontendTargetIR): boolean {
+  const hasMermaidFence = (text?: string) => typeof text === "string" && /```mermaid/.test(text);
+  const checkComponent = (component: FrontendComponent | undefined) => {
+    if (!component) return false;
+    if (hasMermaidFence(component.content)) return true;
+    if (component.layout?.tabs?.some((tab) => hasMermaidFence(tab.content))) return true;
+    return false;
+  };
+
+  for (const page of ir.pages ?? []) {
+    for (const comp of page.components ?? []) {
+      if (checkComponent(comp as any)) return true;
+    }
+  }
+
+  for (const comp of ir.components ?? []) {
+    if (checkComponent(comp as any)) return true;
+  }
+
+  return false;
+}
+
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderInlineMarkdown(input: string): string {
+  let out = escapeHtml(input);
+  out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, text, href) => {
+    return `<a href="${escapeHtml(href)}">${escapeHtml(text)}</a>`;
+  });
+  out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  out = out.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
+  return out;
+}
+
+function slugifyHeading(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
+function renderMarkdownToHtml(input: string): string {
+  const lines = input.replace(/\r\n/g, "\n").split("\n");
+  const parts: string[] = [];
+  const usedIds = new Map<string, number>();
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (/^```/.test(line.trim())) {
+      const lang = line.trim().slice(3).trim().toLowerCase();
+      const codeLines: string[] = [];
+      i += 1;
+      while (i < lines.length && !/^```/.test(lines[i].trim())) {
+        codeLines.push(lines[i]);
+        i += 1;
+      }
+      i += 1;
+      const code = escapeHtml(codeLines.join("\n"));
+      if (lang === "mermaid") {
+        parts.push(`<div class="mermaid">${code}</div>`);
+      } else {
+        const cls = lang ? ` class="language-${escapeHtml(lang)}"` : "";
+        parts.push(`<pre><code${cls}>${code}</code></pre>`);
+      }
+      continue;
+    }
+
+    if (/^#{1,6}\s+/.test(line)) {
+      const level = line.match(/^#+/)?.[0]?.length ?? 1;
+      const text = line.replace(/^#{1,6}\s+/, "");
+      const baseId = slugifyHeading(text) || `section-${level}`;
+      const next = (usedIds.get(baseId) ?? 0) + 1;
+      usedIds.set(baseId, next);
+      const id = next > 1 ? `${baseId}-${next}` : baseId;
+      parts.push(`<h${level} id="${escapeHtml(id)}">${renderInlineMarkdown(text)}</h${level}>`);
+      i += 1;
+      continue;
+    }
+
+    if (/^(\*|-)\s+/.test(line) || /^\d+\.\s+/.test(line)) {
+      const isOrdered = /^\d+\.\s+/.test(line);
+      const items: string[] = [];
+      while (i < lines.length && (/^(\*|-)\s+/.test(lines[i]) || /^\d+\.\s+/.test(lines[i]))) {
+        const raw = lines[i].replace(/^(\*|-)\s+/, "").replace(/^\d+\.\s+/, "");
+        items.push(`<li>${renderInlineMarkdown(raw)}</li>`);
+        i += 1;
+      }
+      parts.push(isOrdered ? `<ol>${items.join("")}</ol>` : `<ul>${items.join("")}</ul>`);
+      continue;
+    }
+
+    if (line.trim() === "") {
+      i += 1;
+      continue;
+    }
+
+    const paragraphLines: string[] = [];
+    while (i < lines.length && lines[i].trim() !== "" && !/^#{1,6}\s+/.test(lines[i]) && !/^```/.test(lines[i].trim())) {
+      paragraphLines.push(lines[i]);
+      i += 1;
+    }
+    const paragraph = paragraphLines.join(" ").trim();
+    if (paragraph) parts.push(`<p>${renderInlineMarkdown(paragraph)}</p>`);
+  }
+
+  return parts.join("\n");
+}
+
 function ensureDir(p: string) {
   fs.mkdirSync(p, { recursive: true });
 }
@@ -17,6 +159,8 @@ function emitFrontendPackageJson(outDir: string, ir: FrontendTargetIR) {
   const policy = ir.policies.frontend;
   const mode = policy.framework.rendering.mode;
   const isSsg = mode === "ssg" || mode === "hybrid";
+  const hasMarkdownCode = hasMarkdownCodeBlocks(ir);
+  const hasMermaid = hasMarkdownMermaid(ir);
 
   const pkg: any = {
     name: ir?.appName ? `${ir.appName.toLowerCase()}-frontend` : "generated-frontend",
@@ -63,9 +207,69 @@ function emitFrontendPackageJson(outDir: string, ir: FrontendTargetIR) {
     pkg.dependencies["react-syntax-highlighter"] = "^15.5.0";
     pkg.devDependencies["@types/react-syntax-highlighter"] = "^15.5.0";
   }
+  if (hasMarkdownCode) {
+    pkg.dependencies["prismjs"] = "^1.29.0";
+  }
+  if (hasMermaid) {
+    pkg.dependencies["mermaid"] = "^10.9.1";
+  }
 
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, "package.json"), JSON.stringify(pkg, null, 2), "utf-8");
+}
+
+function collectComponentText(component: FrontendComponent): string {
+  const parts: string[] = [];
+  if (component.name) parts.push(String(component.name));
+  if (component.content) parts.push(String(component.content));
+  if (component.codeBlock?.snippet) parts.push(String(component.codeBlock.snippet));
+  if (component.button?.label) parts.push(String(component.button.label));
+  if (component.layout?.title) parts.push(String(component.layout.title));
+  if (component.agentChat?.title) parts.push(String(component.agentChat.title));
+  if (Array.isArray(component.agentChat?.messages)) {
+    for (const msg of component.agentChat.messages) {
+      if (msg?.content) parts.push(String(msg.content));
+    }
+  }
+  if (component.cliUsage?.title) parts.push(String(component.cliUsage.title));
+  if (component.cliUsage?.command) parts.push(String(component.cliUsage.command));
+  if (Array.isArray(component.cliUsage?.options)) {
+    for (const opt of component.cliUsage.options) {
+      if (opt?.flag) parts.push(String(opt.flag));
+      if (opt?.description) parts.push(String(opt.description));
+    }
+  }
+  if (component.marketing?.title) parts.push(String(component.marketing.title));
+  if (component.marketing?.subtitle) parts.push(String(component.marketing.subtitle));
+  if (Array.isArray(component.marketing?.items)) {
+    for (const item of component.marketing.items) {
+      if (item?.title) parts.push(String(item.title));
+      if (item?.description) parts.push(String(item.description));
+      if (item?.value) parts.push(String(item.value));
+      if (item?.label) parts.push(String(item.label));
+    }
+  }
+  if (Array.isArray(component.marketing?.actions)) {
+    for (const action of component.marketing.actions) {
+      if (action?.label) parts.push(String(action.label));
+    }
+  }
+  return parts.join(" ");
+}
+
+function buildSearchIndex(ir: FrontendTargetIR) {
+  return (ir.pages ?? []).map((page) => {
+    const contentParts: string[] = [];
+    for (const comp of page.components ?? []) {
+      contentParts.push(collectComponentText(comp as any));
+    }
+    return {
+      title: page.name,
+      path: page.path,
+      description: page.description ?? "",
+      content: contentParts.join(" "),
+    };
+  });
 }
 
 function emitPwaAssets(outDir: string, ir: FrontendTargetIR) {
@@ -180,11 +384,30 @@ export function emitFrontend(project: Project, outDir: string, ir: FrontendTarge
   const policy = ir.policies.frontend;
   const mode = policy.framework.rendering.mode;
   const isSsg = mode === "ssg" || mode === "hybrid";
+  const hasMarkdownCode = hasMarkdownCodeBlocks(ir);
+  const hasMermaid = hasMarkdownMermaid(ir);
+  const docsLinks = (ir.pages ?? [])
+    .filter((page) => page.docsLayout)
+    .map((page) => ({ name: page.name, path: page.path, groupLabel: page.docsGroupLabel }));
+  const docsGroupLabel = docsLinks.find((link) => link.groupLabel)?.groupLabel ?? "Docs";
+  const navbarLinks = (ir.pages ?? [])
+    .filter((page) => !page.docsLayout)
+    .map((page) => ({ name: page.name, path: page.path }));
+  if (docsLinks.length > 0) {
+    navbarLinks.push({ name: docsGroupLabel, path: docsLinks[0].path });
+  }
 
   emitFrontendPackageJson(outDir, ir);
   emitPwaAssets(outDir, ir);
   emitViteConfig(project, outDir, policy);
   emitSharedLogic(project, frontendDir);
+
+  const searchIndex = buildSearchIndex(ir);
+  project.createSourceFile(
+    path.join(frontendDir, "lib", "search-index.ts"),
+    `export const SEARCH_INDEX = ${JSON.stringify(searchIndex, null, 2)} as const;\n`,
+    { overwrite: true },
+  );
 
   // client entry (CSR + optional hydration for hybrid)
   const clientEntry = project.createSourceFile(path.join(frontendDir, "entry-client.tsx"), "", { overwrite: true });
@@ -196,6 +419,19 @@ export function emitFrontend(project: Project, outDir: string, ir: FrontendTarge
   clientEntry.addImportDeclaration({ moduleSpecifier: "react-router-dom", namedImports: ["BrowserRouter"] });
   clientEntry.addImportDeclaration({ moduleSpecifier: "./index.css" });
   clientEntry.addImportDeclaration({ moduleSpecifier: "./App", namedImports: ["App"] });
+  if (hasMarkdownCode) {
+    clientEntry.addImportDeclaration({ moduleSpecifier: "prismjs/themes/prism.css" });
+    clientEntry.addImportDeclaration({ moduleSpecifier: "prismjs/components/prism-markup" });
+    clientEntry.addImportDeclaration({ moduleSpecifier: "prismjs/components/prism-markup-templating" });
+    clientEntry.addImportDeclaration({ moduleSpecifier: "prismjs/components/prism-clike" });
+    clientEntry.addImportDeclaration({ moduleSpecifier: "prismjs/components/prism-javascript" });
+    clientEntry.addImportDeclaration({ moduleSpecifier: "prismjs/components/prism-typescript" });
+    clientEntry.addImportDeclaration({ moduleSpecifier: "prismjs/components/prism-jsx" });
+    clientEntry.addImportDeclaration({ moduleSpecifier: "prismjs/components/prism-tsx" });
+    clientEntry.addImportDeclaration({ moduleSpecifier: "prismjs/components/prism-json" });
+    clientEntry.addImportDeclaration({ moduleSpecifier: "prismjs/components/prism-bash" });
+    clientEntry.addImportDeclaration({ moduleSpecifier: "prismjs/components/prism-css" });
+  }
 
   if (mode === "hybrid") {
     clientEntry.addStatements(`
@@ -263,9 +499,18 @@ if ('serviceWorker' in navigator) {
 
   // App.tsx
   const appFile = project.createSourceFile(path.join(frontendDir, "App.tsx"), "", { overwrite: true });
-  appFile.addImportDeclaration({ moduleSpecifier: "react", namedImports: ["useEffect", "useState"] });
-  appFile.addImportDeclaration({ moduleSpecifier: "react-router-dom", namedImports: ["Routes", "Route", "Link"] });
+  const appReactImports = ["useEffect", "useMemo", "useState"];
+  appFile.addImportDeclaration({ moduleSpecifier: "react", namedImports: appReactImports });
+  const routerImports = ["Routes", "Route", "Link", "useLocation"];
+  appFile.addImportDeclaration({ moduleSpecifier: "react-router-dom", namedImports: routerImports });
   appFile.addImportDeclaration({ moduleSpecifier: "lucide-react", namespaceImport: "Icons" });
+  if (hasMarkdownCode) {
+    appFile.addImportDeclaration({ moduleSpecifier: "prismjs", defaultImport: "Prism" });
+  }
+  if (hasMermaid) {
+    appFile.addImportDeclaration({ moduleSpecifier: "mermaid", defaultImport: "mermaid" });
+  }
+  appFile.addImportDeclaration({ moduleSpecifier: "./lib/search-index", namedImports: ["SEARCH_INDEX"] });
 
   // Import all pages
   ir.pages.forEach(p => {
@@ -281,6 +526,14 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("  }");
     writer.writeLine("  return false;");
     writer.writeLine("});");
+    writer.writeLine("const [searchOpen, setSearchOpen] = useState(false);");
+    writer.writeLine("const [searchQuery, setSearchQuery] = useState(\"\");");
+    writer.writeLine("const [tocItems, setTocItems] = useState([] as Array<{ id: string; text: string; level: number }>);");
+    writer.writeLine("const [activeToc, setActiveToc] = useState(\"\" as string);");
+    writer.writeLine("const location = useLocation();");
+    writer.writeLine(`const docsLinks = ${JSON.stringify(docsLinks, null, 2)};`);
+    writer.writeLine("const docsPaths = docsLinks.map((link) => link.path);");
+    writer.writeLine("const isDocsRoute = docsPaths.includes(location.pathname);");
     writer.writeLine("");
     writer.writeLine("useEffect(() => {");
     writer.writeLine("  if (isDark) {");
@@ -291,6 +544,51 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("    localStorage.setItem('theme', 'light');");
     writer.writeLine("  }");
     writer.writeLine("}, [isDark]);");
+    writer.writeLine("useEffect(() => {");
+    writer.writeLine("  const root = document.querySelector('[data-irgen-content]');");
+    writer.writeLine("  if (!root) { setTocItems([]); return; }");
+    writer.writeLine("  const headings = Array.from(root.querySelectorAll('h2, h3')) as HTMLElement[];");
+    writer.writeLine("  const next = headings.map((el) => ({ id: el.id, text: el.textContent || '', level: Number(el.tagName.replace('H','')) }));");
+    writer.writeLine("  setTocItems(next.filter((item) => item.id && item.text));");
+    writer.writeLine("}, [location.pathname]);");
+    writer.writeLine("");
+    writer.writeLine("useEffect(() => {");
+    writer.writeLine("  const root = document.querySelector('[data-irgen-content]');");
+    writer.writeLine("  if (!root) return;");
+    writer.writeLine("  const headings = Array.from(root.querySelectorAll('h2, h3')) as HTMLElement[];");
+    writer.writeLine("  if (!headings.length) return;");
+    writer.writeLine("  const observer = new IntersectionObserver((entries) => {");
+    writer.writeLine("    entries.forEach((entry) => {");
+    writer.writeLine("      if (entry.isIntersecting) {");
+    writer.writeLine("        setActiveToc(entry.target.id);");
+    writer.writeLine("      }");
+    writer.writeLine("    });");
+    writer.writeLine("  }, { rootMargin: '0px 0px -70% 0px', threshold: 0.1 });");
+    writer.writeLine("  headings.forEach((h) => observer.observe(h));");
+    writer.writeLine("  return () => observer.disconnect();");
+    writer.writeLine("}, [location.pathname, tocItems.length]);");
+    writer.writeLine("");
+    writer.writeLine("const searchResults = useMemo(() => {");
+    writer.writeLine("  const q = searchQuery.trim().toLowerCase();");
+    writer.writeLine("  if (!q) return [];");
+    writer.writeLine("  return SEARCH_INDEX.filter((item) => {");
+    writer.writeLine("    return (`${item.title} ${item.description} ${item.content}`.toLowerCase()).includes(q);");
+    writer.writeLine("  }).slice(0, 20);");
+    writer.writeLine("}, [searchQuery]);");
+    writer.writeLine("");
+
+    if (hasMarkdownCode) {
+      writer.writeLine("useEffect(() => {");
+      writer.writeLine("  Prism.highlightAll();");
+      writer.writeLine("}, [location.pathname]);");
+    }
+    if (hasMermaid) {
+      writer.writeLine("");
+      writer.writeLine("useEffect(() => {");
+      writer.writeLine("  mermaid.initialize({ startOnLoad: false, theme: isDark ? 'dark' : 'default' });");
+      writer.writeLine("  mermaid.run({ querySelector: '.mermaid' });");
+      writer.writeLine("}, [isDark, location.pathname]);");
+    }
     writer.writeLine("");
     writer.writeLine("return (");
     writer.writeLine("    <div className=\"min-h-screen bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-slate-900 selection:text-white transition-colors duration-300\">");
@@ -313,14 +611,16 @@ if ('serviceWorker' in navigator) {
     writer.writeLine(`                    <span className=\"font-black text-2xl tracking-tighter text-slate-900 dark:text-white\">${ir.appName}</span>`);
     writer.writeLine(`                  </Link>`);
     writer.writeLine("                </div>");
-    writer.writeLine("                <div className=\"hidden sm:flex items-center gap-1\">");
-    ir.pages.forEach(p => {
-      writer.writeLine(`                  <Link to=\"${p.path}\" className=\"px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all\">${p.name}</Link>`);
-    });
+    writer.writeLine(`                <div className="hidden sm:flex items-center gap-1">`);
+    writer.writeLine(`                  {${JSON.stringify(navbarLinks)}.map((link) => (`);
+    writer.writeLine(`                    <Link key={link.path} to={link.path} className="px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all">`);
+    writer.writeLine(`                      {link.name}`);
+    writer.writeLine(`                    </Link>`);
+    writer.writeLine(`                  ))}`);
     writer.writeLine("                </div>");
     writer.writeLine("              </div>");
     writer.writeLine("              <div className=\"flex items-center gap-4\">");
-    writer.writeLine("                <button className=\"p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors\"><Icons.Search size={20}/></button>");
+    writer.writeLine("                <button onClick={() => setSearchOpen(true)} className=\"p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors\" aria-label=\"Search\"><Icons.Search size={20}/></button>");
     writer.writeLine("                <button className=\"p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors\"><Icons.Bell size={20}/></button>");
     writer.writeLine("                <button ");
     writer.writeLine("                  onClick={() => setIsDark(!isDark)}");
@@ -342,15 +642,81 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("");
     writer.writeLine("        {/* Content Area */}");
     writer.writeLine("        <main className=\"max-w-7xl mx-auto px-6 lg:px-10 py-12 md:py-20 animate-in fade-in duration-700\">");
-    writer.writeLine("          <Routes>");
+    writer.writeLine("          {isDocsRoute ? (");
+    writer.writeLine("            <div className={tocItems.length > 0 ? \"grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_260px] gap-10\" : \"grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-10\"}>");
+    writer.writeLine("              <aside className=\"hidden lg:block\">");
+    writer.writeLine("                <div className=\"sticky top-28\">");
+    writer.writeLine("                  <p className=\"text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3\">Documentation</p>");
+    writer.writeLine("                  <nav className=\"space-y-2 text-sm\">");
+    writer.writeLine("                    {docsLinks.map((link) => (");
+    writer.writeLine("                      <Link key={link.path} to={link.path} className={link.path === location.pathname ? \"block px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold\" : \"block px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-slate-800/60\"}>");
+    writer.writeLine("                        {link.name}");
+    writer.writeLine("                      </Link>");
+    writer.writeLine("                    ))}");
+    writer.writeLine("                  </nav>");
+    writer.writeLine("                </div>");
+    writer.writeLine("              </aside>");
+    writer.writeLine("              <div data-irgen-content>");
+    writer.writeLine("                <Routes>");
     ir.pages.forEach(p => {
       writer.writeLine(`            <Route path=\"${p.path}\" element={<${pascal(p.name)}Page />} />`);
     });
     if (ir.pages.length > 0) {
       writer.writeLine(`            <Route path=\"*\" element={<${pascal(ir.pages[0].name)}Page />} />`);
     }
-    writer.writeLine("          </Routes>");
+    writer.writeLine("                </Routes>");
+    writer.writeLine("              </div>");
+    writer.writeLine("              {tocItems.length > 0 && (");
+    writer.writeLine("                <aside className=\"hidden lg:block\">");
+    writer.writeLine("                  <div className=\"sticky top-28 space-y-3 text-sm\">");
+    writer.writeLine("                    <p className=\"text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500\">On this page</p>");
+    writer.writeLine("                    <ul className=\"space-y-2\">");
+    writer.writeLine("                      {tocItems.map((item) => (");
+    writer.writeLine("                        <li key={item.id} className={item.level === 3 ? \"pl-3\" : \"\"}>");
+    writer.writeLine("                          <a href={`#${item.id}`} className={item.id === activeToc ? \"text-slate-900 dark:text-white font-semibold\" : \"text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white\"}>{item.text}</a>");
+    writer.writeLine("                        </li>");
+    writer.writeLine("                      ))}");
+    writer.writeLine("                    </ul>");
+    writer.writeLine("                  </div>");
+    writer.writeLine("                </aside>");
+    writer.writeLine("              )}");
+    writer.writeLine("            </div>");
+    writer.writeLine("          ) : (");
+    writer.writeLine("            <div data-irgen-content>");
+    writer.writeLine("              <Routes>");
+    ir.pages.forEach(p => {
+      writer.writeLine(`            <Route path=\"${p.path}\" element={<${pascal(p.name)}Page />} />`);
+    });
+    if (ir.pages.length > 0) {
+      writer.writeLine(`            <Route path=\"*\" element={<${pascal(ir.pages[0].name)}Page />} />`);
+    }
+    writer.writeLine("              </Routes>");
+    writer.writeLine("            </div>");
+    writer.writeLine("          )}");
     writer.writeLine("        </main>");
+    writer.writeLine("");
+    writer.writeLine("        {searchOpen && (");
+    writer.writeLine("          <div className=\"fixed inset-0 z-[60] bg-slate-900/50 backdrop-blur-sm flex items-start justify-center pt-24\" onClick={() => setSearchOpen(false)}>");
+    writer.writeLine("            <div className=\"bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-2xl p-6\" onClick={(e) => e.stopPropagation()}>");
+    writer.writeLine("              <div className=\"flex items-center gap-3 mb-4\">");
+    writer.writeLine("                <Icons.Search size={18} className=\"text-slate-400\" />");
+    writer.writeLine("                <input autoFocus value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder=\"Search docs...\" className=\"w-full bg-transparent outline-none text-slate-900 dark:text-white\" />");
+    writer.writeLine("              </div>");
+    writer.writeLine("              <div className=\"max-h-[420px] overflow-auto divide-y divide-slate-100 dark:divide-slate-800\">");
+    writer.writeLine("                {searchResults.length === 0 ? (");
+    writer.writeLine("                  <p className=\"text-sm text-slate-500 dark:text-slate-400 py-6 text-center\">No results</p>");
+    writer.writeLine("                ) : (");
+    writer.writeLine("                  searchResults.map((item) => (");
+    writer.writeLine("                    <Link key={item.path} to={item.path} onClick={() => setSearchOpen(false)} className=\"block py-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 px-2 rounded-lg\">");
+    writer.writeLine("                      <p className=\"text-sm font-semibold text-slate-900 dark:text-white\">{item.title}</p>");
+    writer.writeLine("                      {item.description && <p className=\"text-xs text-slate-500 dark:text-slate-400 mt-1\">{item.description}</p>}");
+    writer.writeLine("                    </Link>");
+    writer.writeLine("                  ))");
+    writer.writeLine("                )}");
+    writer.writeLine("              </div>");
+    writer.writeLine("            </div>");
+    writer.writeLine("          </div>");
+    writer.writeLine("        )}");
     writer.writeLine("");
     writer.writeLine("        {/* Footer */}");
     writer.writeLine("        <footer className=\"border-t border-slate-200 dark:border-slate-800 mt-20 py-12 bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm\">");
@@ -387,7 +753,7 @@ if ('serviceWorker' in navigator) {
 
   // TAILWIND SETUP
   const cssPath = path.join(frontendDir, "index.css");
-  project.createSourceFile(cssPath, `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n`, { overwrite: true });
+  project.createSourceFile(cssPath, `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n/* Markdown prose styling */\n.prose { color: #0f172a; }\n.dark .prose { color: #e2e8f0; }\n.prose p { margin: 0.75rem 0; line-height: 1.75; }\n.prose h1, .prose h2, .prose h3, .prose h4 { font-weight: 700; color: inherit; margin: 1.25rem 0 0.5rem; }\n.prose h1 { font-size: 2rem; }\n.prose h2 { font-size: 1.5rem; }\n.prose h3 { font-size: 1.25rem; }\n.prose a { color: #2563eb; text-decoration: underline; text-underline-offset: 3px; }\n.dark .prose a { color: #93c5fd; }\n.prose ul, .prose ol { margin: 0.75rem 0 0.75rem 1.25rem; }\n.prose li { margin: 0.25rem 0; }\n.prose code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; background: rgba(15, 23, 42, 0.08); padding: 0.1rem 0.35rem; border-radius: 0.375rem; font-size: 0.85em; }\n.dark .prose code { background: rgba(148, 163, 184, 0.2); }\n.prose pre { background: #0f172a; color: #e2e8f0; padding: 1rem 1.25rem; border-radius: 0.75rem; overflow: auto; font-size: 0.85rem; line-height: 1.6; }\n.prose pre code { background: transparent; padding: 0; color: inherit; }\n`, { overwrite: true });
 
   emitTailwindConfig(project, outDir);
 
@@ -686,10 +1052,9 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
       return;
     }
 
-    // Syntax Highlighter
     if (component.codeBlock) {
       const { snippet, language, showLineNumbers } = component.codeBlock;
-      writer.writeLine(`return (`);
+      writer.writeLine(`const codeBlock = (`);
       writer.writeLine(`  <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">`);
       writer.writeLine(`    <SyntaxHighlighter `);
       writer.writeLine(`      language="${language}" `);
@@ -701,8 +1066,9 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
       writer.writeLine(`    </SyntaxHighlighter>`);
       writer.writeLine(`  </div>`);
       writer.writeLine(`);`);
-      return;
     }
+
+    const hasInlineContent = !!(component.content || component.codeBlock || component.button);
 
     // Marketing components
     if (component.marketing) {
@@ -710,6 +1076,52 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
       writer.writeLine(`  <>`);
       emitMarketingComponent(writer, component.marketing, ir.policies.frontend);
       writer.writeLine(`  </>`);
+      writer.writeLine(`);`);
+      return;
+    }
+
+    if (component.agentChat) {
+      const title = component.agentChat.title ?? "AI Copilot Integration";
+      const messages = component.agentChat.messages ?? [];
+      writer.writeLine(`const messages = ${JSON.stringify(messages)};`);
+      writer.writeLine(`return (`);
+      writer.writeLine(`  <div className="max-w-2xl mx-auto rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl p-8 shadow-2xl space-y-6">`);
+      writer.writeLine(`    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center">{${JSON.stringify(title)}}</p>`);
+      writer.writeLine(`    <div className="space-y-6">`);
+      writer.writeLine(`      {messages.map((msg: any, idx: number) => (`);
+      writer.writeLine(`        <div key={idx} className="flex gap-4">`);
+      writer.writeLine(`          <div className={\`h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-sm font-bold text-white \${msg.role === 'agent' ? 'bg-sky-500' : 'bg-slate-900'}\`}>{msg.label ?? (msg.role === 'agent' ? 'A' : 'U')}</div>`);
+      writer.writeLine(`          <div className={\`flex-1 rounded-2xl p-4 text-sm shadow-sm whitespace-pre-line \${msg.role === 'agent' ? 'bg-sky-50 dark:bg-sky-900/20 text-sky-900 dark:text-sky-100 border border-sky-100/50 dark:border-sky-500/10' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300'}\`}>`);
+      writer.writeLine(`            {msg.content}`);
+      writer.writeLine(`          </div>`);
+      writer.writeLine(`        </div>`);
+      writer.writeLine(`      ))}`);
+      writer.writeLine(`    </div>`);
+      writer.writeLine(`  </div>`);
+      writer.writeLine(`);`);
+      return;
+    }
+
+    if (component.cliUsage) {
+      const title = component.cliUsage.title ?? "Standard Usage";
+      const command = component.cliUsage.command ?? "";
+      const options = component.cliUsage.options ?? [];
+      writer.writeLine(`const options = ${JSON.stringify(options)};`);
+      writer.writeLine(`return (`);
+      writer.writeLine(`  <div className="max-w-3xl mx-auto space-y-6">`);
+      writer.writeLine(`    <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{${JSON.stringify(title)}}</h3>`);
+      writer.writeLine(`    <div className="bg-slate-900 rounded-xl p-4 font-mono text-sm text-green-400 whitespace-pre-wrap">{${JSON.stringify(command)}}</div>`);
+      writer.writeLine(`    {options.length > 0 && (`);
+      writer.writeLine(`      <div className="grid gap-4 mt-8">`);
+      writer.writeLine(`        {options.map((opt: any, idx: number) => (`);
+      writer.writeLine(`          <div key={idx} className="p-6 border border-slate-100 dark:border-slate-800 rounded-2xl">`);
+      writer.writeLine(`            <h4 className="font-bold mb-2">{opt.flag}</h4>`);
+      writer.writeLine(`            <p className="text-sm text-slate-500 italic">{opt.description}</p>`);
+      writer.writeLine(`          </div>`);
+      writer.writeLine(`        ))}`);
+      writer.writeLine(`      </div>`);
+      writer.writeLine(`    )}`);
+      writer.writeLine(`  </div>`);
       writer.writeLine(`);`);
       return;
     }
@@ -769,12 +1181,16 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
         writer.writeLine(`const tabs = [`);
         for (const t of component.layout.tabs ?? []) {
           const validItems = (t.items ?? []).filter((n) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(n));
-          writer.writeLine(`  { label: "${t.label}", content: ${JSON.stringify(t.content ?? "")}, items: [${validItems.join(", ")}] },`);
+          const tabItems = validItems.map((n) => pascal(n));
+          writer.writeLine(`  { label: "${t.label}", content: ${JSON.stringify(t.content ?? "")}, items: [${tabItems.join(", ")}] },`);
         }
         writer.writeLine(`];`);
         writer.writeLine(`return (`);
         writer.writeLine(`  <div className=\"bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm\">`);
-        if (component.layout.title) writer.writeLine(`    <div className=\"px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50\"><h3 className=\"text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider\">${component.layout.title}</h3></div>`);
+        if (component.layout.title) {
+          const titleId = slugifyHeading(component.layout.title);
+          writer.writeLine(`    <div className=\"px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50\"><h3 className=\"text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider\"${titleId ? ` id="${titleId}"` : ""}>{${JSON.stringify(component.layout.title)}}</h3></div>`);
+        }
         writer.writeLine(`    <div className=\"p-2 flex gap-1 bg-slate-100/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800\">`);
         writer.writeLine(`      {tabs.map((t:any, idx:number) => (`);
         writer.writeLine(`        <button key={idx} onClick={() => setActive(idx)} className={\`flex-1 px-4 py-2 text-sm font-semibold rounded-lg transition-all \${active === idx ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}\`}>{t.label}</button>`);
@@ -798,17 +1214,42 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
       } else if (kind === "panel") {
         writer.writeLine(`return (`);
         writer.writeLine(`  <div className=\"bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none rounded-2xl overflow-hidden px-1 py-1\">`);
-        if (component.layout.title) writer.writeLine(`    <h3 className=\"px-5 py-4 text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest border-b border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30\">${component.layout.title}</h3>`);
-        writer.writeLine(`    <div className=\"p-5 space-y-4\">`);
+        if (component.layout.title) {
+          const titleId = slugifyHeading(component.layout.title);
+          writer.writeLine(`    <h3 className=\"px-5 py-4 text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest border-b border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30\"${titleId ? ` id="${titleId}"` : ""}>{${JSON.stringify(component.layout.title)}}</h3>`);
+        }
+        writer.writeLine(`    <div className=\"p-5 space-y-6\">`);
+        if (component.content || component.codeBlock || component.button) {
+          writer.writeLine(`      <div className="space-y-4">`);
+          if (component.content) writer.writeLine(`        <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: ${JSON.stringify(renderMarkdownToHtml(component.content))} }} />`);
+          if (component.codeBlock) writer.writeLine(`        {codeBlock}`);
+          if (component.button) {
+            const variant = component.button.label ? (component.button.variant ?? "primary") : "primary";
+            const baseBtn = "inline-flex items-center justify-center px-6 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-slate-900/5";
+            const variantClass = variant === "secondary"
+              ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700"
+              : (variant === "ghost"
+                ? "bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                : "text-white hover:opacity-90");
+            const style = variant === "primary" ? { backgroundColor: ir.policies.frontend.styling.theme.primaryColor } : {};
+            writer.writeLine(`        <button className="${baseBtn} ${variantClass}" style={${JSON.stringify(style)}} onClick={() => { /* TODO: wire action */ }}>`);
+            if (component.button.icon) {
+              writer.writeLine(`          {(Icons as any)["${component.button.icon}"] && React.createElement((Icons as any)["${component.button.icon}"], { size: 16, className: "mr-2" })}`);
+            }
+            writer.writeLine(`          ${component.button.label}`);
+            writer.writeLine(`        </button>`);
+          }
+          writer.writeLine(`      </div>`);
+        }
         if (component.layout.items?.length) {
           for (const item of component.layout.items ?? []) {
             if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(item)) {
-              writer.writeLine(`      <${item} />`);
+              writer.writeLine(`      <${pascal(item)} />`);
             } else {
               writer.writeLine(`      <div className=\"p-10 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-2xl text-slate-300 dark:text-slate-700 text-xs font-medium uppercase tracking-tighter italic\">Placeholder: ${item}</div>`);
             }
           }
-        } else {
+        } else if (!hasInlineContent) {
           writer.writeLine(`      <p className=\"text-slate-400 dark:text-slate-500 text-sm italic text-center py-10\">Empty panel</p>`);
         }
         writer.writeLine(`    </div>`);
@@ -819,14 +1260,44 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
         const cols = component.layout.columns ?? 2;
         const grid = kind === "row" ? `grid-cols-${Math.min(4, Math.max(1, cols))}` : "grid-cols-1";
         const validItems = (component.layout.items ?? []).filter((n) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(n));
-        writer.writeLine(`const items = [${validItems.join(", ")}];`);
+        const items = validItems.map((n) => pascal(n));
+        writer.writeLine(`const items = [${items.join(", ")}];`);
         writer.writeLine(`return (`);
         writer.writeLine(`  <div className=\"space-y-6\">`);
-        if (component.layout.title) writer.writeLine(`    <h3 className=\"text-2xl font-black text-slate-900 dark:text-white tracking-tight\">${component.layout.title}</h3>`);
+        if (component.layout.title) {
+          const titleId = slugifyHeading(component.layout.title);
+          writer.writeLine(`    <h3 className=\"text-2xl font-black text-slate-900 dark:text-white tracking-tight\"${titleId ? ` id="${titleId}"` : ""}>{${JSON.stringify(component.layout.title)}}</h3>`);
+        }
+        if (component.content || component.codeBlock || component.button) {
+          writer.writeLine(`    <div className="space-y-4">`);
+          if (component.content) writer.writeLine(`      <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: ${JSON.stringify(renderMarkdownToHtml(component.content))} }} />`);
+          if (component.codeBlock) writer.writeLine(`      {codeBlock}`);
+          if (component.button) {
+            const variant = component.button.label ? (component.button.variant ?? "primary") : "primary";
+            const baseBtn = "inline-flex items-center justify-center px-6 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-slate-900/5";
+            const variantClass = variant === "secondary"
+              ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700"
+              : (variant === "ghost"
+                ? "bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                : "text-white hover:opacity-90");
+            const style = variant === "primary" ? { backgroundColor: ir.policies.frontend.styling.theme.primaryColor } : {};
+            writer.writeLine(`      <button className="${baseBtn} ${variantClass}" style={${JSON.stringify(style)}} onClick={() => { /* TODO: wire action */ }}>`);
+            if (component.button.icon) {
+              writer.writeLine(`        {(Icons as any)["${component.button.icon}"] && React.createElement((Icons as any)["${component.button.icon}"], { size: 16, className: "mr-2" })}`);
+            }
+            writer.writeLine(`        ${component.button.label}`);
+            writer.writeLine(`      </button>`);
+          }
+          writer.writeLine(`    </div>`);
+        }
         writer.writeLine("    <div className={`grid gap-6 " + grid + "`}>");
         writer.writeLine(`      {items.length ? items.map((Comp: any, idx: number) => (`);
         writer.writeLine(`        <div key={idx} className=\"transition-all duration-300 hover:-translate-y-1\"><Comp /></div>`);
-        writer.writeLine(`      )) : <div className=\"col-span-full py-20 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl text-center text-slate-400 dark:text-slate-500 italic\">No items</div>}`);
+        if (hasInlineContent) {
+          writer.writeLine(`      )) : null}`);
+        } else {
+          writer.writeLine(`      )) : <div className=\"col-span-full py-20 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl text-center text-slate-400 dark:text-slate-500 italic\">No items</div>}`);
+        }
         writer.writeLine(`    </div>`);
         writer.writeLine(`  </div>`);
         writer.writeLine(`);`);
@@ -835,11 +1306,11 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
     }
 
     // Non-form content/button components
-    if (component.content || component.html || component.button) {
+    if (component.content || component.button || component.codeBlock) {
       writer.writeLine(`return (`);
       writer.writeLine(`  <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl space-y-4">`);
-      if (component.content) writer.writeLine(`    <p className="text-slate-700 dark:text-slate-400 leading-relaxed">${component.content}</p>`);
-      if (component.html) writer.writeLine(`    <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: ${JSON.stringify(component.html)} }} />`);
+      if (component.content) writer.writeLine(`    <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: ${JSON.stringify(renderMarkdownToHtml(component.content))} }} />`);
+      if (component.codeBlock) writer.writeLine(`    {codeBlock}`);
       if (component.button) {
         const variant = component.button.label ? (component.button.variant ?? "primary") : "primary";
         const baseBtn = "inline-flex items-center justify-center px-6 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-slate-900/5";
@@ -1379,18 +1850,25 @@ function emitMarketingComponent(writer: any, m: FrontendMarketing, policy: Front
     writer.writeLine(`      </div>`);
     writer.writeLine(`    </div>`);
   } else if (m.kind === "features") {
+    const align = m.align ?? "left";
+    const headerAlign = align === "center" ? "text-center" : "text-left";
+    const cardAlign = align === "center" ? "text-center items-center" : "text-left";
+    const iconWrap = align === "center" ? "mx-auto" : "";
     writer.writeLine(`    <div className="py-12 px-2">`);
     if (m.title || m.subtitle) {
-      writer.writeLine(`      <div className="text-center mb-12 space-y-2">`);
+      writer.writeLine(`      <div className="${headerAlign} mb-12 space-y-2">`);
       if (m.title) writer.writeLine(`        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{${JSON.stringify(m.title)}}</h2>`);
-      if (m.subtitle) writer.writeLine(`        <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">{${JSON.stringify(m.subtitle)}}</p>`);
+      if (m.subtitle) {
+        const subtitleClass = align === "center" ? "max-w-2xl mx-auto" : "max-w-2xl";
+        writer.writeLine(`        <p className="text-slate-500 dark:text-slate-400 ${subtitleClass}">{${JSON.stringify(m.subtitle)}}</p>`);
+      }
       writer.writeLine(`      </div>`);
     }
     writer.writeLine(`      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">`);
     for (const item of (m.items || [])) {
-      writer.writeLine(`        <div className="p-6 border border-slate-100 dark:border-slate-800 ${radius} bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow">`);
+      writer.writeLine(`        <div className="p-6 border border-slate-100 dark:border-slate-800 ${radius} bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow ${cardAlign}">`);
       if (item.icon) {
-        writer.writeLine(`          <div className="w-12 h-12 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center mb-4 text-[${primaryColor}]">`);
+        writer.writeLine(`          <div className="w-12 h-12 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center mb-4 text-[${primaryColor}] ${iconWrap}">`);
         writer.writeLine(`            {React.createElement((Icons as any)["${item.icon}"], { size: 24 })}`);
         writer.writeLine(`          </div>`);
       }

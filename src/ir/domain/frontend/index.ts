@@ -77,6 +77,19 @@ export interface FrontendComponent {
   props?: Record<string, string>;
   form?: FrontendForm;
   entityRef?: string;
+  agentChat?: {
+    title?: string;
+    messages: Array<{
+      role: "user" | "agent";
+      label?: string;
+      content: string;
+    }>;
+  };
+  cliUsage?: {
+    title?: string;
+    command: string;
+    options?: Array<{ flag: string; description: string }>;
+  };
   layout?: {
     kind: "row" | "column" | "panel" | "tabs";
     title?: string;
@@ -85,7 +98,6 @@ export interface FrontendComponent {
     tabs?: { label: string; content?: string; items?: string[] }[];
   };
   content?: string;
-  html?: string;
   button?: { label: string; variant?: "primary" | "secondary" | "ghost"; icon?: string };
   themeToggle?: boolean;
   codeBlock?: { snippet: string; language: string; showLineNumbers?: boolean };
@@ -94,6 +106,7 @@ export interface FrontendComponent {
 
 export interface FrontendMarketing {
   kind: "hero" | "features" | "testimonials" | "faq" | "logos" | "cta" | "stats" | "timeline";
+  align?: "left" | "center";
   title?: string;
   subtitle?: string;
   items?: {
@@ -120,6 +133,8 @@ export interface FrontendPage {
   path: string;
   hideHeader?: boolean;
   description?: string;
+  docsLayout?: boolean;
+  docsGroupLabel?: string;
   components: FrontendComponent[];
 }
 

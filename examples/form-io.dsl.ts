@@ -143,6 +143,6 @@ const app = frontend("FormIOApp", (app) => {
   app.component("OverviewCard", (c) => { c.content = "Overview card inside tab"; });
   app.component("DetailsCard", (c) => { c.content = "Details card inside tab"; });
 
-  app.component("HeroContent", (c) => { c.html = "<h2 class='text-xl font-bold'>Hero block</h2><p class='text-gray-600'>Content block to show static info; can render plain text or HTML.</p>"; });
+  app.component("HeroContent", (c) => { c.content = "## Hero block\n\nContent block to show static info in Markdown."; });
   app.component("CTAButton", (c) => { c.button = { label: "Take Action", variant: "primary", icon: "Rocket" }; });
 });
