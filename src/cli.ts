@@ -12,6 +12,37 @@ if (Number.isFinite(NODE_MAJOR) && NODE_MAJOR < 18) {
 }
 
 async function main() {
+  if (process.argv.includes("--help") || process.argv.includes("-h")) {
+    console.log(`
+irgen — Policy-Driven Multi-Target Code Generation Toolchain
+
+Usage:
+  irgen <dsl-file> [outDir] [options]
+
+Options:
+  --mode=<mode>        Target mode: backend, frontend, electron, static-site, combined (default: backend)
+  --targets=<list>     Comma-separated list of targets to emit (overrides --mode)
+  --outDir=<path>      Directory to write generated code (default: ./generated)
+  --ext=<path>         Path to extension module(s)
+  --emitters           List all registered emitters
+  --emitter=<name>     Force run a specific emitter
+  --emitter-map=<json> Override emitter mapping for targets (e.g. '{"backend":"my-custom-node"}')
+  --policies=<json>    Override policies from CLI
+  --version, -v        Show version information
+  --help, -h           Show this help message
+
+Debugging / Inspection:
+  --inspect-decl       Print the aggregated Declaration IR (input)
+  --inspect-domain     Print the Domain IR (semantic model)
+  --inspect-ir         Print the final Target IR (emitter contract)
+
+Examples:
+  npx irgen examples/app.dsl.ts --mode=combined
+  npx irgen examples/frontend.dsl.ts --targets=frontend,electron --outDir=my-app
+    `);
+    process.exit(0);
+  }
+
   if (process.argv.includes("--version") || process.argv.includes("-v")) {
     console.log("irgen 0.1.0");
     process.exit(0);
@@ -141,6 +172,7 @@ async function main() {
   const entriesArr = entries.length ? entries : [defaultEntry];
 
   const inspectIR = process.argv.includes("--inspect-ir");
+  const inspectDomain = process.argv.includes("--inspect-domain");
   const inspectDecl = process.argv.includes("--inspect-decl");
   const policiesFlag = process.argv.find(a => a.startsWith("--policies=")) ?? null;
   const policiesFromCli = policiesFlag ? JSON.parse(policiesFlag.split("=")[1]) : undefined;
@@ -232,6 +264,7 @@ async function main() {
     }
 
     const domainIr = await runMapper(chosenMode, unified, policyForTarget(chosenMode));
+    if (inspectDomain) console.log(`INSPECT-DOMAIN (${chosenMode}):`, JSON.stringify(domainIr, null, 2));
     const transformName = `${chosenMode}-target`;
     const targetIr = engine.getTransform(transformName)
       ? await engine.runTransform(transformName, domainIr, policyForTarget(chosenMode))
@@ -246,6 +279,7 @@ async function main() {
     let ir: any;
     try {
       const domainIr = await runMapper(target, unified, policyForTarget(target));
+      if (inspectDomain) console.log(`INSPECT-DOMAIN (${target}):`, JSON.stringify(domainIr, null, 2));
       const transformName = `${target}-target`;
       ir = engine.getTransform(transformName)
         ? await engine.runTransform(transformName, domainIr, policyForTarget(target))

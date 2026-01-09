@@ -1,9 +1,14 @@
 import { frontend } from "../src/dsl/frontend-runtime.js";
-import { DOCS_SECTIONS } from "./docs-content/index.js";
+import { DOCS_SECTIONS, DOCS_SIDEBAR_GROUPS } from "./docs-content/index.js";
 
 const DOCS_DATA = {
   sections: DOCS_SECTIONS,
 };
+
+const DOCS_GROUP_BY_ID = new Map<string, string>();
+DOCS_SIDEBAR_GROUPS.forEach((group) => {
+  group.ids.forEach((id) => DOCS_GROUP_BY_ID.set(id, group.label));
+});
 
 const safeComponentName = (value: string): string => {
   const cleaned = value.replace(/[^A-Za-z0-9_]/g, "_");
@@ -48,13 +53,13 @@ frontend("irgen", {
   });
 
   // Docs pages (split per section for sidebar + TOC)
-  DOCS_DATA.sections.forEach((section, index) => {
+  DOCS_DATA.sections.forEach((section) => {
     app.page(section.title, {
       path: section.id === "quick-start" ? "/docs" : `/docs/${section.id}`,
       hideHeader: (section as any).hideHeader ?? true,
       description: (section as any).description ?? "Documentation",
       docsLayout: true,
-      docsGroupLabel: index === 0 ? "Docs" : undefined,
+      docsGroupLabel: DOCS_GROUP_BY_ID.get(section.id) ?? "Docs",
     }, (p) => {
       const emitBlock = (block: any, idx: number, prefix: string, scope: "page" | "app"): string => {
         const name = safeComponentName(`${prefix}Block${idx}`);
@@ -116,6 +121,7 @@ frontend("irgen", {
             .filter((childName: string) => !!childName);
           p.component(name, (c) => {
             c.layout = { kind: "panel", title: block.title, items: childNames };
+            c.prop("docsLayout", "true");
           });
           return name;
         }
@@ -317,7 +323,7 @@ frontend("irgen", {
   app.component("CliUsage", (c) => {
     c.cliUsage({
       title: "Standard Usage",
-      command: "npx tsx src/cli.ts examples/app.dsl.ts generated/output --mode=frontend",
+      command: "npx irgen examples/app.dsl.ts generated/output --mode=frontend",
       options: [
         { flag: "--targets", description: "backend,frontend,electron" },
         { flag: "--mode", description: "fullstack, backend, or frontend" }

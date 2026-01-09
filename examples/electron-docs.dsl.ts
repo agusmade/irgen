@@ -44,7 +44,7 @@ frontend("Electron Docs", {
   });
 
   app.component("Quickstart", (c) => {
-    c.prop("gen", "npx tsx src/cli.ts examples/electron-docs.dsl.ts --targets=frontend,electron --outDir=generated/electron-docs");
+    c.prop("gen", "npx irgen examples/electron-docs.dsl.ts --targets=frontend,electron --outDir=generated/electron-docs");
     c.prop("runWeb", "cd generated/electron-docs/frontend && npm install && npm run dev");
     c.prop("runElectron", "cd generated/electron-docs/electron && npm install && npm run start");
   });

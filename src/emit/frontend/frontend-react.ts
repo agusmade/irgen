@@ -140,7 +140,14 @@ function renderMarkdownToHtml(input: string): string {
     }
 
     const paragraphLines: string[] = [];
-    while (i < lines.length && lines[i].trim() !== "" && !/^#{1,6}\s+/.test(lines[i]) && !/^```/.test(lines[i].trim())) {
+    while (
+      i < lines.length
+      && lines[i].trim() !== ""
+      && !/^#{1,6}\s+/.test(lines[i])
+      && !/^```/.test(lines[i].trim())
+      && !/^(\*|-)\s+/.test(lines[i])
+      && !/^\d+\.\s+/.test(lines[i])
+    ) {
       paragraphLines.push(lines[i]);
       i += 1;
     }
@@ -389,7 +396,10 @@ export function emitFrontend(project: Project, outDir: string, ir: FrontendTarge
   const docsLinks = (ir.pages ?? [])
     .filter((page) => page.docsLayout)
     .map((page) => ({ name: page.name, path: page.path, groupLabel: page.docsGroupLabel }));
-  const docsGroupLabel = docsLinks.find((link) => link.groupLabel)?.groupLabel ?? "Docs";
+  const docsGroupLabels = Array.from(
+    new Set(docsLinks.map((link) => link.groupLabel).filter((label): label is string => Boolean(label))),
+  );
+  const docsGroupLabel = docsGroupLabels.length === 1 ? docsGroupLabels[0] : "Docs";
   const navbarLinks = (ir.pages ?? [])
     .filter((page) => !page.docsLayout)
     .map((page) => ({ name: page.name, path: page.path }));
@@ -532,6 +542,14 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("const [activeToc, setActiveToc] = useState(\"\" as string);");
     writer.writeLine("const location = useLocation();");
     writer.writeLine(`const docsLinks = ${JSON.stringify(docsLinks, null, 2)};`);
+    writer.writeLine(`const defaultDocsGroupLabel = ${JSON.stringify(docsGroupLabel)};`);
+    writer.writeLine("const docsSidebarGroups = docsLinks.reduce((acc, link) => {");
+    writer.writeLine("  const label = link.groupLabel || defaultDocsGroupLabel;");
+    writer.writeLine("  let group = acc.find((g) => g.label === label);");
+    writer.writeLine("  if (!group) { group = { label, items: [] as typeof docsLinks }; acc.push(group); }");
+    writer.writeLine("  group.items.push(link);");
+    writer.writeLine("  return acc;");
+    writer.writeLine("}, [] as Array<{ label: string; items: typeof docsLinks }>)");
     writer.writeLine("const docsPaths = docsLinks.map((link) => link.path);");
     writer.writeLine("const isDocsRoute = docsPaths.includes(location.pathname);");
     writer.writeLine("");
@@ -641,22 +659,29 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("        </nav>");
     writer.writeLine("");
     writer.writeLine("        {/* Content Area */}");
-    writer.writeLine("        <main className=\"max-w-7xl mx-auto px-6 lg:px-10 py-12 md:py-20 animate-in fade-in duration-700\">");
+    writer.writeLine("        <main className={isDocsRoute ? \"max-w-[1400px] mx-auto px-6 lg:px-10 py-10 md:py-12 animate-in fade-in duration-700\" : \"max-w-7xl mx-auto px-6 lg:px-10 py-12 md:py-20 animate-in fade-in duration-700\"}>");
     writer.writeLine("          {isDocsRoute ? (");
     writer.writeLine("            <div className={tocItems.length > 0 ? \"grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_260px] gap-10\" : \"grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-10\"}>");
     writer.writeLine("              <aside className=\"hidden lg:block\">");
     writer.writeLine("                <div className=\"sticky top-28\">");
     writer.writeLine("                  <p className=\"text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3\">Documentation</p>");
-    writer.writeLine("                  <nav className=\"space-y-2 text-sm\">");
-    writer.writeLine("                    {docsLinks.map((link) => (");
-    writer.writeLine("                      <Link key={link.path} to={link.path} className={link.path === location.pathname ? \"block px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold\" : \"block px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-slate-800/60\"}>");
-    writer.writeLine("                        {link.name}");
-    writer.writeLine("                      </Link>");
+    writer.writeLine("                  <nav className=\"space-y-6 text-sm\">");
+    writer.writeLine("                    {docsSidebarGroups.map((group) => (");
+    writer.writeLine("                      <div key={group.label} className=\"space-y-2\">");
+    writer.writeLine("                        <p className=\"text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500\">{group.label}</p>");
+    writer.writeLine("                        <div className=\"space-y-0\">");
+    writer.writeLine("                          {group.items.map((link) => (");
+    writer.writeLine("                            <Link key={link.path} to={link.path} className={link.path === location.pathname ? \"block px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold\" : \"block px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-slate-800/60\"}>");
+    writer.writeLine("                              {link.name}");
+    writer.writeLine("                            </Link>");
+    writer.writeLine("                          ))}");
+    writer.writeLine("                        </div>");
+    writer.writeLine("                      </div>");
     writer.writeLine("                    ))}");
     writer.writeLine("                  </nav>");
     writer.writeLine("                </div>");
     writer.writeLine("              </aside>");
-    writer.writeLine("              <div data-irgen-content>");
+    writer.writeLine("              <div className=\"min-w-0\" data-irgen-content>");
     writer.writeLine("                <Routes>");
     ir.pages.forEach(p => {
       writer.writeLine(`            <Route path=\"${p.path}\" element={<${pascal(p.name)}Page />} />`);
@@ -682,7 +707,7 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("              )}");
     writer.writeLine("            </div>");
     writer.writeLine("          ) : (");
-    writer.writeLine("            <div data-irgen-content>");
+    writer.writeLine("            <div className=\"min-w-0\" data-irgen-content>");
     writer.writeLine("              <Routes>");
     ir.pages.forEach(p => {
       writer.writeLine(`            <Route path=\"${p.path}\" element={<${pascal(p.name)}Page />} />`);
@@ -753,7 +778,7 @@ if ('serviceWorker' in navigator) {
 
   // TAILWIND SETUP
   const cssPath = path.join(frontendDir, "index.css");
-  project.createSourceFile(cssPath, `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n/* Markdown prose styling */\n.prose { color: #0f172a; }\n.dark .prose { color: #e2e8f0; }\n.prose p { margin: 0.75rem 0; line-height: 1.75; }\n.prose h1, .prose h2, .prose h3, .prose h4 { font-weight: 700; color: inherit; margin: 1.25rem 0 0.5rem; }\n.prose h1 { font-size: 2rem; }\n.prose h2 { font-size: 1.5rem; }\n.prose h3 { font-size: 1.25rem; }\n.prose a { color: #2563eb; text-decoration: underline; text-underline-offset: 3px; }\n.dark .prose a { color: #93c5fd; }\n.prose ul, .prose ol { margin: 0.75rem 0 0.75rem 1.25rem; }\n.prose li { margin: 0.25rem 0; }\n.prose code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; background: rgba(15, 23, 42, 0.08); padding: 0.1rem 0.35rem; border-radius: 0.375rem; font-size: 0.85em; }\n.dark .prose code { background: rgba(148, 163, 184, 0.2); }\n.prose pre { background: #0f172a; color: #e2e8f0; padding: 1rem 1.25rem; border-radius: 0.75rem; overflow: auto; font-size: 0.85rem; line-height: 1.6; }\n.prose pre code { background: transparent; padding: 0; color: inherit; }\n`, { overwrite: true });
+  project.createSourceFile(cssPath, `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n/* Markdown prose styling */\n.prose { color: #0f172a; }\n.dark .prose { color: #e2e8f0; }\n.prose p { margin: 0.75rem 0; line-height: 1.75; }\n.prose h1, .prose h2, .prose h3, .prose h4 { font-weight: 700; color: inherit; margin: 1.25rem 0 0.5rem; }\n.prose h1 { font-size: 2rem; }\n.prose h2 { font-size: 1.5rem; }\n.prose h3 { font-size: 1.25rem; }\n.prose a { color: #2563eb; text-decoration: underline; text-underline-offset: 3px; }\n.dark .prose a { color: #93c5fd; }\n.prose ul, .prose ol { margin: 0.75rem 0 0.75rem 1.25rem; }\n.prose li { margin: 0.25rem 0; }\n.prose code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; background: rgba(15, 23, 42, 0.08); padding: 0.1rem 0.35rem; border-radius: 0.375rem; font-size: 0.85em; }\n.dark .prose code { background: rgba(148, 163, 184, 0.2); }\n.prose pre { background: #0f172a; color: #e2e8f0; padding: 1rem 1.25rem; border-radius: 0.75rem; overflow-x: auto; overflow-y: hidden; font-size: 0.85rem; line-height: 1.6; }\n.prose pre code { background: transparent; padding: 0; color: inherit; }\n`, { overwrite: true });
 
   emitTailwindConfig(project, outDir);
 
@@ -930,8 +955,10 @@ function emitPage(project: Project, frontendDir: string, page: FrontendPage) {
   const compName = `${pascal(page.name)}Page`;
   const fn = sf.addFunction({ name: compName, isExported: true });
   fn.setBodyText((writer) => {
+    const sectionGap = page.docsLayout ? "space-y-6" : "space-y-12";
+    const gridGap = page.docsLayout ? "gap-6" : "gap-12";
     writer.writeLine("return (");
-    writer.writeLine("  <div className=\"space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500\">");
+    writer.writeLine(`  <div className="${sectionGap} animate-in fade-in slide-in-from-bottom-4 duration-500">`);
 
     if (!page.hideHeader) {
       writer.writeLine("    <header className=\"border-b border-slate-200 dark:border-slate-800 pb-10\">");
@@ -946,9 +973,12 @@ function emitPage(project: Project, frontendDir: string, page: FrontendPage) {
       writer.writeLine("    </header>");
     }
 
-    writer.writeLine("    <div className=\"grid gap-12\">");
+    writer.writeLine(`    <div className="grid ${gridGap}">`);
     for (const c of page.components) {
-      writer.writeLine(`      <section className=\"relative shrink-0\">`);
+      const sectionClass = page.docsLayout
+        ? "relative shrink-0 overflow-x-hidden"
+        : "relative shrink-0";
+      writer.writeLine(`      <section className=\"${sectionClass}\">`);
       writer.writeLine(`        <${pascal(c.name)} />`);
       writer.writeLine(`      </section>`);
     }
@@ -1055,7 +1085,7 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
     if (component.codeBlock) {
       const { snippet, language, showLineNumbers } = component.codeBlock;
       writer.writeLine(`const codeBlock = (`);
-      writer.writeLine(`  <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">`);
+      writer.writeLine(`  <div className="rounded-xl overflow-x-auto overflow-y-hidden border border-slate-200 dark:border-slate-800 shadow-sm">`);
       writer.writeLine(`    <SyntaxHighlighter `);
       writer.writeLine(`      language="${language}" `);
       writer.writeLine(`      style={oneDark} `);
@@ -1212,6 +1242,51 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
         writer.writeLine(`);`);
         return;
       } else if (kind === "panel") {
+        const docsVariant = component.props?.docsLayout === "true";
+        if (docsVariant) {
+          writer.writeLine(`return (`);
+          writer.writeLine(`  <div className="space-y-4">`);
+          if (component.layout.title) {
+            const titleId = slugifyHeading(component.layout.title);
+            writer.writeLine(`    <h3 className="text-xl font-semibold text-slate-900 dark:text-white"${titleId ? ` id="${titleId}"` : ""}>{${JSON.stringify(component.layout.title)}}</h3>`);
+          }
+          if (component.content || component.codeBlock || component.button) {
+            writer.writeLine(`    <div className="space-y-4">`);
+            if (component.content) writer.writeLine(`      <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: ${JSON.stringify(renderMarkdownToHtml(component.content))} }} />`);
+            if (component.codeBlock) writer.writeLine(`      {codeBlock}`);
+            if (component.button) {
+              const variant = component.button.label ? (component.button.variant ?? "primary") : "primary";
+              const baseBtn = "inline-flex items-center justify-center px-6 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-slate-900/5";
+              const variantClass = variant === "secondary"
+                ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700"
+                : (variant === "ghost"
+                  ? "bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  : "text-white hover:opacity-90");
+              const style = variant === "primary" ? { backgroundColor: ir.policies.frontend.styling.theme.primaryColor } : {};
+              writer.writeLine(`      <button className="${baseBtn} ${variantClass}" style={${JSON.stringify(style)}} onClick={() => { /* TODO: wire action */ }}>`);
+              if (component.button.icon) {
+                writer.writeLine(`        {(Icons as any)["${component.button.icon}"] && React.createElement((Icons as any)["${component.button.icon}"], { size: 16, className: "mr-2" })}`);
+              }
+              writer.writeLine(`        ${component.button.label}`);
+              writer.writeLine(`      </button>`);
+            }
+            writer.writeLine(`    </div>`);
+          }
+          if (component.layout.items?.length) {
+            writer.writeLine(`    <div className="space-y-4">`);
+            for (const item of component.layout.items ?? []) {
+              if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(item)) {
+                writer.writeLine(`      <${pascal(item)} />`);
+              } else {
+                writer.writeLine(`      <div className="text-slate-400 dark:text-slate-500 text-sm italic">Placeholder: ${item}</div>`);
+              }
+            }
+            writer.writeLine(`    </div>`);
+          }
+          writer.writeLine(`  </div>`);
+          writer.writeLine(`);`);
+          return;
+        }
         writer.writeLine(`return (`);
         writer.writeLine(`  <div className=\"bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none rounded-2xl overflow-hidden px-1 py-1\">`);
         if (component.layout.title) {

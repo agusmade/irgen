@@ -1,5 +1,5 @@
 import { frontend } from "../src/dsl/frontend-runtime.js";
-import { DOCS_SECTIONS } from "./docs-content/index.js";
+import { DOCS_SECTIONS, DOCS_SIDEBAR_GROUPS } from "./docs-content/index.js";
 
 /**
  * Shared Documentation Data
@@ -37,35 +37,10 @@ frontend("irgen Docs", {
         ]
       },
       sidebar: {
-        groups: [
-          {
-            label: "Overview",
-            items: [
-              "/",
-              "/install-cli/",
-              "/cli-reference/",
-              "/dsl-reference/",
-              "/architecture/",
-              "/policies/"
-            ]
-          },
-          {
-            label: "Reference",
-            items: [
-              "/policy-reference/",
-              "/backend/",
-              "/frontend/",
-              "/static-site/",
-              "/react-ssg/",
-              "/electron/",
-              "/extensions/",
-              "/output-structure/",
-              "/troubleshooting/",
-              "/release-notes/",
-              "/contributing/"
-            ]
-          }
-        ]
+        groups: DOCS_SIDEBAR_GROUPS.map((group) => ({
+          label: group.label,
+          items: group.ids.map((id) => (id === "quick-start" ? "/" : `/${id}/`)),
+        })),
       }
     },
   }

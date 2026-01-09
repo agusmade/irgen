@@ -9,7 +9,7 @@ function assert(cond: unknown, msg: string): asserts cond {
 }
 
 // Runtime types with helper methods
-export type RuntimeComponent = DeclComponent & {
+export type RuntimeComponent = Omit<DeclComponent, "agentChat" | "cliUsage"> & {
   field: (fieldName: string, type: string, label?: string, validators?: Record<string, any>, config?: any) => void;
   prop: (key: string, value: string) => void;
   // helpers (these are functions in DSL, but they populate IR properties)
@@ -84,7 +84,7 @@ export function frontend(
 
   const opts = (typeof optsOrFn === "function" ? {} : optsOrFn) ?? {};
   const fn = (typeof optsOrFn === "function" ? optsOrFn : maybeFn) as ((a: {
-    page: (name: string, opts: { path: string, hideHeader?: boolean, description?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
+    page: (name: string, opts: { path: string, hideHeader?: boolean, description?: string, docsLayout?: boolean, docsGroupLabel?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
     component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
     meta: (key: string, value: unknown) => void;
     policy: (target: string, value: Record<string, any>) => void;
@@ -158,8 +158,9 @@ export function frontend(
             if ((comp as any).html) {
               throw new Error(`component.html is not allowed (component: ${comp.name}). Use component.content with Markdown instead.`);
             }
-            page.components.push(comp);
-            if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(comp);
+            const finalized = comp as unknown as DeclComponent;
+            page.components.push(finalized);
+            if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(finalized);
           }
         });
       }
@@ -202,7 +203,7 @@ export function frontend(
       if ((comp as any).html) {
         throw new Error(`component.html is not allowed (component: ${comp.name}). Use component.content with Markdown instead.`);
       }
-      if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(comp);
+      if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(comp as unknown as DeclComponent);
     },
     meta(key: string, value: unknown) {
       assert(CURRENT_FRONTEND, "meta() harus di dalam frontend()");
