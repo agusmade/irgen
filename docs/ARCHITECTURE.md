@@ -200,6 +200,14 @@ This is a practical, incremental plan. Each phase lists goals, key tasks, and su
 - Added `scripts/gen-frontend.test.js` (CIable test) and `npm run test:gen-frontend` to validate frontend generation.
 - Acceptance: `npm run gen:frontend` and `npm run gen:combined` work and `npm run test:gen-frontend` passes locally.
 
+### Phase 9 — Headless Runtime & Operation-Oriented Architecture (4–7 days) — **Done** ✅
+- **Headless Client Runtime**: Implemented `lib/runtime.ts` and React hooks (`useOperation`, `useResource`) to decouple the UI from backend-specific logic.
+- **Operations-as-Atom**: Refactored the entire frontend interaction model to be operation-centric, enabling connection to any backend via configurable DataSources and Adapters.
+- **Multi-App Deployment**: Added support for `basePath` routing, allowing multiple independent frontend applications to be generated and deployed from a single irgen run.
+- **DSL Modernization**: Updated the `frontend()` DSL to support entity definitions in options and as standalone functions, improving developer flexibility.
+- **Table Component**: Introduced a first-class `Table` component with native operation/resource binding and automatic state management.
+- Acceptance: `examples/phase1-acceptance.dsl.ts` verifies multi-app, multi-datasource, and operation-oriented interactions.
+
 ---
 
 ## Estimates & Notes

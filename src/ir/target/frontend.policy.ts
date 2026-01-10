@@ -15,6 +15,7 @@ export const FrontendFrameworkPolicySchema = z.object({
     iconLibrary: z.enum(["lucide-react", "none"]).default("lucide-react"),
     rendering: z.object({
         mode: z.enum(["csr", "ssg", "hybrid"]).default("csr"),
+        basePath: z.string().default("/"),
         prerender: z.object({
             enabled: z.boolean().default(false),
             routes: z.union([z.literal("auto"), z.array(z.string())]).default("auto"),

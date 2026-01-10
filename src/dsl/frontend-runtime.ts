@@ -9,7 +9,7 @@ function assert(cond: unknown, msg: string): asserts cond {
 }
 
 // Runtime types with helper methods
-export type RuntimeComponent = Omit<DeclComponent, "agentChat" | "cliUsage"> & {
+export type RuntimeComponent = Omit<DeclComponent, "agentChat" | "cliUsage" | "table"> & {
   field: (fieldName: string, type: string, label?: string, validators?: Record<string, any>, config?: any) => void;
   prop: (key: string, value: string) => void;
   // helpers (these are functions in DSL, but they populate IR properties)
@@ -25,12 +25,17 @@ export type RuntimeComponent = Omit<DeclComponent, "agentChat" | "cliUsage"> & {
   timeline: (items: any[], opts?: any) => void;
   enableThemeToggle: () => void;
   code: (snippet: string, language?: string, options?: { showLineNumbers?: boolean }) => void;
+  table: (data: { resourceId?: string; operationId?: string; columns?: Array<{ header: string; accessor: string; render?: string }> }) => void;
 };
 
 type FrontendOptions = {
+  basePath?: string;
   pwa?: DeclFrontendApp["pwa"];
   meta?: Record<string, any>;
   policies?: Record<string, any>;
+  datasources?: DeclFrontendApp["datasources"];
+  operations?: DeclFrontendApp["operations"];
+  resources?: DeclFrontendApp["resources"];
 };
 
 function mergePolicy(target: string, value: Record<string, any>) {
@@ -55,6 +60,7 @@ const RUNTIME_HELPERS = [
   "timeline",
   "enableThemeToggle",
   "code",
+  "table",
 ];
 
 function stripRuntimeHelpers(comp: Record<string, any>) {
@@ -65,30 +71,152 @@ function stripRuntimeHelpers(comp: Record<string, any>) {
   }
 }
 
+export function datasource(id: string, config: any) {
+  assert(CURRENT_FRONTEND, "datasource() harus di dalam frontend()");
+  CURRENT_FRONTEND.datasources.push({ id, ...config });
+}
+
+export function operation(id: string, config: any) {
+  assert(CURRENT_FRONTEND, "operation() harus di dalam frontend()");
+  CURRENT_FRONTEND.operations.push({ id, ...config });
+}
+
+export function resource(id: string, config: any) {
+  assert(CURRENT_FRONTEND, "resource() harus di dalam frontend()");
+  CURRENT_FRONTEND.resources.push({ id, ...config });
+}
+
+export function meta(key: string, value: unknown) {
+  assert(CURRENT_FRONTEND, "meta() harus di dalam frontend()");
+  CURRENT_FRONTEND.meta = CURRENT_FRONTEND.meta ?? {};
+  (CURRENT_FRONTEND.meta as any)[key] = value;
+}
+
+export function policy(target: string, value: Record<string, any>) {
+  assert(CURRENT_FRONTEND, "policy() harus di dalam frontend()");
+  mergePolicy(target, value);
+}
+
+export function page(pName: string, opts: { path: string, hideHeader?: boolean, description?: string, docsLayout?: boolean, docsGroupLabel?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) {
+  assert(CURRENT_FRONTEND, "page() harus di dalam frontend()");
+  const page: DeclPage = {
+    type: "page",
+    name: pName,
+    path: opts.path,
+    hideHeader: opts.hideHeader,
+    description: opts.description,
+    docsLayout: opts.docsLayout,
+    docsGroupLabel: opts.docsGroupLabel,
+    components: []
+  };
+  if (typeof cb === "function") {
+    cb({
+      component(cName, cCb) {
+        const comp = { type: "component", name: cName, props: {}, form: { fields: [] } } as unknown as RuntimeComponent;
+
+        // add convenience methods to the comp object for DSL users: field() and prop()
+        comp.field = function (fieldName: string, type: string, label?: string, validators?: Record<string, any>, config?: any) {
+          comp.form = comp.form ?? { fields: [] };
+          comp.form.fields.push({ name: fieldName, type, label, validators, ...config });
+        };
+        comp.prop = function (key: string, value: string) {
+          comp.props = comp.props ?? {};
+          comp.props[key] = value;
+        };
+        comp.agentChat = function (data: { title?: string; messages: Array<{ role: "user" | "agent"; label?: string; content: string }> }) {
+          (comp as any).agentChat = data;
+        };
+        comp.cliUsage = function (data: { title?: string; command: string; options?: Array<{ flag: string; description: string }> }) {
+          (comp as any).cliUsage = data;
+        };
+        comp.hero = function (data: any) { comp.marketing = { kind: "hero", ...data }; };
+        comp.features = function (items: any[], opts?: any) { comp.marketing = { kind: "features", items, ...opts }; };
+        comp.testimonials = function (items: any[], opts?: any) { comp.marketing = { kind: "testimonials", items, ...opts }; };
+        comp.faq = function (items: any[], opts?: any) { comp.marketing = { kind: "faq", items, ...opts }; };
+        comp.logos = function (items: any[], opts?: any) { comp.marketing = { kind: "logos", items, ...opts }; };
+        comp.cta = function (title: string, subtitle?: string, actions?: any[]) { comp.marketing = { kind: "cta", title, subtitle, actions }; };
+        comp.stats = function (items: any[], opts?: any) { comp.marketing = { kind: "stats", items, ...opts }; };
+        comp.timeline = function (items: any[], opts?: any) { comp.marketing = { kind: "timeline", items, ...opts }; };
+        comp.enableThemeToggle = function () { (comp as any).themeToggle = true; };
+        comp.code = function (snippet: string, language: string = "typescript", options?: { showLineNumbers?: boolean }) {
+          (comp as any).codeBlock = { snippet, language, showLineNumbers: options?.showLineNumbers ?? true };
+        };
+        comp.table = function (data: any) { (comp as any).table = data; };
+
+        if (typeof cCb === "function") cCb(comp);
+        stripRuntimeHelpers(comp as any);
+        if ((comp as any).html) {
+          throw new Error(`component.html is not allowed (component: ${comp.name}). Use component.content with Markdown instead.`);
+        }
+        const finalized = comp as unknown as DeclComponent;
+        page.components.push(finalized);
+        if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(finalized);
+      }
+    });
+  }
+  if (CURRENT_FRONTEND) CURRENT_FRONTEND.pages.push(page);
+}
+
+export function component(name: string, cb: (c: RuntimeComponent) => void) {
+  assert(CURRENT_FRONTEND, "component() harus di dalam frontend()");
+  const comp = { type: "component", name: name, props: {}, form: { fields: [] } } as unknown as RuntimeComponent;
+
+  // add convenience methods to the comp object for DSL users: field() and prop()
+  comp.field = function (fieldName: string, type: string, label?: string, validators?: Record<string, any>, config?: any) {
+    comp.form = comp.form ?? { fields: [] };
+    comp.form.fields.push({ name: fieldName, type, label, validators, ...config });
+  };
+  comp.prop = function (key: string, value: string) {
+    comp.props = comp.props ?? {};
+    comp.props[key] = value;
+  };
+  comp.agentChat = function (data: { title?: string; messages: Array<{ role: "user" | "agent"; label?: string; content: string }> }) {
+    (comp as any).agentChat = data;
+  };
+  comp.cliUsage = function (data: { title?: string; command: string; options?: Array<{ flag: string; description: string }> }) {
+    (comp as any).cliUsage = data;
+  };
+  comp.hero = function (data: any) { comp.marketing = { kind: "hero", ...data }; };
+  comp.features = function (items: any[], opts?: any) { comp.marketing = { kind: "features", items, ...opts }; };
+  comp.testimonials = function (items: any[], opts?: any) { comp.marketing = { kind: "testimonials", items, ...opts }; };
+  comp.faq = function (items: any[], opts?: any) { comp.marketing = { kind: "faq", items, ...opts }; };
+  comp.logos = function (items: any[], opts?: any) { comp.marketing = { kind: "logos", items, ...opts }; };
+  comp.cta = function (title: string, subtitle?: string, actions?: any[]) { comp.marketing = { kind: "cta", title, subtitle, actions }; };
+  comp.stats = function (items: any[], opts?: any) { comp.marketing = { kind: "stats", items, ...opts }; };
+  comp.timeline = function (items: any[], opts?: any) { comp.marketing = { kind: "timeline", items, ...opts }; };
+  comp.enableThemeToggle = function () { (comp as any).themeToggle = true; };
+  comp.code = function (snippet: string, language: string = "typescript", options?: { showLineNumbers?: boolean }) {
+    (comp as any).codeBlock = { snippet, language, showLineNumbers: options?.showLineNumbers ?? true };
+  };
+  comp.table = function (data: any) { (comp as any).table = data; };
+
+  if (typeof cb === "function") cb(comp);
+  stripRuntimeHelpers(comp as any);
+  if ((comp as any).html) {
+    throw new Error(`component.html is not allowed (component: ${comp.name}). Use component.content with Markdown instead.`);
+  }
+  if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(comp as unknown as DeclComponent);
+}
+
+type FrontendCallbackArgs = {
+  page: typeof page;
+  component: typeof component;
+  datasource: typeof datasource;
+  operation: typeof operation;
+  resource: typeof resource;
+  meta: typeof meta;
+  policy: typeof policy;
+};
+
 export function frontend(
   name: string,
-  optsOrFn: FrontendOptions | ((a: {
-    page: (name: string, opts: { path: string, hideHeader?: boolean, description?: string, docsLayout?: boolean, docsGroupLabel?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
-    component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
-    meta: (key: string, value: unknown) => void;
-    policy: (target: string, value: Record<string, any>) => void;
-  }) => void),
-  maybeFn?: (a: {
-    page: (name: string, opts: { path: string, hideHeader?: boolean, description?: string, docsLayout?: boolean, docsGroupLabel?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
-    component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
-    meta: (key: string, value: unknown) => void;
-    policy: (target: string, value: Record<string, any>) => void;
-  }) => void,
+  optsOrFn: FrontendOptions | ((a: FrontendCallbackArgs) => void),
+  maybeFn?: (a: FrontendCallbackArgs) => void,
 ) {
   assert(typeof name === "string" && name.length > 0, "frontend(name) harus string");
 
   const opts = (typeof optsOrFn === "function" ? {} : optsOrFn) ?? {};
-  const fn = (typeof optsOrFn === "function" ? optsOrFn : maybeFn) as ((a: {
-    page: (name: string, opts: { path: string, hideHeader?: boolean, description?: string, docsLayout?: boolean, docsGroupLabel?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) => void;
-    component: (name: string, cb?: (c: RuntimeComponent) => void) => void;
-    meta: (key: string, value: unknown) => void;
-    policy: (target: string, value: Record<string, any>) => void;
-  }) => void);
+  const fn = (typeof optsOrFn === "function" ? optsOrFn : maybeFn) as ((a: FrontendCallbackArgs) => void);
 
   assert(typeof fn === "function", "frontend(..., fn) fn harus function");
 
@@ -96,8 +224,12 @@ export function frontend(
   CURRENT_FRONTEND = {
     type: "frontend",
     name,
+    basePath: opts?.basePath ?? "/",
     pages: [],
     components: [],
+    datasources: opts?.datasources ?? [],
+    operations: opts?.operations ?? [],
+    resources: opts?.resources ?? [],
     ...(opts?.pwa ? { pwa: opts.pwa } : {}),
     meta: { ...baseMeta },
   };
@@ -108,112 +240,13 @@ export function frontend(
   }
 
   fn({
-    page(pName, opts, cb) {
-      assert(CURRENT_FRONTEND, "page() harus di dalam frontend()");
-      const page: DeclPage = {
-        type: "page",
-        name: pName,
-        path: opts.path,
-        hideHeader: opts.hideHeader,
-        description: opts.description,
-        docsLayout: opts.docsLayout,
-        docsGroupLabel: opts.docsGroupLabel,
-        components: []
-      };
-      if (typeof cb === "function") {
-        cb({
-          component(cName, cCb) {
-            const comp = { type: "component", name: cName, props: {}, form: { fields: [] } } as unknown as RuntimeComponent;
-
-            // attach helpers
-            comp.field = function (fieldName: string, type: string, label?: string, validators?: Record<string, any>, config?: any) {
-              comp.form = comp.form ?? { fields: [] };
-              comp.form.fields.push({ name: fieldName, type, label, validators, ...config });
-            };
-            comp.prop = function (key: string, value: string) {
-              comp.props = comp.props ?? {};
-              comp.props[key] = value;
-            };
-            comp.agentChat = function (data: { title?: string; messages: Array<{ role: "user" | "agent"; label?: string; content: string }> }) {
-              (comp as any).agentChat = data;
-            };
-            comp.cliUsage = function (data: { title?: string; command: string; options?: Array<{ flag: string; description: string }> }) {
-              (comp as any).cliUsage = data;
-            };
-            comp.hero = function (data: any) { comp.marketing = { kind: "hero", ...data }; };
-            comp.features = function (items: any[], opts?: any) { comp.marketing = { kind: "features", items, ...opts }; };
-            comp.testimonials = function (items: any[], opts?: any) { comp.marketing = { kind: "testimonials", items, ...opts }; };
-            comp.faq = function (items: any[], opts?: any) { comp.marketing = { kind: "faq", items, ...opts }; };
-            comp.logos = function (items: any[], opts?: any) { comp.marketing = { kind: "logos", items, ...opts }; };
-            comp.cta = function (title: string, subtitle?: string, actions?: any[]) { comp.marketing = { kind: "cta", title, subtitle, actions }; };
-            comp.stats = function (items: any[], opts?: any) { comp.marketing = { kind: "stats", items, ...opts }; };
-            comp.timeline = function (items: any[], opts?: any) { comp.marketing = { kind: "timeline", items, ...opts }; };
-            comp.enableThemeToggle = function () { (comp as any).themeToggle = true; };
-            comp.code = function (snippet: string, language: string = "typescript", options?: { showLineNumbers?: boolean }) {
-              (comp as any).codeBlock = { snippet, language, showLineNumbers: options?.showLineNumbers ?? true };
-            };
-
-            if (typeof cCb === "function") cCb(comp);
-            stripRuntimeHelpers(comp as any);
-            if ((comp as any).html) {
-              throw new Error(`component.html is not allowed (component: ${comp.name}). Use component.content with Markdown instead.`);
-            }
-            const finalized = comp as unknown as DeclComponent;
-            page.components.push(finalized);
-            if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(finalized);
-          }
-        });
-      }
-      if (CURRENT_FRONTEND) CURRENT_FRONTEND.pages.push(page);
-    },
-    component(name, cb) {
-      assert(CURRENT_FRONTEND, "component() harus di dalam frontend()");
-      const comp = { type: "component", name: name, props: {}, form: { fields: [] } } as unknown as RuntimeComponent;
-
-      // add convenience methods to the comp object for DSL users: field() and prop()
-      comp.field = function (fieldName: string, type: string, label?: string, validators?: Record<string, any>, config?: any) {
-        comp.form = comp.form ?? { fields: [] };
-        comp.form.fields.push({ name: fieldName, type, label, validators, ...config });
-      };
-      comp.prop = function (key: string, value: string) {
-        comp.props = comp.props ?? {};
-        comp.props[key] = value;
-      };
-      comp.agentChat = function (data: { title?: string; messages: Array<{ role: "user" | "agent"; label?: string; content: string }> }) {
-        (comp as any).agentChat = data;
-      };
-      comp.cliUsage = function (data: { title?: string; command: string; options?: Array<{ flag: string; description: string }> }) {
-        (comp as any).cliUsage = data;
-      };
-      comp.hero = function (data: any) { comp.marketing = { kind: "hero", ...data }; };
-      comp.features = function (items: any[], opts?: any) { comp.marketing = { kind: "features", items, ...opts }; };
-      comp.testimonials = function (items: any[], opts?: any) { comp.marketing = { kind: "testimonials", items, ...opts }; };
-      comp.faq = function (items: any[], opts?: any) { comp.marketing = { kind: "faq", items, ...opts }; };
-      comp.logos = function (items: any[], opts?: any) { comp.marketing = { kind: "logos", items, ...opts }; };
-      comp.cta = function (title: string, subtitle?: string, actions?: any[]) { comp.marketing = { kind: "cta", title, subtitle, actions }; };
-      comp.stats = function (items: any[], opts?: any) { comp.marketing = { kind: "stats", items, ...opts }; };
-      comp.timeline = function (items: any[], opts?: any) { comp.marketing = { kind: "timeline", items, ...opts }; };
-      comp.enableThemeToggle = function () { (comp as any).themeToggle = true; };
-      comp.code = function (snippet: string, language: string = "typescript", options?: { showLineNumbers?: boolean }) {
-        (comp as any).codeBlock = { snippet, language, showLineNumbers: options?.showLineNumbers ?? true };
-      };
-
-      if (typeof cb === "function") cb(comp);
-      stripRuntimeHelpers(comp as any);
-      if ((comp as any).html) {
-        throw new Error(`component.html is not allowed (component: ${comp.name}). Use component.content with Markdown instead.`);
-      }
-      if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(comp as unknown as DeclComponent);
-    },
-    meta(key: string, value: unknown) {
-      assert(CURRENT_FRONTEND, "meta() harus di dalam frontend()");
-      CURRENT_FRONTEND.meta = CURRENT_FRONTEND.meta ?? {};
-      (CURRENT_FRONTEND.meta as any)[key] = value;
-    },
-    policy(target: string, value: Record<string, any>) {
-      assert(CURRENT_FRONTEND, "policy() harus di dalam frontend()");
-      mergePolicy(target, value);
-    },
+    datasource,
+    operation,
+    resource,
+    page,
+    component,
+    meta,
+    policy,
   });
 
   const parsed = DeclFrontendAppSchema.parse(CURRENT_FRONTEND);

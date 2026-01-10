@@ -61,3 +61,12 @@ A standalone, PWA-ready documentation site that serves as the source of truth fo
 - **Target Parity**: Shares its content with the main website DSL.
 
 Output: `generated/docs/`
+
+### 8. General Purpose & Headless Runtime - `phase1-acceptance.dsl.ts`
+Demonstrates the operation-oriented architecture and headless runtime:
+- **Headless Runtime**: Direct use of `useOperation` and `useResource` hooks.
+- **DataSources & Adapters**: Configures custom API endpoints with auth strategies.
+- **Operations as Atoms**: Defines functional actions (e.g., `publish-post`) decoupled from entity CRUD.
+- **Multi-App Context**: Shows how to deploy multiple apps (Public Site vs Admin Portal) with different `basePath` configurations.
+
+Output: `generated/phase1-acceptance/`

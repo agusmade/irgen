@@ -13,15 +13,18 @@ Dokumen ini merangkum **kebijakan frontend yang benar-benar diterapkan** di kode
   - `styling.theme.primaryColor` dipakai untuk aksen utama (CTA/button, icon tint, marketing sections).
   - `styling.theme.borderRadius` dipakai di komponen marketing untuk radius (hero/features/cta/timeline/testimonials/faq).
   - Tailwind dipakai sebagai CSS framework (default).
-- **Framework**
-  - Output selalu React + Vite + React Router + Lucide (package.json + config + imports).
+- **Framework & Rendering**
+  - Output always React + Vite + React Router + Lucide.
+  - `framework.rendering.mode`: `csr` (default), `ssg`, or `hybrid`.
+  - `framework.rendering.basePath`: base URL for routing (e.g., `/admin`).
+  - **Headless Runtime**: Generates `lib/runtime.ts` and `lib/hooks.ts` (`useOperation`, `useResource`) for backend communication.
 - **PWA**
-  - `pwa.enabled=true` akan menulis `manifest.webmanifest`, `public/pwa-sw.js`, dan `public/icons/icon.svg`, lalu register SW di entry.
+  - `pwa.enabled=true` will menulis `manifest.webmanifest`, `public/pwa-sw.js`, dan `public/icons/icon.svg`, lalu register SW di entry.
   - Nilai PWA dapat diisi dari DSL (`frontend(..., { pwa: {...} })`) atau dari `policies.frontend.pwa`.
 
 ## Masih rencana / belum diimplementasikan
 - **styling.cssFramework = "none"**: schema ada, tetapi emitter masih selalu menulis Tailwind config dan class Tailwind.
-- **framework.library/runtime/router/iconLibrary = "none"**: schema ada, tetapi emitter masih selalu memakai React/Vite/React Router/Lucide.
+- **framework.library/router/iconLibrary = "none"**: schema ada, tetapi emitter masih selalu memakai React/React Router/Lucide.
 - **Theme tokens lain** (font, spacing, shadows) belum ada di policy; hanya `primaryColor` dan `borderRadius`.
 
 ## Default FrontendPolicy (efektif out-of-box)

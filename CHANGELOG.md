@@ -2,6 +2,25 @@
 
 All notable changes to the `irgen` project will be documented in this file.
 
+## [0.2.0] - 2026-01-10
+
+### General Purpose Frontend & Headless Runtime (Phase 3)
+
+#### Core Architecture
+- **Operation-Oriented Runtime**: Transitioned from a "frontend for a specific backend" to a "general-purpose webapp generator". The runtime now treats **Operations** as the atom of interaction.
+- **Headless Client Runtime**: Implemented a backend-agnostic runtime (`lib/runtime.ts`) that manages operation execution, authentication, and response normalization without being tied to a specific UI framework.
+- **React Hooks Integration**: Introduced `useOperation` and `useResource` hooks for headless interaction, providing built-in loading, error, and data state management.
+- **DataSource Abstraction**: Support for multiple `datasources` with specialized `AuthStrategy`, `EnvelopeAdapter`, and `PaginationAdapter` to connect to any API (REST, GraphQL, etc.).
+
+#### UI & Components
+- **Operation-Bound Components**: Refactored Form and Select components to use the new `useOperation` hook.
+- **Table Component**: New first-class `Table` component with direct binding to operations or resources, featuring premium styling and automatic data fetching.
+- **Multi-App Deployment**: Support for `basePath` in frontend policies and IR, allowing multiple applications (e.g., `PublicSite` and `AdminPortal`) to be routed correctly under different subpaths.
+
+#### DSL Enhancements
+- **Modernized Frontend DSL**: `frontend()` now supports defining entities (`datasources`, `operations`, `resources`) directly via the options object or as standalone function calls within the callback.
+- **Improved Type Safety**: Refined `RuntimeComponent` and DSL helper types for better developer experience.
+
 ## [Unreleased] - 2026-01-01
 
 ### Major Features (Phases 9-10)

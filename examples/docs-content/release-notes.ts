@@ -15,12 +15,24 @@ export const releaseNotesSection: DocSection = {
     },
     {
       type: "section",
-      title: "Changelog",
+      title: "Latest: v0.2.0 - The General Purpose Release",
       blocks: [
         {
           type: "paragraph",
-          text: "See CHANGELOG.md in the repository for detailed release notes.",
+          text: [
+            "This release transforms irgen from a backend-specific generator into a",
+            "full General-Purpose Webapp Generator.",
+          ].join(" "),
         },
+      ],
+    },
+    {
+      type: "features",
+      items: [
+        { title: "Headless Runtime", description: "Backend-agnostic lib/runtime.ts for frontend apps.", icon: "Ghost" },
+        { title: "Operation-Oriented", description: "DSL support for datasources, operations, and resources.", icon: "Activity" },
+        { title: "React Integration", description: "Native useOperation and useResource hooks.", icon: "CheckCircle" },
+        { title: "Multi-App Support", description: "Deploy multiple apps with the basePath policy.", icon: "Layers" },
       ],
     },
     {

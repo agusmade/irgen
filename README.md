@@ -25,16 +25,19 @@ irgen focuses on **architecture and determinism**, not convenience shortcuts. ir
 - **Automated Testing**: Auto-generated `vitest` unit tests for services.
 
 ### Frontend (React/Vite)
-- **Multi-page SPA Support**: Generates a complete React Router based app with support for complex multi-page sites (Home, Features, Docs, etc.).
+- **General-Purpose Webapp Generator**: Move beyond "dashboard-only" UIs. Generate any web application by defining operations and data sources.
+- **Headless Client Runtime**: Decoupled `lib/runtime.ts` and React hooks (`useOperation`, `useResource`) manage interaction with any backend (REST, GraphQL, etc.).
+- **Operation-Oriented Architecture**: Actions (Operations) are the fundamental units of the client, allowing for complex command-oriented UIs.
+- **DataSource Abstraction**: Connect to multiple backends with pluggable `AuthStrategy`, `EnvelopeAdapter`, and `PaginationAdapter`.
 - **Global Dark Mode**: Built-in persistence (`localStorage`) and toggle in a sleek, glassmorphism Navbar.
 - **Rich UI Components**:
-  - **Forms**: text/number/select/textarea/checkbox/radio/date/datetime/time/url/phone/password/daterange, slider, currency, tags/chips, file upload, signature.
+  - **Forms**: 30+ field types including slider, currency, tags, file upload, and signature.
+  - **Table**: First-class table component with direct operation/resource binding and pagination.
   - **Marketing**: Responsive Hero, Features, Testimonials, FAQ, Logos, CTA, Stats, and Timeline sections.
   - **Dev Tools**: Native **Syntax Highlighter** (`CodeBlock`) with automatic dependency management.
-- **Tailwind CSS**: Automated styling configuration and adaptive dark mode variant support for all components.
-- **Layout & Content**: Row/column/panel/tabs containers; smooth transitions and premium micro-interactions.
-- **Form Logic & UX**: JSONLogic-like predicates, dependency-tracked `useEffect` hooks, async select with debounce/pagination/search.
-- **Submission Pipeline**: lifecycle hooks, confirm dialogs, and draft persistence.
+- **Multi-app Support**: Set `basePath` to deploy multiple apps (e.g., `/admin`, `/docs`) under a single project or domain.
+- **Form Logic & UX**: JSONLogic predicates, dependency-tracked hooks, async select with debounce/pagination/search.
+- **Submission Pipeline**: Lifecycle hooks, confirm dialogs, response handling, and draft persistence.
 
 ### Static Site (HTML-first)
 - **HTML-only output**: emits final HTML (no React hydration), JS is strictly progressive enhancement.

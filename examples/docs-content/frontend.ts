@@ -3,112 +3,123 @@ import type { DocSection } from "./types.js";
 export const frontendSection: DocSection = {
   id: "frontend",
   title: "Frontend",
-  subtitle: "One DSL, multiple rendering modes.",
-  description: "Frontend output is policy-driven without fragmenting the DSL.",
+  subtitle: "General-Purpose Webapp Generator.",
+  description: "Frontend output is backend-agnostic, operation-oriented, and policy-driven.",
   content: [
     {
       type: "paragraph",
       text: [
-        "irgen keeps a single frontend DSL. Rendering mode is chosen by policy during",
-        "lowering, allowing CSR, SSG, or hybrid output without changing DSL structure.",
+        "irgen generates full-stack web applications that are decoupled from specific backends.",
+        "Using a headless runtime model, your frontend can interact with any API through",
+        "standardized operations and data sources. This single DSL can then be rendered",
+        "in multiple modes: CSR, SSG, or Hybrid.",
       ].join(" "),
     },
     {
       type: "features",
       items: [
-        { title: "CSR", description: "Client-side React for dashboards and tools.", icon: "Cpu" },
-        { title: "SSG", description: "Build-time HTML for SEO and static hosting.", icon: "Layers" },
-        { title: "Static Site", description: "HTML-first output with optional enhancement.", icon: "Library" },
+        { title: "Operation-Oriented", description: "Operations are the atom of the contract, not just CRUD.", icon: "Activity" },
+        { title: "Headless Runtime", description: "Backend-agnostic lib/runtime.ts handles auth and data.", icon: "Ghost" },
+        { title: "Any Rendering", description: "Choose CSR, SSG, or Hybrid without changing DSL.", icon: "Waves" },
       ],
     },
     {
-      type: "code",
-      language: "typescript",
-      snippet: [
-        "frontend: {",
-        "  framework: {",
-        "    rendering: {",
-        "      mode: \"csr\" | \"ssg\" | \"hybrid\"",
-        "    }",
-        "  }",
-        "}",
-      ].join("\n"),
-    },
-    {
       type: "section",
-      title: "DSL Entry Points",
+      title: "Operation-Oriented Architecture",
       blocks: [
         {
           type: "paragraph",
           text: [
-            "irgen separates DSL by domain, not technology. Use app(...) for backend",
-            "and frontend(...) for UI and desktop targets.",
+            "Traditional generators are often tied to a single REST resource model.",
+            "irgen treats **Operations** as first-class citizens. Whether it is",
+            "publishing a post, processing a payment, or triggering a build,",
+            "every interaction is defined as a discrete operation bound to a DataSource.",
           ].join(" "),
         },
       ],
     },
     {
       type: "section",
-      title: "Target-Agnostic DSL",
+      title: "Headless Client Runtime",
       blocks: [
         {
           type: "paragraph",
           text: [
-            "The DSL declares what the UI is, not how it is rendered. Lowering decides",
-            "CSR, SSG, or other modes based on policy.",
+            "Every generated frontend includes a powerful `lib/runtime.ts`. This",
+            "runtime manages the execution loop, authentication, and response normalization.",
+            "Develop using standard React hooks: `useOperation(id)` for triggering actions",
+            "and `useResource(id)` for managing entity state.",
           ].join(" "),
         },
       ],
     },
     {
       type: "section",
-      title: "CSR",
+      title: "Client-Side Rendering (CSR)",
       blocks: [
         {
           type: "paragraph",
           text: [
             "CSR renders entirely in the browser. Initial HTML is a shell and JS is required",
-            "for meaningful output.",
+            "for meaningful output. This is the default for dynamic dashboards where",
+            "interactivity is the priority.",
           ].join(" "),
         },
       ],
     },
     {
       type: "section",
-      title: "SSG",
+      title: "Static Site Generation (SSG)",
       blocks: [
         {
           type: "paragraph",
           text: [
             "SSG renders at build time to produce static HTML. mode=\"ssg\" ships non-hydrated",
-            "pages, while mode=\"hybrid\" hydrates only when interactivity is required.",
+            "pages for maximum speed, while mode=\"hybrid\" hydrates (adds interactivity)",
+            "only when necessary. This is perfect for SEO-focused websites.",
           ].join(" "),
         },
       ],
     },
     {
       type: "section",
-      title: "Static Site",
+      title: "Progressive Web App (PWA)",
       blocks: [
         {
           type: "paragraph",
           text: [
-            "Static Site is a separate target that produces HTML-first output with optional",
-            "progressive enhancement and no React runtime. It has its own staticSite",
-            "policy block, separate from frontend.",
+            "PWA settings (manifest, icons, service workers) belong to the frontend target.",
+            "They configure installability and offline capabilities for web outputs",
+            "regardless of the rendering mode chosen.",
           ].join(" "),
         },
       ],
     },
     {
       type: "section",
-      title: "PWA",
+      title: "Support for Multi-App",
       blocks: [
         {
           type: "paragraph",
           text: [
-            "PWA settings belong to the frontend target. They configure manifests and",
-            "installability for web outputs without changing the DSL.",
+            "Using the `basePath` policy, you can generate and deploy multiple applications",
+            "(e.g., a Marketing Site at `/` and an Admin Portal at `/admin`) within the",
+            "same project structure, sharing the same operation definitions.",
+          ].join(" "),
+        },
+      ],
+    },
+    {
+      type: "section",
+      title: "Static Site Target vs React SSG",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "**Static Site** is a separate specialized target that produces HTML-first output",
+            "with zero React dependency, ideal for documentation. **React SSG** is a",
+            "rendering mode for the Frontend target that keeps the React ecosystem but",
+            "pre-renders the initial state.",
           ].join(" "),
         },
       ],
@@ -120,21 +131,9 @@ export const frontendSection: DocSection = {
         {
           type: "paragraph",
           text: [
-            "Electron is a separate target with its own policy block. Frontend focuses",
-            "on web outputs; Electron has distinct security and packaging concerns.",
-          ].join(" "),
-        },
-      ],
-    },
-    {
-      type: "section",
-      title: "Combining Targets",
-      blocks: [
-        {
-          type: "paragraph",
-          text: [
-            "A common pattern is React SSG for marketing pages and Static Site for docs.",
-            "Both outputs can be merged into a single dist directory for static hosting.",
+            "Electron is a separate target with its own policy block. While they share",
+            "the same UI DSL, Electron targets focus on desktop integration, local security,",
+            "and native packaging concerns.",
           ].join(" "),
         },
       ],
@@ -142,8 +141,9 @@ export const frontendSection: DocSection = {
     {
       type: "calloutLinks",
       links: [
+        { label: "See DSL Reference", href: "/dsl-reference/" },
         { label: "See Policies", href: "/policies/" },
-        { label: "See React SSG", href: "/react-ssg/" },
+        { label: "See React SSG Detail", href: "/react-ssg/" },
       ],
     },
   ],

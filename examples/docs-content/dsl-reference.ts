@@ -9,9 +9,37 @@ export const dslReferenceSection: DocSection = {
     {
       type: "paragraph",
       text: [
-        "irgen ships two DSL entry points: `app(...)` for backend and `frontend(...)`",
-        "for web UI targets. Each DSL maps to its own DomainIR.",
+        "irgen ships two primary entry points: `app(...)` for backend and `frontend(...)`.",
+        "Each DSL maps to its own DomainIR, allowing you to describe system intent",
+        "independently of implementation details.",
       ].join(" "),
+    },
+    {
+      type: "section",
+      title: "Core Concepts",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "To keep the architecture modular, irgen distinguishes between the data layer",
+            "and the interaction layer:",
+          ].join(" "),
+        },
+        {
+          type: "paragraph",
+          text: [
+            "• **Operation**: The atom of the backend contract. It defines a specific",
+            "API call (path, method, payload) regardless of how the UI uses it.",
+          ].join(" "),
+        },
+        {
+          type: "paragraph",
+          text: [
+            "• **Action**: The representation of intent in the UI. It binds a component",
+            "to an operation, handling state, loading, and optimistic updates.",
+          ].join(" "),
+        },
+      ],
     },
     {
       type: "code",
@@ -23,7 +51,6 @@ export const dslReferenceSection: DocSection = {
         "  a.entity(\"User\", (e) => {",
         "    e.model({ id: \"string\", email: \"string\" });",
         "    e.create();",
-        "    e.get();",
         "    e.list();",
         "  });",
         "});",
@@ -31,13 +58,13 @@ export const dslReferenceSection: DocSection = {
     },
     {
       type: "section",
-      title: "Frontend DSL",
+      title: "Common Frontend DSL",
       blocks: [
         {
           type: "paragraph",
           text: [
             "Frontend DSL declares pages and components. Components can be plain or",
-            "form-like; policies decide rendering and enhancements.",
+            "bound to operations; policies decide final rendering modes.",
           ].join(" "),
         },
         {
@@ -46,7 +73,7 @@ export const dslReferenceSection: DocSection = {
           snippet: [
             "import { frontend } from \"irgen\";",
             "",
-            "frontend(\"DemoFrontend\", (f) => {",
+            "frontend(\"DemoFE\", (f) => {",
             "  f.page(\"Home\", { path: \"/\" }, (p) => {",
             "    p.component(\"Hero\");",
             "  });",
@@ -60,25 +87,98 @@ export const dslReferenceSection: DocSection = {
     },
     {
       type: "section",
-      title: "Policies in DSL",
+      title: "Operation-Oriented DSL",
       blocks: [
         {
           type: "paragraph",
           text: [
-            "You can attach policy blocks directly in DSL options. Policies remain",
-            "declarative and are resolved in lowering.",
+            "The new frontend DSL supports an **Operation-Oriented** architecture with specialized",
+            "constructs for connecting to any API.",
+          ].join(" "),
+        },
+      ],
+    },
+    {
+      type: "section",
+      title: "Flexible Definitions",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "You can now define entities either directly in the options object",
+            "or using standalone function calls within the callback.",
           ].join(" "),
         },
         {
           type: "code",
           language: "typescript",
           snippet: [
-            "frontend(\"Docs\", {",
-            "  policies: {",
-            "    staticSite: { enhancements: { enabled: true } }",
-            "  }",
-            "}, (f) => {",
-            "  f.page(\"Home\", { path: \"/\" });",
+            "import { frontend, datasource } from \"irgen\";",
+            "",
+            "frontend(\"AdminApp\", {",
+            "  datasources: [{ id: \"api\", baseUrl: \"/api\" }]",
+            "}, (app) => {",
+            "  // Standalone function call",
+            "  datasource(\"legacy\", { baseUrl: \"https://old.api.com\" });",
+            "",
+            "  app.page(\"Dashboard\", ...);",
+            "});",
+          ].join("\n"),
+        },
+      ],
+    },
+    {
+      type: "section",
+      title: "Operation-Oriented UI",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "Use `datasource`, `operation`, and `resource` to model your data layer.",
+          ].join(" "),
+        },
+        {
+          type: "code",
+          language: "typescript",
+          snippet: [
+            "app.datasource(\"main\", { baseUrl: \"/api\", authStrategyId: \"bearer\" });",
+            "",
+            "app.operation(\"publish\", {",
+            "  datasourceId: \"main\",",
+            "  method: \"POST\",",
+            "  path: \"/posts/:id/publish\"",
+            "});",
+            "",
+            "app.resource(\"posts\", {",
+            "  datasourceId: \"main\",",
+            "  listOpId: \"list-posts\"",
+            "});",
+          ].join("\n"),
+        },
+      ],
+    },
+    {
+      type: "section",
+      title: "Component Helpers",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "New helpers like `table()` allow binding UI components directly to operations.",
+          ].join(" "),
+        },
+        {
+          type: "code",
+          language: "typescript",
+          snippet: [
+            "app.component(\"PostTable\", (c) => {",
+            "  c.table({",
+            "    operationId: \"list-posts\",",
+            "    columns: [",
+            "      { header: \"Title\", accessor: \"title\" },",
+            "      { header: \"Status\", accessor: \"status\" }",
+            "    ]",
+            "  });",
             "});",
           ].join("\n"),
         },
@@ -87,8 +187,8 @@ export const dslReferenceSection: DocSection = {
     {
       type: "calloutLinks",
       links: [
+        { label: "See Frontend Docs", href: "/frontend/" },
         { label: "See Policies", href: "/policies/" },
-        { label: "See CLI Reference", href: "/cli-reference/" },
       ],
     },
   ],

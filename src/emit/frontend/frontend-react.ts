@@ -8,6 +8,7 @@ import { emitterEngine } from "../engine.js";
 import { registerTargetEmitter } from "../registry.js";
 import { pascal, kebab } from "../../utils/string.js";
 import { emitSsgSupport } from "./ssg.js";
+import { emitRuntime } from "./runtime-emitter.js";
 
 function hasMarkdownCodeBlocks(ir: FrontendTargetIR): boolean {
   const hasFence = (text?: string) => typeof text === "string" && /```/.test(text);
@@ -411,6 +412,7 @@ export function emitFrontend(project: Project, outDir: string, ir: FrontendTarge
   emitPwaAssets(outDir, ir);
   emitViteConfig(project, outDir, policy);
   emitSharedLogic(project, frontendDir);
+  emitRuntime(project, frontendDir, ir);
 
   const searchIndex = buildSearchIndex(ir);
   project.createSourceFile(
@@ -443,6 +445,9 @@ export function emitFrontend(project: Project, outDir: string, ir: FrontendTarge
     clientEntry.addImportDeclaration({ moduleSpecifier: "prismjs/components/prism-css" });
   }
 
+  const basePath = ir.basePath || policy.framework.rendering.basePath || "/";
+  const hasBasePath = basePath !== "/";
+
   if (mode === "hybrid") {
     clientEntry.addStatements(`
 const rootElement = document.getElementById('root') as HTMLElement | null;
@@ -454,7 +459,7 @@ if (rootElement) {
     const root = createRoot(rootElement);
     root.render(
       <React.StrictMode>
-        <BrowserRouter>
+        <BrowserRouter${hasBasePath ? ` basename="${basePath}"` : ""}>
           <App />
         </BrowserRouter>
       </React.StrictMode>
@@ -463,7 +468,7 @@ if (rootElement) {
     hydrateRoot(
       rootElement,
       <React.StrictMode>
-        <BrowserRouter>
+        <BrowserRouter${hasBasePath ? ` basename="${basePath}"` : ""}>
           <App />
         </BrowserRouter>
       </React.StrictMode>
@@ -476,7 +481,7 @@ if (rootElement) {
 const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter${hasBasePath ? ` basename="${basePath}"` : ""}>
       <App />
     </BrowserRouter>
   </React.StrictMode>
@@ -995,7 +1000,7 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
   const sf = project.createSourceFile(filePath, "", { overwrite: true });
 
   const hasIpcButton = Boolean((component as any).props && (component as any).props["ipcChannel"]);
-  const needsHooks = !!component.themeToggle || !!(component.form && component.form.fields && component.form.fields.length > 0) || (component.layout?.kind === "tabs") || hasIpcButton;
+  const needsHooks = !!component.themeToggle || !!(component.form && component.form.fields && component.form.fields.length > 0) || (component.layout?.kind === "tabs") || hasIpcButton || !!component.table;
   if (needsHooks) {
     sf.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React", namedImports: ["useEffect", "useState"] });
   } else {
@@ -1003,6 +1008,7 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
   }
   sf.addImportDeclaration({ moduleSpecifier: "lucide-react", namespaceImport: "Icons" });
   sf.addImportDeclaration({ moduleSpecifier: "../lib/logic", namedImports: ["evalLogic", "getByPath", "isEmptyVal"] });
+  sf.addImportDeclaration({ moduleSpecifier: "../lib/hooks", namedImports: ["useOperation", "useResource"] });
 
   if (component.codeBlock) {
     sf.addImportDeclaration({
@@ -1447,25 +1453,17 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
           const pageSizeParam = f.dataSource.pageSizeParam ?? "pageSize";
           const pageSize = f.dataSource.pageSize ?? 20;
           const debounceMs = f.dataSource.debounceMs ?? 300;
+
+          writer.writeLine(`const op_${varName} = useOperation("${f.dataSource.url}"); // In future, this will be an operationId`);
           writer.writeLine(`useEffect(() => {`);
-          writer.writeLine(`  const handle = setTimeout(() => {`);
-          writer.writeLine(`  setLoading_${varName}(true); setError_${varName}(null);`);
-          writer.writeLine(`  const url = new URL("${f.dataSource.url}", window.location.origin);`);
-          writer.writeLine(`  url.searchParams.set("${searchParam}", search_${varName});`);
-          writer.writeLine(`  url.searchParams.set("${pageParam}", String(page_${varName}));`);
-          writer.writeLine(`  url.searchParams.set("${pageSizeParam}", String(${pageSize}));`);
-          writer.writeLine(`  fetch(url.toString())`);
-          writer.writeLine(`    .then(r => r.json())`);
-          writer.writeLine(`    .then(data => {`);
-          writer.writeLine(`      const arr = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []);`);
-          writer.writeLine(`      setOptions_${varName}(arr.map((item: any) => ({ label: item["${f.dataSource.labelKey}"], value: item["${f.dataSource.valueKey}"] })));`);
-          writer.writeLine(`      setHasMore_${varName}(arr.length >= ${pageSize});`);
-          writer.writeLine(`    })`);
-          writer.writeLine(`    .catch(err => setError_${varName}(err?.message ?? "Failed to load options"))`);
-          writer.writeLine(`    .finally(() => setLoading_${varName}(false));`);
+          writer.writeLine(`  const handle = setTimeout(async () => {`);
+          writer.writeLine(`    await op_${varName}.execute({ [ "${searchParam}" ]: search_${varName}, ["${pageParam}"]: page_${varName}, ["${pageSizeParam}"]: ${pageSize} });`);
           writer.writeLine(`  }, ${debounceMs});`);
           writer.writeLine(`  return () => clearTimeout(handle);`);
           writer.writeLine(`}, [search_${varName}, page_${varName}]);`);
+          writer.writeLine(`useEffect(() => {`);
+          writer.writeLine(`  if (op_${varName}.data) setOptions_${varName}(op_${varName}.data as any);`);
+          writer.writeLine(`}, [op_${varName}.data]);`);
         }
 
         if (f.loweredDefaultValue) {
@@ -1560,7 +1558,6 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
       writer.writeLine(`  return Object.keys(n).length === 0;`);
       writer.writeLine(`};`);
 
-      writer.writeLine(`const [submitting, setSubmitting] = useState(false);`);
       writer.writeLine(`const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);`);
       writer.writeLine(`const [submitError, setSubmitError] = useState<string | null>(null);`);
       if (component.form.submit?.draftKey) {
@@ -1577,6 +1574,7 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
         writer.writeLine(`  try { localStorage.setItem("${component.form.submit.draftKey}", JSON.stringify(data)); } catch (_) {}`);
         writer.writeLine(`}, [${stateVars.join(", ")}]);`);
       }
+      writer.writeLine(`const submitOp = useOperation("${component.form.submit?.url ?? ""}");`);
       writer.writeLine(`const onSubmit = async (e: any) => { e.preventDefault(); setSubmitSuccess(null); setSubmitError(null);`);
       if (component.form.submit?.confirmMessage) {
         writer.writeLine(`  if (!window.confirm(${JSON.stringify(component.form.submit.confirmMessage)})) return;`);
@@ -1589,31 +1587,27 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
       writer.writeLine(`    if (shouldContinue === false) { setSubmitError("Submission cancelled"); return; }`);
       writer.writeLine(`  }`);
       writer.writeLine(`  if (!${component.form.submit ? "true" : "false"}) { setSubmitSuccess("Saved (mock)"); return; }`);
-      writer.writeLine(`  setSubmitting(true);`);
-      writer.writeLine(`  try {`);
-      writer.writeLine(`    const res = await fetch("${component.form.submit?.url ?? ""}", { method: "${component.form.submit?.method ?? "POST"}", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });`);
-      writer.writeLine(`    if (!res.ok) throw new Error("Submit failed");`);
+      writer.writeLine(`  const res = await submitOp.execute(payload);`);
+      writer.writeLine(`  if (res.ok) {`);
       writer.writeLine(`    setSubmitSuccess(${component.form.submit?.successMessage ? JSON.stringify(component.form.submit.successMessage) : `"Saved"`});`);
-      writer.writeLine(`    const hookCtx = { ...ctx, payload, response: await res.clone().json().catch(() => null) };`);
+      writer.writeLine(`    const hookCtx = { ...ctx, payload, response: res.data };`);
       if (component.form.submit?.onSuccess) {
         writer.writeLine(`    evalLogic(${JSON.stringify(component.form.submit.onSuccess)}, undefined, hookCtx);`);
       }
       if (component.form.submit?.redirect) {
         writer.writeLine(`    window.location.href = ${JSON.stringify(component.form.submit.redirect)};`);
       }
-      writer.writeLine(`  } catch (err: any) {`);
-      writer.writeLine(`    setSubmitError(${component.form.submit?.errorMessage ? JSON.stringify(component.form.submit.errorMessage) : `"Submit error"`});`);
-      writer.writeLine(`    const hookCtx = { ...ctx, payload, error: err?.message ?? err };`);
+      writer.writeLine(`  } else {`);
+      writer.writeLine(`    setSubmitError(res.error?.message ?? ${component.form.submit?.errorMessage ? JSON.stringify(component.form.submit.errorMessage) : `"Submit error"`});`);
+      writer.writeLine(`    const hookCtx = { ...ctx, payload, error: res.error };`);
       if (component.form.submit?.onError) {
         writer.writeLine(`    evalLogic(${JSON.stringify(component.form.submit.onError)}, undefined, hookCtx);`);
       }
-      writer.writeLine(`  } finally {`);
-      if (component.form.submit?.afterSubmit) {
-        writer.writeLine(`    const hookCtx = { ...ctx, payload };`);
-        writer.writeLine(`    evalLogic(${JSON.stringify(component.form.submit.afterSubmit)}, undefined, hookCtx);`);
-      }
-      writer.writeLine(`    setSubmitting(false);`);
       writer.writeLine(`  }`);
+      if (component.form.submit?.afterSubmit) {
+        writer.writeLine(`  const hookCtx = { ...ctx, payload };`);
+        writer.writeLine(`  evalLogic(${JSON.stringify(component.form.submit.afterSubmit)}, undefined, hookCtx);`);
+      }
       writer.writeLine(`};`);
 
       // 4. RENDER
@@ -1853,8 +1847,8 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
 
       writer.writeLine(`    {submitSuccess && <div className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 px-4 py-3 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2">{submitSuccess}</div>}`);
       writer.writeLine(`    {submitError && <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50 px-4 py-3 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2">{submitError}</div>}`);
-      writer.writeLine(`    <button className="${btnClass} w-full shadow-lg" style={{ backgroundColor: "${primaryColor}" }} type="submit" disabled={submitting}>`);
-      writer.writeLine(`      {submitting ? (`);
+      writer.writeLine(`    <button className="${btnClass} w-full shadow-lg" style={{ backgroundColor: "${primaryColor}" }} type="submit" disabled={submitOp.loading}>`);
+      writer.writeLine(`      {submitOp.loading ? (`);
       writer.writeLine(`        <span className="flex items-center gap-2">`);
       writer.writeLine(`          <Icons.Loader2 className="animate-spin" size={18} />`);
       writer.writeLine(`          Submitting...`);
@@ -1865,6 +1859,40 @@ function emitComponent(project: Project, frontendDir: string, component: Fronten
       writer.writeLine(`);`);
 
     } else {
+      if (component.table) {
+        const opId = component.table.operationId || (component.table.resourceId ? `${component.table.resourceId}.list` : "");
+        writer.writeLine(`const op = useOperation("${opId}");`);
+        writer.writeLine(`useEffect(() => { op.execute(); }, []);`);
+        writer.writeLine(`const data = op.data || [];`);
+        writer.writeLine(`return (`);
+        writer.writeLine(`  <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden">`);
+        writer.writeLine(`    <div className="overflow-x-auto">`);
+        writer.writeLine(`      <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800">`);
+        writer.writeLine(`        <thead className="bg-slate-50/50 dark:bg-slate-900/50">`);
+        writer.writeLine(`          <tr>`);
+        for (const col of component.table.columns ?? []) {
+          writer.writeLine(`            <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">${col.header}</th>`);
+        }
+        writer.writeLine(`          </tr>`);
+        writer.writeLine(`        </thead>`);
+        writer.writeLine(`        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">`);
+        writer.writeLine(`          {op.loading && <tr><td colSpan={${component.table.columns?.length ?? 1}} className="px-6 py-10 text-center text-slate-400">Loading...</td></tr>}`);
+        writer.writeLine(`          {!op.loading && data.length === 0 && <tr><td colSpan={${component.table.columns?.length ?? 1}} className="px-6 py-10 text-center text-slate-400">No data available</td></tr>}`);
+        writer.writeLine(`          {data.map((item: any, i: number) => (`);
+        writer.writeLine(`            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-150">`);
+        for (const col of component.table.columns ?? []) {
+          writer.writeLine(`              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300 font-medium">{String(item["${col.accessor}"])}</td>`);
+        }
+        writer.writeLine(`            </tr>`);
+        writer.writeLine(`          ))}`);
+        writer.writeLine(`        </tbody>`);
+        writer.writeLine(`      </table>`);
+        writer.writeLine(`    </div>`);
+        writer.writeLine(`  </div>`);
+        writer.writeLine(`);`);
+        return;
+      }
+
       writer.writeLine(`return (`);
       writer.writeLine(`  <div className=\"p-6 bg-white shadow rounded-lg\">`);
       if (component.entityRef) {

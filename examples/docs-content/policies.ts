@@ -21,11 +21,26 @@ export const policiesSection: DocSection = {
         "policies: {",
         "  backend: { core: { generateId: \"uuid_v4\" } },",
         "  frontend: {",
+        "    basePath: \"/admin\",",
         "    framework: { rendering: { mode: \"ssg\", prerender: { routes: \"auto\" } } }",
         "  },",
         "  staticSite: { enabled: true, baseUrl: \"/docs/\" }",
         "}",
       ].join("\n"),
+    },
+    {
+      type: "section",
+      title: "Multi-Application Support",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "With the `basePath` policy, irgen can generate different frontend",
+            "targets that coexist on the same domain. For example, a marketing",
+            "site at `/` (mode: ssg) and an admin dashboard at `/admin` (mode: csr).",
+          ].join(" "),
+        },
+      ],
     },
     {
       type: "section",

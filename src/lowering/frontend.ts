@@ -171,6 +171,7 @@ export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): Fronten
     themeToggle: c.themeToggle,
     codeBlock: c.codeBlock,
     marketing: c.marketing,
+    table: c.table,
   });
 
   const pages = (decl.pages ?? []).map((p: any) => ({
@@ -187,8 +188,28 @@ export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): Fronten
   return {
     domain: "frontend",
     appName: decl.name,
+    basePath: decl.basePath ?? "/",
     pages,
     components,
+    datasources: decl.datasources ?? [],
+    operations: (decl.operations ?? []).map((op: any) => ({
+      ...op,
+      // In Phase 2, we might want to normalize logic expressions in operations too
+      pathParams: lowerLogicExpression(op.pathParams),
+      query: lowerLogicExpression(op.query),
+      headers: lowerLogicExpression(op.headers),
+      body: op.body ? {
+        ...op.body,
+        build: lowerLogicExpression(op.body.build)
+      } : undefined,
+      resultHandling: op.resultHandling ? {
+        ...op.resultHandling,
+        redirectTo: lowerLogicExpression(op.resultHandling.redirectTo),
+        openUrl: lowerLogicExpression(op.resultHandling.openUrl),
+        downloadAs: lowerLogicExpression(op.resultHandling.downloadAs),
+      } : undefined
+    })),
+    resources: decl.resources ?? [],
     pwa: resolvePwaConfig(decl, policies),
   };
 }

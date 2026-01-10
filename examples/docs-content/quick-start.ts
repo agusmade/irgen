@@ -5,7 +5,7 @@ export const quickStartSection: DocSection = {
   title: "Quick Start",
   subtitle: "Get a working project in minutes.",
   hideHeader: true,
-  description: "A short path to generate your first backend or frontend output using irgen.",
+  description: "Two short paths: connect to an existing API, or generate a full-stack starter.",
   content: [
     {
       type: "hero",
@@ -16,37 +16,111 @@ export const quickStartSection: DocSection = {
     {
       type: "paragraph",
       text: [
-        "irgen treats code generation like compilation. You describe intent in DSL,",
-        "apply policies for target behavior, and run the CLI to emit code.",
-        "Use the Architecture and Policies pages to understand the decision flow.",
+        "irgen can generate frontend apps, backend targets, or both.",
+        "These can share the same contracts, or run independently and integrate with existing frontend and/or backend systems.",
+        "It treats code generation like compilation: you describe intent in DSL, apply policies for target behavior, and emit code.",
       ].join(" "),
     },
     {
       type: "features",
       items: [
-        { title: "Install", description: "Use the CLI from npm with Node.js >= 18.", icon: "Terminal" },
-        { title: "Describe", description: "Write DSL for backend or frontend intent.", icon: "FileCode" },
-        { title: "Generate", description: "Emit deterministic outputs per target.", icon: "Layers" },
+        { title: "Operation-Oriented", description: "Define operations (contracts) and bind UI to them.", icon: "Activity" },
+        { title: "Full-Stack", description: "Generate frontend only, backend only, or both from one DSL.", icon: "Layers" },
+        { title: "Policy-Driven", description: "Same intent, different rendering/persistence via policies.", icon: "Shield" },
       ],
     },
     {
-      type: "code",
-      language: "typescript",
-      snippet: [
-        'import { app, frontend } from "irgen";',
-        "",
-        'app("MyService", (be) => {',
-        '  be.entity("User", (e) => {',
-        '    e.field("email", "string", { format: "email" });',
-        "  });",
-        "});",
-        "",
-        'frontend("AdminPanel", (fe) => {',
-        '  fe.page("Home", { path: "/" }, (p) => {',
-        '    p.component("UserList");',
-        "  });",
-        "});",
-      ].join("\n"),
+      type: "section",
+      title: "Core Concept: Operation vs Action",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "An **Operation** is a backend contract: a request (query or command) with a defined input and output.",
+            "An **Action** is how an operation is triggered in the UI (button click, form submit, row action, etc.).",
+            "Operation is the architectural atom; Action is a UI concern. CRUD is just a common pattern of operations, not a requirement.",
+          ].join(" "),
+        },
+      ],
+    },
+    {
+      type: "section",
+      title: "Path A: Operation-First (Existing API)",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "Use this path if your backend already exists (internal API, SaaS, PHP shared hosting, etc.).",
+            "irgen generates a headless runtime and React components bound to your API contracts.",
+          ].join(" "),
+        },
+        {
+          type: "code",
+          language: "typescript",
+          snippet: [
+            'import { frontend } from "irgen";',
+            "",
+            'frontend("AdminApp", (app) => {',
+            '  // 1) Define where requests go',
+            '  app.datasource("api", { baseUrl: "https://api.example.com" });',
+            "",
+            '  // 2) Define the contract (Operation)',
+            '  app.operation("listUsers", { datasourceId: "api", method: "GET", path: "/users" });',
+            '  app.operation("disableUser", { datasourceId: "api", method: "POST", path: "/users/:id/disable" });',
+            "",
+            '  // 3) Bind UI to operations',
+            '  app.page("Users", (p) => {',
+            '    p.component("UserTable", (c) => {',
+            '      c.table({ operationId: "listUsers" });',
+            '      c.action({ label: "Disable", operationId: "disableUser" });',
+            '    });',
+            '  });',
+            '});',
+          ].join("\n"),
+        },
+      ],
+    },
+    {
+      type: "section",
+      title: "Path B: Full-Stack (New Backend)",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "Use this path if you want irgen to generate both backend and frontend.",
+            "irgen provides higher-level DSL constructs (like entities/resources) that expand into underlying operations.",
+          ].join(" "),
+        },
+        {
+          type: "code",
+          language: "typescript",
+          snippet: [
+            'import { app, frontend } from "irgen";',
+            "",
+            '// 1) Describe the backend target',
+            'app("MyService", (be) => {',
+            '  be.entity("Profile", (e) => {',
+            '    e.model({ name: "string" });',
+            '    e.list(); // sugar: expands into operations (list/get/create/update/delete as needed)',
+            '  });',
+            '});',
+            "",
+            '// 2) Describe the frontend (binds to operations)',
+            'frontend("AdminPanel", (fe) => {',
+            '  fe.page("Home", (p) => {',
+            '    p.component("ProfileList");',
+            '  });',
+            '});',
+          ].join("\n"),
+        },
+        {
+          type: "paragraph",
+          text: [
+            "The important part: even if you start from a high-level CRUD abstraction, irgen still lowers it into Operations.",
+            "That keeps the architecture consistent across both paths.",
+          ].join(" "),
+        },
+      ],
     },
     {
       type: "section",
@@ -55,8 +129,8 @@ export const quickStartSection: DocSection = {
         {
           type: "paragraph",
           text: [
-            "Run the CLI for the targets you need. Static-site is a separate target,",
-            "while React SSG is a rendering mode within the frontend target.",
+            "Run the CLI for the targets you need.",
+            "Static-site is a separate target, while React SSG is a rendering mode within the frontend target.",
           ].join(" "),
         },
         {
@@ -76,31 +150,14 @@ export const quickStartSection: DocSection = {
         {
           type: "paragraph",
           text: [
-            "Use the published CLI for reproducible builds. The CLI uses the tsx loader",
-            "to run .dsl.ts files (including imported .ts modules) without extra setup.",
+            "Use the published CLI for reproducible builds.",
+            "The CLI uses the tsx loader to run .dsl.ts files (including imported .ts modules) without extra setup.",
           ].join(" "),
         },
         {
           type: "code",
           language: "bash",
-          snippet: [
-            "npm install -g irgen",
-            "irgen --version",
-          ].join("\n"),
-        },
-      ],
-    },
-    {
-      type: "section",
-      title: "Pick a Starting Path",
-      blocks: [
-        {
-          type: "paragraph",
-          text: [
-            "If you want structure first, read Architecture and Policies. If you want",
-            "hands-on output, start with Backend or Frontend. Documentation sites live",
-            "under Static Site and React SSG.",
-          ].join(" "),
+          snippet: ["npm install -g irgen", "irgen --version"].join("\n"),
         },
       ],
     },

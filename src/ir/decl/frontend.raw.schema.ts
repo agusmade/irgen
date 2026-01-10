@@ -153,10 +153,15 @@ export const DeclComponentSchema = z.object({
     })).optional(),
   }).optional(),
   content: z.string().optional(),
-  button: z.object({
-    label: z.string(),
-    variant: z.enum(["primary", "secondary", "ghost"]).optional(),
-    icon: z.string().optional(),
+  button: z.object({ label: z.string(), variant: z.enum(["primary", "secondary", "ghost"]).optional(), icon: z.string().optional() }).optional(),
+  table: z.object({
+    resourceId: z.string().optional(),
+    operationId: z.string().optional(),
+    columns: z.array(z.object({
+      header: z.string(),
+      accessor: z.string(),
+      render: z.string().optional(),
+    })).optional(),
   }).optional(),
   themeToggle: z.boolean().optional(),
   codeBlock: z.object({
@@ -199,11 +204,81 @@ export const DeclPwaConfigSchema = z.object({
   icons: z.array(DeclPwaIconSchema).optional(),
 });
 
+const DeclDataSourceSchema = z.object({
+  id: z.string().min(1),
+  baseUrl: z.string().min(1),
+  defaultHeaders: z.record(z.string()).optional(),
+  withCredentials: z.boolean().optional(),
+  timeoutMs: z.number().optional(),
+  authStrategyId: z.string().optional(),
+  csrfStrategyId: z.string().optional(),
+  capabilities: z.object({
+    supportsCookies: z.boolean().optional(),
+    supportsCsrf: z.boolean().optional(),
+    supportsMultipart: z.boolean().optional(),
+    supportsStreaming: z.boolean().optional(),
+  }).optional(),
+});
+
+const DeclOperationResultHandlingSchema = z.object({
+  invalidate: z.array(z.union([
+    z.object({ kind: z.literal("resourceList"), resourceId: z.string() }),
+    z.object({ kind: z.literal("resourceDetail"), resourceId: z.string(), id: z.string() }),
+    z.object({ kind: z.literal("operation"), operationId: z.string() }),
+    z.object({ kind: z.literal("custom"), key: z.any() }),
+  ])).optional(),
+  redirectTo: LogicExprSchema.optional(),
+  openUrl: LogicExprSchema.optional(),
+  downloadAs: LogicExprSchema.optional(),
+  toastOnSuccess: z.object({ kind: z.enum(["success", "info", "warning", "error"]), message: z.string() }).optional(),
+  toastOnError: z.object({ kind: z.enum(["success", "info", "warning", "error"]), message: z.string() }).optional(),
+});
+
+const DeclOperationSchema = z.object({
+  id: z.string().min(1),
+  datasourceId: z.string().min(1),
+  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]),
+  path: z.string().min(1),
+  pathParams: LogicExprSchema.optional(),
+  query: LogicExprSchema.optional(),
+  headers: LogicExprSchema.optional(),
+  body: z.object({
+    type: z.enum(["none", "json", "text", "multipart", "formUrlEncoded"]),
+    build: LogicExprSchema.optional(),
+    contentType: z.string().optional(),
+    accept: z.string().optional(),
+  }).optional(),
+  response: z.object({
+    type: z.enum(["json", "text", "html", "blob"]),
+    envelopeAdapterId: z.string().optional(),
+    paginationAdapterId: z.string().optional(),
+    filenameHint: z.string().optional(),
+  }),
+  resultHandling: DeclOperationResultHandlingSchema.optional(),
+  requiresAuth: z.boolean().optional(),
+  requiredRoles: z.array(z.string()).optional(),
+});
+
+const DeclResourceSchema = z.object({
+  id: z.string().min(1),
+  datasourceId: z.string().min(1),
+  idField: z.string().optional(),
+  listOpId: z.string().optional(),
+  getOpId: z.string().optional(),
+  createOpId: z.string().optional(),
+  updateOpId: z.string().optional(),
+  deleteOpId: z.string().optional(),
+});
+
 export const DeclFrontendAppSchema = z.object({
   type: z.literal("frontend"),
   name: z.string().min(1),
+  basePath: z.string().default("/"),
   pages: z.array(DeclPageSchema).default([]),
   components: z.array(DeclComponentSchema).default([]),
+  datasources: z.array(DeclDataSourceSchema).default([]),
+  operations: z.array(DeclOperationSchema).default([]),
+  resources: z.array(DeclResourceSchema).default([]),
   pwa: DeclPwaConfigSchema.optional(),
   meta: z.record(z.any()).default({}),
 });

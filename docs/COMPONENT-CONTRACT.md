@@ -27,6 +27,7 @@ These fields should be supported by **both** emitters:
 | `marketing.kind = logos` | Partner list | Title/subtitle + items. |
 | `agentChat` | Chat transcript card | Title + messages (user/agent). |
 | `cliUsage` | CLI usage panel | Title + command + options list. |
+| `table` | Data table | Static HTML table in static-site; Operation/Resource bound in frontend. |
 
 ## Extended (Frontend-Only or Fallback)
 

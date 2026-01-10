@@ -99,6 +99,11 @@ export interface FrontendComponent {
   };
   content?: string;
   button?: { label: string; variant?: "primary" | "secondary" | "ghost"; icon?: string };
+  table?: {
+    resourceId?: string;
+    operationId?: string;
+    columns?: Array<{ header: string; accessor: string; render?: string }>;
+  };
   themeToggle?: boolean;
   codeBlock?: { snippet: string; language: string; showLineNumbers?: boolean };
   marketing?: FrontendMarketing;
@@ -159,10 +164,20 @@ export interface FrontendPwaConfig {
   icons?: FrontendPwaIcon[];
 }
 
+import type {
+  DataSourceRuntimeConfig,
+  OperationSpec,
+  ResourceSpec
+} from "../../frontend-contract.js";
+
 export interface FrontendIR {
   domain: "frontend";
   appName: string;
+  basePath: string;
   pages: FrontendPage[];
   components: FrontendComponent[];
+  datasources: DataSourceRuntimeConfig[];
+  operations: OperationSpec[];
+  resources: ResourceSpec[];
   pwa?: FrontendPwaConfig;
 }
