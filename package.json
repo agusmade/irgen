@@ -1,6 +1,6 @@
 {
   "name": "irgen",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": false,
   "license": "MIT",
   "description": "a policy-driven, IR-based code generation toolchain for backend, frontend, and beyond.",
@@ -45,7 +45,7 @@
   },
   "scripts": {
     "dev": "tsx src/cli.ts examples/app.dsl.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "rimraf dist && tsc -p tsconfig.json",
     "build:backend": "tsc -p tsconfig.backend.json",
     "start": "node dist/cli.js examples/app.dsl.ts",
     "clean": "rimraf dist generated*",

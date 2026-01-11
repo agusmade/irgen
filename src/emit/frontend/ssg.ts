@@ -68,10 +68,14 @@ export function emitSsgSupport(project: Project, outDir: string, frontendDir: st
   serverEntry.addImportDeclaration({ moduleSpecifier: "react-router-dom/server", namedImports: ["StaticRouter"] });
   serverEntry.addImportDeclaration({ moduleSpecifier: "./App", namedImports: ["App"] });
   serverEntry.addStatements(`
+const basePath = "${policy.framework.rendering.basePath}".replace(/\\/$/, "");
+const hasBasePath = basePath && basePath !== "/";
+
 export function render(url: string) {
+  const location = hasBasePath ? \`\${basePath}\${url}\` : url;
   const html = renderToString(
     <React.StrictMode>
-      <StaticRouter location={url} basename="${policy.framework.rendering.basePath}">
+      <StaticRouter location={location} basename={hasBasePath ? basePath : undefined}>
         <App />
       </StaticRouter>
     </React.StrictMode>
@@ -88,6 +92,8 @@ export function render(url: string) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     ${ir.pwa?.enabled ? `<link rel="manifest" href="${policy.framework.rendering.basePath.replace(/\/$/, "")}/manifest.webmanifest" />` : ""}
+    ${ir.pwa?.enabled ? `<link rel="icon" href="${policy.framework.rendering.basePath.replace(/\/$/, "")}/icons/icon.svg" />` : ""}
+    ${ir.pwa?.enabled ? `<link rel="apple-touch-icon" href="${policy.framework.rendering.basePath.replace(/\/$/, "")}/icons/icon.svg" />` : ""}
     ${ir.pwa?.enabled ? `<meta name="theme-color" content="${ir.pwa.themeColor}" />` : ""}
     <!--app-head-->
     <title>${ir.appName}</title>

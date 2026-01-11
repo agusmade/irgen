@@ -284,6 +284,9 @@ function emitPwaAssets(outDir: string, ir: FrontendTargetIR) {
   if (!ir.pwa?.enabled) return;
 
   const pwa = ir.pwa;
+  const basePath = ir.policies.frontend.framework.rendering.basePath || "/";
+  const swBasePath = basePath === "/" ? "" : basePath.replace(/\/$/, "");
+  const manifestIconPath = basePath === "/" ? "/icons/icon.svg" : `${basePath.replace(/\/$/, "")}/icons/icon.svg`;
   const manifest = {
     name: pwa.name,
     short_name: pwa.shortName,
@@ -295,7 +298,7 @@ function emitPwaAssets(outDir: string, ir: FrontendTargetIR) {
     theme_color: pwa.themeColor,
     orientation: pwa.orientation,
     icons: pwa.icons ?? [
-      { src: "/icons/icon.svg", sizes: "any", type: "image/svg+xml" },
+      { src: manifestIconPath, sizes: "any", type: "image/svg+xml" },
     ],
   };
 
@@ -320,7 +323,11 @@ function emitPwaAssets(outDir: string, ir: FrontendTargetIR) {
 
   const sw = `
 const CACHE_NAME = "irgen-pwa-v1";
-const ASSETS = ["/", "/index.html", "/manifest.webmanifest"];
+const ASSETS = [
+  "${swBasePath}/",
+  "${swBasePath}/index.html",
+  "${swBasePath}/manifest.webmanifest"
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -343,7 +350,7 @@ self.addEventListener("fetch", (event) => {
         const copy = resp.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         return resp;
-      }).catch(() => caches.match("/index.html"));
+      }).catch(() => caches.match("${swBasePath}/index.html"));
     })
   );
 });
@@ -445,7 +452,10 @@ export function emitFrontend(project: Project, outDir: string, ir: FrontendTarge
     clientEntry.addImportDeclaration({ moduleSpecifier: "prismjs/components/prism-css" });
   }
 
-  const basePath = ir.basePath || policy.framework.rendering.basePath || "/";
+  const policyBasePath = policy.framework.rendering.basePath || "/";
+  const irBasePath = ir.basePath || "/";
+  const basePathRaw = policyBasePath !== "/" ? policyBasePath : irBasePath;
+  const basePath = basePathRaw.replace(/\/$/, "") || "/";
   const hasBasePath = basePath !== "/";
 
   if (mode === "hybrid") {
@@ -490,10 +500,11 @@ root.render(
   }
 
   if (ir.pwa?.enabled) {
+    const swBasePath = basePath !== "/" ? basePath : "";
     clientEntry.addStatements(`
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/pwa-sw.js').catch(err => {
+    navigator.serviceWorker.register('${swBasePath}/pwa-sw.js').catch(err => {
       console.error('Service worker registration failed', err);
     });
   });
@@ -546,7 +557,7 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("const [tocItems, setTocItems] = useState([] as Array<{ id: string; text: string; level: number }>);");
     writer.writeLine("const [activeToc, setActiveToc] = useState(\"\" as string);");
     writer.writeLine("const location = useLocation();");
-    writer.writeLine(`const basePath = "${policy.framework.rendering.basePath}";`);
+    writer.writeLine(`const basePath = "${policy.framework.rendering.basePath}".replace(/\\/$/, "") || "/";`);
     writer.writeLine("const relativePath = location.pathname.startsWith(basePath) ? location.pathname.substring(basePath.length) || '/' : location.pathname;");
     writer.writeLine(`const docsLinks = ${JSON.stringify(docsLinks, null, 2)};`);
     writer.writeLine(`const defaultDocsGroupLabel = ${JSON.stringify(docsGroupLabel)};`);
@@ -768,13 +779,16 @@ if ('serviceWorker' in navigator) {
   // index.html (SPA fallback / CSR entry)
   // Note: Vite handles prefixing based on 'base' config during build. 
   // Scripts in index.html should point to the source path relative to project root.
+  const htmlBasePath = basePath !== "/" ? basePath : "";
   project.createSourceFile(path.join(outDir, "index.html"), `
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    ${ir.pwa?.enabled ? `<link rel="manifest" href="/manifest.webmanifest" />` : ""}
+    ${ir.pwa?.enabled ? `<link rel="manifest" href="${htmlBasePath}/manifest.webmanifest" />` : ""}
+    ${ir.pwa?.enabled ? `<link rel="icon" href="${htmlBasePath}/icons/icon.svg" />` : ""}
+    ${ir.pwa?.enabled ? `<link rel="apple-touch-icon" href="${htmlBasePath}/icons/icon.svg" />` : ""}
     ${ir.pwa?.enabled ? `<meta name="theme-color" content="${ir.pwa.themeColor}" />` : ""}
     <title>${ir.appName}</title>
   </head>

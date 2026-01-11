@@ -2,6 +2,19 @@
 
 All notable changes to the `irgen` project will be documented in this file.
 
+## [0.2.1] - 2026-01-11
+
+### GitHub Pages (SSG/Hybrid)
+- Generate and build SSG/hybrid output for `examples/irgen-web.dsl.ts` in CI.
+- Fix basePath handling so nav/docs links keep `/irgen` prefix after hydration.
+- Add favicon/apple-touch-icon links in SSG output.
+- Fix PWA manifest icon path and service worker cache paths under basePath.
+- Set `SITE_URL` in Pages workflow for correct sitemap/robots URLs.
+
+### Packaging
+- Remove TypeScript sourcemaps and declaration maps from build output.
+- Align README outputs with generated examples and keep example script in sync.
+
 ## [0.2.0] - 2026-01-11
 
 ### General Purpose Frontend & Headless Runtime (Phase 3)
