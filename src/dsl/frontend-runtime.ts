@@ -2,7 +2,9 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { DeclFrontendApp, DeclComponent, DeclPage, DeclFrontendAppSchema } from "../ir/decl/frontend.raw.schema.js";
 
-let CURRENT_FRONTEND: DeclFrontendApp | null = null;
+// Use globalThis to share state across multiple module instances (e.g., src vs dist)
+const _global = globalThis as any;
+_global.__IR_CURRENT_FRONTEND = _global.__IR_CURRENT_FRONTEND || null;
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
@@ -39,10 +41,10 @@ type FrontendOptions = {
 };
 
 function mergePolicy(target: string, value: Record<string, any>) {
-  if (!CURRENT_FRONTEND) return;
-  CURRENT_FRONTEND.meta = CURRENT_FRONTEND.meta ?? {};
-  const existing = (CURRENT_FRONTEND.meta.policies ?? {}) as Record<string, any>;
-  CURRENT_FRONTEND.meta.policies = { ...existing, [target]: { ...(existing[target] ?? {}), ...value } };
+  if (!_global.__IR_CURRENT_FRONTEND) return;
+  _global.__IR_CURRENT_FRONTEND.meta = _global.__IR_CURRENT_FRONTEND.meta ?? {};
+  const existing = (_global.__IR_CURRENT_FRONTEND.meta.policies ?? {}) as Record<string, any>;
+  _global.__IR_CURRENT_FRONTEND.meta.policies = { ...existing, [target]: { ...(existing[target] ?? {}), ...value } };
 }
 
 const RUNTIME_HELPERS = [
@@ -72,33 +74,33 @@ function stripRuntimeHelpers(comp: Record<string, any>) {
 }
 
 export function datasource(id: string, config: any) {
-  assert(CURRENT_FRONTEND, "datasource() harus di dalam frontend()");
-  CURRENT_FRONTEND.datasources.push({ id, ...config });
+  assert(_global.__IR_CURRENT_FRONTEND, "datasource() harus di dalam frontend()");
+  _global.__IR_CURRENT_FRONTEND.datasources.push({ id, ...config });
 }
 
 export function operation(id: string, config: any) {
-  assert(CURRENT_FRONTEND, "operation() harus di dalam frontend()");
-  CURRENT_FRONTEND.operations.push({ id, ...config });
+  assert(_global.__IR_CURRENT_FRONTEND, "operation() harus di dalam frontend()");
+  _global.__IR_CURRENT_FRONTEND.operations.push({ id, ...config });
 }
 
 export function resource(id: string, config: any) {
-  assert(CURRENT_FRONTEND, "resource() harus di dalam frontend()");
-  CURRENT_FRONTEND.resources.push({ id, ...config });
+  assert(_global.__IR_CURRENT_FRONTEND, "resource() harus di dalam frontend()");
+  _global.__IR_CURRENT_FRONTEND.resources.push({ id, ...config });
 }
 
 export function meta(key: string, value: unknown) {
-  assert(CURRENT_FRONTEND, "meta() harus di dalam frontend()");
-  CURRENT_FRONTEND.meta = CURRENT_FRONTEND.meta ?? {};
-  (CURRENT_FRONTEND.meta as any)[key] = value;
+  assert(_global.__IR_CURRENT_FRONTEND, "meta() harus di dalam frontend()");
+  _global.__IR_CURRENT_FRONTEND.meta = _global.__IR_CURRENT_FRONTEND.meta ?? {};
+  (_global.__IR_CURRENT_FRONTEND.meta as any)[key] = value;
 }
 
 export function policy(target: string, value: Record<string, any>) {
-  assert(CURRENT_FRONTEND, "policy() harus di dalam frontend()");
+  assert(_global.__IR_CURRENT_FRONTEND, "policy() harus di dalam frontend()");
   mergePolicy(target, value);
 }
 
 export function page(pName: string, opts: { path: string, hideHeader?: boolean, description?: string, docsLayout?: boolean, docsGroupLabel?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) {
-  assert(CURRENT_FRONTEND, "page() harus di dalam frontend()");
+  assert(_global.__IR_CURRENT_FRONTEND, "page() harus di dalam frontend()");
   const page: DeclPage = {
     type: "page",
     name: pName,
@@ -150,15 +152,15 @@ export function page(pName: string, opts: { path: string, hideHeader?: boolean, 
         }
         const finalized = comp as unknown as DeclComponent;
         page.components.push(finalized);
-        if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(finalized);
+        if (_global.__IR_CURRENT_FRONTEND) _global.__IR_CURRENT_FRONTEND.components.push(finalized);
       }
     });
   }
-  if (CURRENT_FRONTEND) CURRENT_FRONTEND.pages.push(page);
+  if (_global.__IR_CURRENT_FRONTEND) _global.__IR_CURRENT_FRONTEND.pages.push(page);
 }
 
 export function component(name: string, cb: (c: RuntimeComponent) => void) {
-  assert(CURRENT_FRONTEND, "component() harus di dalam frontend()");
+  assert(_global.__IR_CURRENT_FRONTEND, "component() harus di dalam frontend()");
   const comp = { type: "component", name: name, props: {}, form: { fields: [] } } as unknown as RuntimeComponent;
 
   // add convenience methods to the comp object for DSL users: field() and prop()
@@ -195,7 +197,7 @@ export function component(name: string, cb: (c: RuntimeComponent) => void) {
   if ((comp as any).html) {
     throw new Error(`component.html is not allowed (component: ${comp.name}). Use component.content with Markdown instead.`);
   }
-  if (CURRENT_FRONTEND) CURRENT_FRONTEND.components.push(comp as unknown as DeclComponent);
+  if (_global.__IR_CURRENT_FRONTEND) _global.__IR_CURRENT_FRONTEND.components.push(comp as unknown as DeclComponent);
 }
 
 type FrontendCallbackArgs = {
@@ -221,7 +223,7 @@ export function frontend(
   assert(typeof fn === "function", "frontend(..., fn) fn harus function");
 
   const baseMeta = opts?.meta ?? {};
-  CURRENT_FRONTEND = {
+  _global.__IR_CURRENT_FRONTEND = {
     type: "frontend",
     name,
     basePath: opts?.basePath ?? "/",
@@ -249,8 +251,8 @@ export function frontend(
     policy,
   });
 
-  const parsed = DeclFrontendAppSchema.parse(CURRENT_FRONTEND);
-  CURRENT_FRONTEND = parsed;
+  const parsed = DeclFrontendAppSchema.parse(_global.__IR_CURRENT_FRONTEND);
+  _global.__IR_CURRENT_FRONTEND = parsed;
   return parsed;
 }
 
@@ -259,7 +261,7 @@ export async function loadFrontendDsl(entry: string): Promise<DeclFrontendApp> {
   const url = pathToFileURL(abs).href;
 
   // reset
-  CURRENT_FRONTEND = null;
+  _global.__IR_CURRENT_FRONTEND = null;
 
   try {
     await import(url);
@@ -283,7 +285,7 @@ export async function loadFrontendDsl(entry: string): Promise<DeclFrontendApp> {
     }
   }
 
-  if (!CURRENT_FRONTEND) throw new Error(`Frontend DSL did not call frontend(...)`);
-  const parsed = DeclFrontendAppSchema.parse(CURRENT_FRONTEND);
+  if (!_global.__IR_CURRENT_FRONTEND) throw new Error(`Frontend DSL did not call frontend(...)`);
+  const parsed = DeclFrontendAppSchema.parse(_global.__IR_CURRENT_FRONTEND);
   return parsed;
 }

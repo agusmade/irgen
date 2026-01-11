@@ -35,7 +35,7 @@ jobs:
 
       - name: Generate SSG site
         run: >
-          node dist/cli.js
+          npx tsx src/cli.ts
           --mode=frontend
           examples/irgen-web.dsl.ts
           --outDir=site

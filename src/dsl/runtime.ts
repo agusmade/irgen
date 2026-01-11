@@ -22,7 +22,9 @@ type AppBuilder = {
   policy(target: string, value: Record<string, any>): void;
 };
 
-let CURRENT: DeclApp | null = null;
+// Use globalThis to share state across multiple module instances (e.g., src vs dist)
+const _global = globalThis as any;
+_global.__IR_CURRENT_BACKEND = _global.__IR_CURRENT_BACKEND || null;
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
@@ -40,10 +42,10 @@ type AppOptions = {
 };
 
 function mergePolicy(target: string, value: Record<string, any>) {
-  if (!CURRENT) return;
-  CURRENT.meta = CURRENT.meta ?? {};
-  const existing = (CURRENT.meta.policies ?? {}) as Record<string, any>;
-  CURRENT.meta.policies = { ...existing, [target]: { ...(existing[target] ?? {}), ...value } };
+  if (!_global.__IR_CURRENT_BACKEND) return;
+  _global.__IR_CURRENT_BACKEND.meta = _global.__IR_CURRENT_BACKEND.meta ?? {};
+  const existing = (_global.__IR_CURRENT_BACKEND.meta.policies ?? {}) as Record<string, any>;
+  _global.__IR_CURRENT_BACKEND.meta.policies = { ...existing, [target]: { ...(existing[target] ?? {}), ...value } };
 }
 
 export function app(name: string, fn: (a: AppBuilder) => void): void;
@@ -54,7 +56,7 @@ export function app(name: string, optsOrFn: AppOptions | ((a: AppBuilder) => voi
   const fn = (typeof optsOrFn === "function" ? optsOrFn : maybeFn) as (a: AppBuilder) => void;
   assert(typeof fn === "function", "app(..., fn) fn harus function");
 
-  CURRENT = { type: "app", name, entities: [], meta: { ...(opts.meta ?? {}) } };
+  _global.__IR_CURRENT_BACKEND = { type: "app", name, entities: [], meta: { ...(opts.meta ?? {}) } };
   if (opts.policies) {
     for (const [target, value] of Object.entries(opts.policies)) {
       mergePolicy(target, value as Record<string, any>);
@@ -63,7 +65,7 @@ export function app(name: string, optsOrFn: AppOptions | ((a: AppBuilder) => voi
 
   fn({
     entity(entityName, entityFn) {
-      assert(CURRENT, "entity() harus di dalam app()");
+      assert(_global.__IR_CURRENT_BACKEND, "entity() harus di dalam app()");
       const entity: DeclEntity = {
         type: "entity",
         name: entityName,
@@ -101,14 +103,14 @@ export function app(name: string, optsOrFn: AppOptions | ((a: AppBuilder) => voi
       };
 
       entityFn(eb);
-      CURRENT.entities.push(entity);
+      _global.__IR_CURRENT_BACKEND.entities.push(entity);
     },
     meta(key, value) {
-      assert(CURRENT, "meta() harus di dalam app()");
-      CURRENT.meta[key] = value;
+      assert(_global.__IR_CURRENT_BACKEND, "meta() harus di dalam app()");
+      _global.__IR_CURRENT_BACKEND.meta[key] = value;
     },
     policy(target, value) {
-      assert(CURRENT, "policy() harus di dalam app()");
+      assert(_global.__IR_CURRENT_BACKEND, "policy() harus di dalam app()");
       mergePolicy(target, value);
     },
   });
@@ -124,7 +126,7 @@ export async function loadDsl(entry: string): Promise<DeclApp> {
   const url = pathToFileURL(abs).href;
 
   // reset
-  CURRENT = null;
+  _global.__IR_CURRENT_BACKEND = null;
 
   try {
     await import(url);
@@ -145,9 +147,9 @@ export async function loadDsl(entry: string): Promise<DeclApp> {
     }
   }
 
-  assert(CURRENT, `DSL tidak memanggil app(...) — file: ${entry}`);
+  assert(_global.__IR_CURRENT_BACKEND, `DSL tidak memanggil app(...) — file: ${entry}`);
 
   // validate + normalize
-  const parsed = DeclAppSchema.parse(CURRENT);
+  const parsed = DeclAppSchema.parse(_global.__IR_CURRENT_BACKEND);
   return parsed;
 }
