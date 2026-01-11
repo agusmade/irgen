@@ -27,4 +27,24 @@ npx tsx src/cli.ts examples/fullstack.dsl.ts generated/fullstack --mode=backend
 echo "Generating Form IO (Rich Frontend)..."
 npx tsx src/cli.ts examples/form-io.dsl.ts generated/form-io --mode=frontend
 
+# 6. Docs (Frontend)
+echo "Generating Docs (Frontend)..."
+npx tsx src/cli.ts examples/docs.dsl.ts generated/docs --mode=frontend
+
+# 7. Static Docs (HTML-first)
+echo "Generating Static Docs (HTML-first)..."
+npx tsx src/cli.ts examples/docs.dsl.ts generated/static-docs --targets=static-site
+
+# 8. irgen Web (Frontend)
+echo "Generating irgen Web (Frontend)..."
+npx tsx src/cli.ts examples/irgen-web.dsl.ts generated/irgen-web --mode=frontend
+
+# 9. Static No Enhance
+echo "Generating Static No Enhance..."
+npx tsx src/cli.ts examples/static-no-enhance.dsl.ts generated/static-no-enhance --targets=static-site
+
+# 10. Static With Enhance
+echo "Generating Static With Enhance..."
+npx tsx src/cli.ts examples/static-with-enhance.dsl.ts generated/static-with-enhance --targets=static-site
+
 echo "All examples generated successfully!"

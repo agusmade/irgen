@@ -2,7 +2,7 @@
 
 All notable changes to the `irgen` project will be documented in this file.
 
-## [0.2.0] - 2026-01-10
+## [0.2.0] - 2026-01-11
 
 ### General Purpose Frontend & Headless Runtime (Phase 3)
 
@@ -20,8 +20,6 @@ All notable changes to the `irgen` project will be documented in this file.
 #### DSL Enhancements
 - **Modernized Frontend DSL**: `frontend()` now supports defining entities (`datasources`, `operations`, `resources`) directly via the options object or as standalone function calls within the callback.
 - **Improved Type Safety**: Refined `RuntimeComponent` and DSL helper types for better developer experience.
-
-## [Unreleased] - 2026-01-01
 
 ### Major Features (Phases 9-10)
 
@@ -46,6 +44,7 @@ All notable changes to the `irgen` project will be documented in this file.
 - **Improved DSL Loading**: Solved relative import issues when loading DSLs through temporary transpile files by ensuring temp files reside in the same directory as the source.
 - **Robustness**: Fixed interpolation bugs in the React emitter and relaxed Zod validation for internal URLs in form submissions.
 - **Mapping & Lowering**: Updated mapping logic to preserve new component properties (like `codeBlock`) through the lowering pipeline.
+
 #### Rebranding & Identity
 - **Project Renaming**: Officially rebranded from `ir-codegen` to `irgen` for a modern, CLI-friendly identity (consistent with tools like `esbuild` and `vite`).
 - **New Positioning**: Reframed the toolchain as a "compiler-style code generation toolchain built around Intermediate Representation (IR)".
@@ -53,7 +52,7 @@ All notable changes to the `irgen` project will be documented in this file.
 - **Documentation Overhaul**: Updated `README.md` and `ARCHITECTURE.md` to reflect the new policy-driven, compiler-oriented philosophy.
 - **Example Refresh**: Updated `irgen-web.dsl.ts` with the new brand voice and positioning statements.
 
-## [0.1.0] - 2025-12-28
+## [0.1.0] - pre-public history
 
 ### Architecture/IR
 - Refined IR layering to match DeclIR → DomainIR → TargetIR: DSL schemas now live under `src/ir/decl/*`, DomainIR files are schema/policy-free, and TargetIR holds emitter-facing policies (backend target now carries `policies.backend.*`).

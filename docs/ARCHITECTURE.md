@@ -20,7 +20,7 @@ flowchart TB
   %% =========================
   subgraph A[Authoring & Inputs]
     DSL["Developer DSL\n(JS/TS)\napp/page/entity/service..."]
-    SCHEMA["Schema / Models\n(DB schema / table/relasi / OpenAPI)\noptional"]
+    SCHEMA["Schema / Models\n(DB schema / tables/relations / OpenAPI)\noptional"]
     ASSETS["Assets/Resources\n(files, templates? optional)\noptional"]
   end
 
@@ -30,7 +30,7 @@ flowchart TB
   subgraph B["Build Pipeline (deterministic)"]
     CLI["CLI / Runner\n(mytool build ...)"]
     RT["DSL Runtime / Evaluator\n(exec DSL, collect declarations)"]
-    DECL["DeclIR (Unified Declarative IR)\nagnostic, dekat ke DSL"]
+    DECL["DeclIR (Unified Declarative IR)\nagnostic, close to the DSL"]
     VALID["Validate + Normalize\ncanonical naming rules"]
     MAP["Domain Mapper\nDeclIR -> DomainIR"]
   end
@@ -184,7 +184,7 @@ This is a practical, incremental plan. Each phase lists goals, key tasks, and su
 
 ### Phase 6 — CLI Orchestration & Flags (1–2 days) — **Done** ✅
 - Added `--targets=backend,frontend` to orchestrate the pipeline from DSL to emitted outputs (generates target subfolders under the chosen `outDir`).
-- Added `--inspect-ir` to print the lowered TargetIR for debugging and optional `--policies='{"key":"val"}'` to override policies (default policies sekarang bisa disuplai dari DSL/meta).
+- Added `--inspect-ir` to print the lowered TargetIR for debugging and optional `--policies='{"key":"val"}'` to override policies (default policies can now be supplied via DSL/meta).
 - Added `--ext=path/to/ext.ts` to load extension modules that can register mappers/emitters/target mappings (same shape as programmatic extensions).
 - Acceptance: CLI runs orchestration for requested targets; `scripts/cli-build.test.js` exercises and validates the behavior. ✅
 

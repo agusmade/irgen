@@ -1,19 +1,43 @@
 {
   "name": "irgen",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "license": "MIT",
   "description": "a policy-driven, IR-based code generation toolchain for backend, frontend, and beyond.",
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agusmade/irgen.git"
+  },
+  "homepage": "https://agusmade.github.io/irgen/",
+  "bugs": {
+    "url": "https://github.com/agusmade/irgen/issues"
+  },
+  "keywords": [
+    "codegen",
+    "code-generation",
+    "ir",
+    "intermediate-representation",
+    "generator",
+    "dsl",
+    "compiler",
+    "typescript",
+    "react",
+    "vite",
+    "ssg",
+    "scaffold",
+    "cli"
+  ],
+  "author": "Agus Made <krisnaparta@gmail.com>",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "bin": {
-    "irgen": "dist/src/cli.js"
+    "irgen": "dist/cli.js"
   },
   "exports": {
     ".": {
-      "types": "./dist/src/index.d.ts",
-      "import": "./dist/src/index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "engines": {

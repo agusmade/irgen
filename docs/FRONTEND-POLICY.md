@@ -1,33 +1,33 @@
-# Frontend Policy — Implementasi Saat Ini
+# Frontend Policy — Current Implementation
 
-Dokumen ini merangkum **kebijakan frontend yang benar-benar diterapkan** di kode saat ini. Bagian yang masih rencana/placeholder ditandai.
+This document summarizes **frontend policies that are actually implemented** in the code right now. Sections that are still planned/placeholder are marked.
 
-## Sumber kebenaran
-- Schema + default: `src/ir/target/frontend.policy.ts`
-- Normalisasi target: `src/lowering/targets/to-frontend.ts` (transform `frontend-target`)
+## Source of truth
+- Schema + defaults: `src/ir/target/frontend.policy.ts`
+- Target normalization: `src/lowering/targets/to-frontend.ts` (transform `frontend-target`)
 - PWA policy (domain): `src/lowering/frontend.ts`
-- Konsumsi emitter: `src/emit/frontend/frontend-react.ts`
+- Emitter consumption: `src/emit/frontend/frontend-react.ts`
 
-## Yang sudah berjalan hari ini
+## Working today
 - **Styling**
-  - `styling.theme.primaryColor` dipakai untuk aksen utama (CTA/button, icon tint, marketing sections).
-  - `styling.theme.borderRadius` dipakai di komponen marketing untuk radius (hero/features/cta/timeline/testimonials/faq).
-  - Tailwind dipakai sebagai CSS framework (default).
+  - `styling.theme.primaryColor` is used for primary accents (CTA/button, icon tint, marketing sections).
+  - `styling.theme.borderRadius` is used for marketing components (hero/features/cta/timeline/testimonials/faq).
+  - Tailwind is used as the CSS framework (default).
 - **Framework & Rendering**
-  - Output always React + Vite + React Router + Lucide.
+  - Output is always React + Vite + React Router + Lucide.
   - `framework.rendering.mode`: `csr` (default), `ssg`, or `hybrid`.
   - `framework.rendering.basePath`: base URL for routing (e.g., `/admin`).
   - **Headless Runtime**: Generates `lib/runtime.ts` and `lib/hooks.ts` (`useOperation`, `useResource`) for backend communication.
 - **PWA**
-  - `pwa.enabled=true` will menulis `manifest.webmanifest`, `public/pwa-sw.js`, dan `public/icons/icon.svg`, lalu register SW di entry.
-  - Nilai PWA dapat diisi dari DSL (`frontend(..., { pwa: {...} })`) atau dari `policies.frontend.pwa`.
+  - `pwa.enabled=true` writes `manifest.webmanifest`, `public/pwa-sw.js`, and `public/icons/icon.svg`, then registers the SW in the entry.
+  - PWA values can be set via DSL (`frontend(..., { pwa: {...} })`) or via `policies.frontend.pwa`.
 
-## Masih rencana / belum diimplementasikan
-- **styling.cssFramework = "none"**: schema ada, tetapi emitter masih selalu menulis Tailwind config dan class Tailwind.
-- **framework.library/router/iconLibrary = "none"**: schema ada, tetapi emitter masih selalu memakai React/React Router/Lucide.
-- **Theme tokens lain** (font, spacing, shadows) belum ada di policy; hanya `primaryColor` dan `borderRadius`.
+## Planned / not implemented yet
+- **styling.cssFramework = "none"**: schema exists, but the emitter still always writes Tailwind config and Tailwind classes.
+- **framework.library/router/iconLibrary = "none"**: schema exists, but the emitter still always uses React/React Router/Lucide.
+- **Other theme tokens** (font, spacing, shadows) are not in policy yet; only `primaryColor` and `borderRadius`.
 
-## Default FrontendPolicy (efektif out-of-box)
+## Default FrontendPolicy (effective out-of-box)
 ```json
 {
   "styling": {
@@ -46,7 +46,7 @@ Dokumen ini merangkum **kebijakan frontend yang benar-benar diterapkan** di kode
 }
 ```
 
-## Default PWA (hanya jika enabled)
+## Default PWA (only when enabled)
 ```json
 {
   "enabled": false,
@@ -60,18 +60,17 @@ Dokumen ini merangkum **kebijakan frontend yang benar-benar diterapkan** di kode
   "themeColor": "#0f172a"
 }
 ```
-Jika `pwa.enabled=true`, maka nilai di atas menjadi default dan bisa dioverride oleh input DSL/policies.
+If `pwa.enabled=true`, the values above become defaults and can be overridden by DSL/policies input.
 
-## Cara mengubah sesuai kebutuhan
+## How to customize
 - **Via DSL**
   - Frontend policy: `frontend("App", { policies: { frontend: { styling: { theme: { primaryColor: "#0ea5e9", borderRadius: "lg" }}}}}, ...)`
   - PWA config: `frontend("App", { pwa: { enabled: true, name: "My App", shortName: "MyApp" } }, ...)`
 - **Via CLI**
   - `--policies='{"frontend":{"styling":{"theme":{"primaryColor":"#0ea5e9","borderRadius":"lg"}},"pwa":{"enabled":true,"name":"My App","shortName":"MyApp"}}}'`
 
-## Referensi cepat
+## Quick references
 - Policy schema: `src/ir/target/frontend.policy.ts`
 - Target lowering: `src/lowering/targets/to-frontend.ts`
 - PWA lowering: `src/lowering/frontend.ts`
 - Frontend emitter: `src/emit/frontend/frontend-react.ts`
-

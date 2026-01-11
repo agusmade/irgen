@@ -1,48 +1,48 @@
 # STATIC-SITE (Enhanced) v1 — Checklist (irgen)
 
-## Tujuan
+## Goals
 
-* [x] Output berupa **HTML statis final** (tanpa React render/hydration).
-* [x] JS hanya untuk **progressive enhancement** (UX kecil), bukan menentukan layout/markup utama.
-* [x] **Tanpa JS pun situs tetap terbaca** dan navigable.
-* [x] Dependency **opt-in by usage** (capability-based), terutama untuk fitur seperti highlight/search.
+* [x] Output is **final static HTML** (no React render/hydration).
+* [x] JS is only for **progressive enhancement** (small UX), not for core layout/markup.
+* [x] **Without JS the site remains readable** and navigable.
+* [x] Dependencies are **opt-in by usage** (capability-based), especially for features like highlight/search.
 
-## Non-tujuan (v1)
+## Non-goals (v1)
 
-* [x] Tidak mengejar SPA routing / client-side navigation penuh.
-* [x] Tidak mengejar SSR runtime.
-* [x] Tidak mengejar komponen interaktif kompleks (form builder, async select, dsb) selain fallback sederhana.
+* [x] No full SPA routing / client-side navigation.
+* [x] No SSR runtime.
+* [x] No complex interactive components (form builder, async select, etc.) beyond simple fallbacks.
 
 ---
 
-## Kontrak Output Folder
+## Output Folder Contract
 
-* [x] `dist/` (atau `generated/.../static/`) berisi:
+* [x] `dist/` (or `generated/.../static/`) contains:
 
   * [x] `index.html`
   * [x] `docs/<slug>/index.html` (route folder style)
   * [x] `assets/style.css`
-  * [x] `assets/app.js` (opsional; hanya jika ada enhancement)
+  * [x] `assets/app.js` (optional; only when enhancements are used)
   * [x] `assets/*.svg|png|woff2` (fonts/icons)
-  * [x] `sitemap.xml` (opsional v1, tapi bagus)
-  * [x] `robots.txt` (opsional v1)
-* [x] URL yang “cantik”: `/docs/foo/` bukan `/docs/foo.html`.
+  * [x] `sitemap.xml` (optional v1, but recommended)
+  * [x] `robots.txt` (optional v1)
+* [x] Pretty URLs: `/docs/foo/` not `/docs/foo.html`.
 
 ---
 
 ## Target & Policy Shape
 
-* [ ] Tambah target baru (nama bebas, pilih salah satu):
+* [ ] Add a new target (free name, pick one):
 
   * [ ] `web:static`
   * [ ] `frontend:static`
   * [ ] `frontend:static-enhanced`
-* [x] Policy `staticSite` (contoh bidang):
+* [x] `staticSite` policy (example fields):
 
   * [x] `staticSite.enabled`
   * [x] `staticSite.baseUrl`
   * [x] `staticSite.trailingSlash`
-  * [x] `staticSite.enhancements` (list capability)
+  * [x] `staticSite.enhancements` (capability list)
   * [x] `staticSite.assets.hashing` (cache busting)
   * [x] `staticSite.codeHighlight.mode` = `pre` | `client` | `none`
   * [x] `staticSite.search.mode` = `none` | `client_index` | `remote`
@@ -51,72 +51,72 @@
 
 ## Capability Matrix (opt-in by usage)
 
-> Prinsip: kalau capability tidak dipakai di DSL/IR → **tidak emit JS**, tidak tambah deps.
+> Principle: if a capability is not used in DSL/IR → **do not emit JS** and do not add deps.
 
-### Enhancement minimal (v1)
+### Minimal enhancements (v1)
 
 * [x] `sidebarToggle` (hamburger / collapse)
-* [x] `copyCode` (tombol copy pada code block)
-* [x] `themeToggle` (light/dark) **opsional**
-* [x] `tocScrollSpy` **opsional**
+* [x] `copyCode` (copy button on code blocks)
+* [x] `themeToggle` (light/dark) **optional**
+* [x] `tocScrollSpy` **optional**
 
-### Fitur tambahan (boleh ditunda)
+### Additional features (can be delayed)
 
 * [ ] `tabs`
 * [ ] `accordion`
-* [x] `search` (lihat bagian Search)
+* [x] `search` (see Search section)
 
 ---
 
 ## Rendering Rules (HTML-first)
 
-* [x] Semua halaman di-render dari TargetIR layout tree menjadi HTML final:
+* [x] All pages render from TargetIR layout tree into final HTML:
 
   * [x] headings, paragraphs, lists, tables
   * [x] nav/sidebars/breadcrumbs
   * [x] code blocks: `<pre><code class="language-ts">...</code></pre>`
-* [x] Komponen “khusus” boleh emit HTML inline (escape hatch) tapi:
+* [x] “Special” components may emit inline HTML (escape hatch) but:
 
-  * [x] tetap deterministic
-  * [x] tidak memerlukan runtime React
-* [x] Gunakan `data-irgen-*` attributes untuk hook JS enhancement (tanpa query selector rapuh).
+  * [x] still deterministic
+  * [x] does not require React runtime
+* [x] Use `data-irgen-*` attributes for JS enhancement hooks (no fragile query selectors).
 
 ---
 
 ## CSS Strategy
 
-* [x] Output CSS minimal, cepat, dan predictable:
+* [x] Minimal, fast, predictable CSS output:
 
   * [x] base typography
   * [x] layout grid (header/sidebar/content)
-  * [x] code block styling (tanpa highlight token jika mode=none)
+  * [x] code block styling (no highlight tokens if mode=none)
 * [x] Theme support:
 
   * [x] CSS variables (`--bg`, `--fg`, `--muted`, `--accent`)
-  * [x] mode switch via `data-theme="dark"` pada `<html>`
+  * [x] mode switch via `data-theme="dark"` on `<html>`
 * [x] Allow override:
 
-  * [x] `staticSite.customCssPath` atau folder `public/` merge.
+  * [x] `staticSite.customCssPath` or merge a `public/` folder.
 
 ---
 
 ## JS Strategy (Enhancement-only)
 
-* [x] Emit `assets/app.js` hanya jika ada enhancement capability.
+* [x] Emit `assets/app.js` only when enhancements are used.
 * [x] app.js:
 
-  * [x] event listeners berbasis `data-irgen-*`
-  * [x] tidak membangun DOM ulang (no virtual DOM)
-  * [x] tidak “mengganti” HTML konten utama
+  * [x] event listeners based on `data-irgen-*`
+  * [x] no DOM rebuild (no virtual DOM)
+  * [x] does not replace the main HTML content
 * [x] Degrade gracefully:
 
-  * [x] semua tombol enhancement punya fallback (mis. sidebar selalu tampil jika JS off).
+  * [x] all enhancement toggles have fallbacks (e.g., sidebar always visible if JS is off).
 
 ---
 
 ## Code Highlighting
 
-Pilih salah satu mode (via policy + capability usage):
+Choose one mode (via policy + capability usage):
 
 * [x] `pre` (recommended): highlight saat build (output HTML tokenized)
 

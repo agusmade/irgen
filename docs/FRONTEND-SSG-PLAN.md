@@ -1,24 +1,24 @@
 # Frontend SSG (React) — Design Plan
 
-Dokumen ini merancang pipeline **React SSG** untuk target frontend dengan basis Vite. Fokus utama: prerender via Vite pipeline (bukan renderToString manual), HTML final untuk `mode="ssg"`, dan hybrid untuk `mode="hybrid"`.
+This document designs the **React SSG** pipeline for the frontend target based on Vite. The main focus is prerendering through the Vite pipeline (not manual `renderToString`), final HTML for `mode="ssg"`, and hybrid mode for `mode="hybrid"`.
 
-Status: **implemented** (SSR bundle + prerender step, output HTML di root `outDir`).
+Status: **implemented** (SSR bundle + prerender step, HTML output at the root `outDir`).
 
 ## Goals
 
-- HTML hasil prerender sebagai output utama (SEO-friendly).
-- `mode="ssg"`: **no hydrate** (HTML final).
-- `mode="hybrid"`: hydrate **opsional** hanya untuk halaman/komponen yang membutuhkan interaktivitas.
-- Asset injection memakai Vite manifest (CSS/JS terkontrol).
+- Prerendered HTML as the primary output (SEO-friendly).
+- `mode="ssg"`: **no hydration** (final HTML).
+- `mode="hybrid"`: **optional** hydration only for pages/components that need interactivity.
+- Asset injection uses the Vite manifest (controlled CSS/JS).
 
 ## Non-Goals
 
-- SSR runtime penuh.
-- Custom React renderer/manual `renderToString` sebagai jalur utama.
+- Full SSR runtime.
+- Custom React renderer/manual `renderToString` as the primary path.
 
 ## Policy Surface (Frontend)
 
-Sumber: `src/ir/target/frontend.policy.ts`
+Source: `src/ir/target/frontend.policy.ts`
 
 ```
 frontend.framework.rendering.mode = "csr" | "ssg" | "hybrid"
@@ -31,66 +31,66 @@ frontend.framework.rendering.prerender = {
 }
 ```
 
-Catatan:
+Notes:
 - `mode="ssg"` implies `prerender.enabled=true`.
-- `routes="auto"` menggunakan `FrontendIR.pages`.
+- `routes="auto"` uses `FrontendIR.pages`.
 
 ## Pipeline (High-Level)
 
 1) **Vite Build**
    - Generate bundle + manifest (`dist/manifest.json`).
-   - Output JS/CSS ke `prerender.outDir` (default `dist`).
+   - Output JS/CSS to `prerender.outDir` (default `dist`).
 
 2) **Prerender Step**
-   - Jalankan Vite SSG pipeline (build + SSR bundle + prerender script).
-   - Render HTML per route (routes = auto dari `FrontendIR.pages` atau list manual).
-   - Inject CSS/JS dari manifest.
+   - Run the Vite SSG pipeline (build + SSR bundle + prerender script).
+   - Render HTML per route (routes = auto from `FrontendIR.pages` or a manual list).
+   - Inject CSS/JS from the manifest.
 
 3) **Post-Process**
-   - SSG mode: **tidak** include hydrate script.
-   - Hybrid mode: include hydrate script untuk halaman yang flagged interaktif.
-   - Optional: `sitemap.xml` dan `robots.txt` bila policy mengizinkan.
+   - SSG mode: **do not** include hydrate script.
+   - Hybrid mode: include hydrate script for pages flagged as interactive.
+   - Optional: `sitemap.xml` and `robots.txt` when policy allows.
 
 ## Manifest Injection (SSG)
 
-- Gunakan `manifest.json` untuk mapping:
+- Use `manifest.json` for mapping:
   - `entry` → JS
   - `css` → `<link rel="stylesheet">`
-- Untuk SSG: HTML berisi CSS + (opsional) JS runtime jika mode `hybrid`.
+- For SSG: HTML contains CSS + (optional) JS runtime if mode is `hybrid`.
 
 ## Hydration Strategy
 
-- `mode="ssg"`: no hydrate.
+- `mode="ssg"`: no hydration.
 - `mode="hybrid"`: hydrate only if:
-  - halaman mengandung komponen interactive (form, tabs, async, dll), atau
-  - policy/flag manual di DSL (`frontend.meta` / future policy flag).
+  - the page contains interactive components (form, tabs, async, etc.), or
+  - a manual policy/flag is set in the DSL (`frontend.meta` / future policy flag).
 
-Catatan: flag interaktif bisa dihasilkan pada lowering (capability tagging).
-Catatan implementasi saat ini: App shell memiliki theme toggle, jadi semua route dianggap interaktif pada `mode="hybrid"`.
+Notes: the interactive flag can be produced during lowering (capability tagging).
+Current implementation note: the app shell has a theme toggle, so all routes are considered interactive in `mode="hybrid"`.
 
 ## Output Structure
 
 ```
 <outDir>/
   dist/              # Vite build output (JS/CSS/assets)
-  index.html         # prerendered (root) untuk SSG
+  index.html         # prerendered (root) for SSG
   index.spa.html     # SPA fallback (CSR entry)
   docs/foo/index.html
   sitemap.xml        # optional
   robots.txt         # optional
 ```
 
-`prerender.outDir` bisa diset untuk memisahkan build assets vs HTML output.
+`prerender.outDir` can be set to separate build assets from HTML output.
 
 ## Integration Points
 
-- `src/emit/frontend/frontend-react.ts`: perlu mode switch CSR vs SSG.
-- `src/emit/frontend/`: tambah runner untuk Vite SSG (plugin or CLI).
-- `src/emit/registry.ts`: tetap mapping `frontend -> frontend-tsmorph` (emitter same, behavior branch).
+- `src/emit/frontend/frontend-react.ts`: needs a CSR vs SSG mode switch.
+- `src/emit/frontend/`: add a runner for Vite SSG (plugin or CLI).
+- `src/emit/registry.ts`: keep mapping `frontend -> frontend-tsmorph` (same emitter, behavior branch).
 
 ## Open Questions
 
 Resolved:
-- SSG menggantikan `index.html` untuk output statis, dan SPA fallback disimpan sebagai `index.spa.html`.
-- HTML hasil prerender berada di root `outDir` (folder-style routing).
-- Interactivity ditandai dari lowering (capability tagging) dengan policy sebagai guard.
+- SSG replaces `index.html` for static output, and SPA fallback is saved as `index.spa.html`.
+- Prerendered HTML is placed at the root `outDir` (folder-style routing).
+- Interactivity is tagged during lowering (capability tagging) with policy as the guard.

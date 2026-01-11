@@ -20,6 +20,9 @@ generated-inspect-*/
 *.sublime-workspace
 *.sublime-project
 
+# Local extensions workspace
+extensions/
+
 # Logs and temp files
 npm-debug.log*
 yarn-debug.log*

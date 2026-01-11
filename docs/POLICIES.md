@@ -1,31 +1,31 @@
 # Policies Reference
 
-Dokumen ini merangkum semua policy yang saat ini dipakai di irgen untuk backend dan frontend (termasuk static-site). Gunakan ini sebagai peta percabangan saat menambah fitur baru.
+This document summarizes all policies currently used in irgen for backend and frontend (including static-site). Use it as a branching map when adding new features.
 
 ## Entry Point: `app(...)` vs `frontend(...)`
 
-irgen memiliki dua entry point DSL yang berbeda karena DomainIR‑nya berbeda:
+irgen has two DSL entry points because their DomainIRs are different:
 
-- `app(...)` → menghasilkan **backend DomainIR** (entities, services, operations).
-- `frontend(...)` → menghasilkan **frontend DomainIR** (pages, components, marketing blocks).
+- `app(...)` → produces **backend DomainIR** (entities, services, operations).
+- `frontend(...)` → produces **frontend DomainIR** (pages, components, marketing blocks).
 
-Implikasinya:
+Implications:
 
-- **Target backend** hanya bisa berangkat dari `app(...)`.
-- **Target frontend / electron / static-site** berangkat dari `frontend(...)` (static-site memakai FrontendIR).
-- Saat CLI menjalankan `--targets=backend,frontend`, irgen akan **mengagregasi** dua DSL (app + frontend) bila keduanya ada.
+- **Backend targets** can only start from `app(...)`.
+- **Frontend / Electron / static-site targets** start from `frontend(...)` (static-site uses FrontendIR).
+- When the CLI runs `--targets=backend,frontend`, irgen **aggregates** two DSLs (app + frontend) if both exist.
 
-Alasan tidak semua berangkat dari `app(...)`:
+Why everything does not start from `app(...)`:
 
-- Struktur data yang dibutuhkan backend vs frontend sangat berbeda.
-- Frontend punya konsep page/layout/component yang tidak ada di backend.
-- Memisahkan entry point menjaga IR tetap deterministik dan tidak memaksa satu DSL menampung dua domain yang berbeda.
+- Backend and frontend require very different data structures.
+- Frontend has page/layout/component concepts that do not exist in backend.
+- Separating entry points keeps the IR deterministic and avoids forcing one DSL to cover two different domains.
 
-Ringkasnya: **`app(...)` untuk backend**, **`frontend(...)` untuk UI/HTML/Electron/static‑site**.  
+In short: **`app(...)` for backend**, **`frontend(...)` for UI/HTML/Electron/static-site**.
 
-## Cara pakai (DSL)
+## Usage (DSL)
 
-Di DSL, policy ditaruh di `policies` dan dipilih berdasarkan target. Contoh:
+In DSL, policies live under `policies` and are selected by target. Example:
 
 ```ts
 frontend("MyApp", {
@@ -38,11 +38,11 @@ frontend("MyApp", {
 }, (app) => { /* ... */ });
 ```
 
-Catatan: `static-site` bisa ditulis sebagai `staticSite` di DSL (keduanya dikenali).
+Note: `static-site` can be written as `staticSite` in DSL (both are recognized).
 
 ## Backend Policies (`backend`)
 
-Sumber: `src/ir/target/backend.policy.ts`
+Source: `src/ir/target/backend.policy.ts`
 
 - `backend.interfaces.rest`
   - `enabled` (boolean)
@@ -79,7 +79,7 @@ Sumber: `src/ir/target/backend.policy.ts`
 
 ## Frontend Policies (`frontend`)
 
-Sumber: `src/ir/target/frontend.policy.ts`
+Source: `src/ir/target/frontend.policy.ts`
 
 - `frontend.styling`
   - `cssFramework` = `tailwind` | `none`
@@ -101,13 +101,13 @@ Sumber: `src/ir/target/frontend.policy.ts`
       - `emitRobotsTxt` (boolean)
 
 Notes:
-- Untuk `mode="ssg"`, HTML prerender ditulis ke root `outDir` (folder-style routing).
-- `index.html` tetap SPA fallback (CSR entry), dan SSG akan menyalinnya ke `index.spa.html` sebelum overwrite.
-- `SITE_URL` (env var) dipakai untuk `sitemap.xml`/`robots.txt` jika diaktifkan.
+- For `mode="ssg"`, prerendered HTML is written to the root `outDir` (folder-style routing).
+- `index.html` stays as the SPA fallback (CSR entry), and SSG copies it to `index.spa.html` before overwriting.
+- `SITE_URL` (env var) is used for `sitemap.xml`/`robots.txt` when enabled.
 
 ## Static Site Policies (`static-site` / `staticSite`)
 
-Sumber: `src/ir/target/static-site.policy.ts`
+Source: `src/ir/target/static-site.policy.ts`
 
 - `staticSite.enabled` (boolean)
 - `staticSite.baseUrl` (string)
@@ -152,7 +152,7 @@ Sumber: `src/ir/target/static-site.policy.ts`
 
 ## Electron Policies (`electron`)
 
-Sumber: `src/ir/target/electron.policy.ts`
+Source: `src/ir/target/electron.policy.ts`
 
 - `electron.window`
   - `width`, `height` (number?)
@@ -196,7 +196,7 @@ Sumber: `src/ir/target/electron.policy.ts`
 
 ## CLI Target (`cli`)
 
-Sumber: `src/ir/target/cli.ts`
+Source: `src/ir/target/cli.ts`
 
 - Tidak ada policy khusus untuk target CLI saat ini (hanya domain IR).
 - Schema policy CLI adalah objek kosong `passthrough` (tidak divalidasi secara ketat).

@@ -1,6 +1,6 @@
 # irgen (Robust Fullstack Generator)
 
-[![pipeline status](https://gitlab.com/agusmade/irgen/-/badges/main/pipeline.svg)](https://gitlab.com/agusmade/irgen/-/pipelines)
+[![CI](https://github.com/agusmade/irgen/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/agusmade/irgen/actions/workflows/ci.yml)
 
 > **Compiler-style code generation via Intermediate Representation.**
 
@@ -52,6 +52,9 @@ irgen focuses on **architecture and determinism**, not convenience shortcuts. ir
 npm install
 ```
 
+### Security note
+If you enable JWT auth in generated backends, replace the default placeholder secret (`CHANGE_ME_SUPER_SECRET_MIN_16_CHARS`) with a real value.
+
 ### 2. Run Examples
 We provide a script to generate all example projects into `generated/` folders:
 
@@ -61,11 +64,14 @@ We provide a script to generate all example projects into `generated/` folders:
 
 ### 3. Explore Outputs
 - **Backend Only**: `generated/backend-only/`
+- **Frontend Only**: `generated/frontend-only/`
 - **Rich Frontend**: `generated/form-io/` (Run `npm install && npm run dev` inside to see the UI)
-- **Multi-page Website**: `generated/irgen-web-full/` (from `examples/irgen-web.dsl.ts`)
+- **Multi-page Website**: `generated/irgen-web/` (from `examples/irgen-web.dsl.ts`)
 - **Fullstack**: `generated/fullstack/` (backend and frontend are generated independently)
 - **Docs (PWA-ready)**: `generated/docs/` (from `examples/docs.dsl.ts`)
 - **Static Docs (HTML-first)**: `generated/static-docs/` (from `examples/docs.dsl.ts` with `--targets=static-site`)
+- **Static Site (No Enhance)**: `generated/static-no-enhance/`
+- **Static Site (With Enhance)**: `generated/static-with-enhance/`
 
 ## Manual Generation
 You can generate artifacts from a specific DSL file using the CLI:
@@ -123,6 +129,20 @@ npx irgen examples/docs.dsl.ts --targets=static-site --outDir=generated/static-d
 Notes:
 - Published CLI (`npx irgen`) can load `.dsl.ts` (and its `.ts` imports) directly using the built-in tsx loader.
 - For local development inside this repo, you can still run `npx tsx src/cli.ts ...` if preferred.
+
+## Release
+Releases are published to npm automatically via GitHub Actions when a version tag is pushed.
+
+```bash
+npm version <patch|minor|major>
+git push origin main --follow-tags
+```
+
+## Contributing
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
+
+## Security
+If you believe you have found a security vulnerability, please follow [SECURITY.md](SECURITY.md).
 
 ## Architecture
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details on:

@@ -1,49 +1,49 @@
-# Backend Policy — Implementasi Saat Ini
+# Backend Policy — Current Implementation
 
-Dokumen ini merangkum **kebijakan backend yang benar-benar diterapkan** di kode (per `src/ir/target/backend.policy.ts`, lowering `to-backend.ts`, dan emitter backend). Bagian yang masih rencana/placeholder ditandai.
+This document summarizes **backend policies that are actually implemented** in the code (per `src/ir/target/backend.policy.ts`, lowering `to-backend.ts`, and backend emitters). Sections that are still planned/placeholder are marked.
 
-## Sumber kebenaran
-- Schema + default: `src/ir/target/backend.policy.ts`
-- Normalisasi & merge legacy flags: `src/lowering/targets/to-backend.ts` (terdaftar sebagai transform `backend-target`)
-- Konsumsi emitter: `src/emit/backend/backend-tsmorph.ts` (helper `getBackendPolicies`)
+## Source of truth
+- Schema + defaults: `src/ir/target/backend.policy.ts`
+- Normalization & legacy merge: `src/lowering/targets/to-backend.ts` (registered as transform `backend-target`)
+- Emitter consumption: `src/emit/backend/backend-tsmorph.ts` (helper `getBackendPolicies`)
 
-## Yang sudah berjalan hari ini
+## Working today
 - **Interfaces**
-  - REST saja (`interfaces.rest.enabled`), `basePath` default `/api`
-  - OpenAPI flag/title/version/serverUrl diteruskan ke `emitOpenAPI`
-  - `publicRoutes` dipakai auth middleware untuk bypass per prefix
+  - REST only (`interfaces.rest.enabled`), `basePath` default `/api`
+  - OpenAPI flag/title/version/serverUrl are forwarded to `emitOpenAPI`
+  - `publicRoutes` is used by auth middleware to bypass per prefix
 - **Envelope**
-  - Tipe `standard_v1` dengan key `data/meta/error`; dipakai di `lib/response.ts` + controller responses
-  - `requestIdKey` disuntik via `withRequestId` (middleware context)
+  - Type `standard_v1` with keys `data/meta/error`; used in `lib/response.ts` + controller responses
+  - `requestIdKey` is injected via `withRequestId` (middleware context)
 - **Pagination**
-  - Skema `page_limit` default `page=1`, `limit=20`, `maxLimit=100`; meta key `page/limit/total/hasNext`
+  - `page_limit` defaults: `page=1`, `limit=20`, `maxLimit=100`; meta keys `page/limit/total/hasNext`
 - **Auth**
-  - JWT (HS256/RS256 di schema); runtime `lib/auth.ts` **selalu pakai shared secret** (`jsonwebtoken.verify` dengan `JWT_SECRET`) ⇒ RS256/JWKS belum jalan (lihat “Masih rencana”)
-  - `claims.subjectKey` & `claims.rolesKey` dipakai untuk `req.user`; helper `requireRoles` tersedia
+  - JWT (HS256/RS256 in schema); runtime `lib/auth.ts` **always uses shared secret** (`jsonwebtoken.verify` with `JWT_SECRET`) ⇒ RS256/JWKS not active yet (see “Planned”)
+  - `claims.subjectKey` & `claims.rolesKey` map into `req.user`; `requireRoles` helper is available
 - **Core knobs**
-  - `generateId`: `uuid_v4` (uuid), `shortid` (crypto), `custom` melempar error (belum ada hook)
-  - `loggerImpl`: `console` real console; `pino`/`winston` hanya wrapper console (butuh deps dan wiring jika mau nyata)
-  - `httpClient`: `fetch` (default); `axios` adapter ada; `got/custom` belum diimplementasi
-  - `formatter`: `prettier` atau `biome`; emitter memanggil `formatDirectory` (package.json hanya menambahkan Prettier)
-  - `db`: opsional `provider: "prisma", url`; jika prisma dipilih, schema+repo+deps Prisma dan script `db:generate/db:push` ditulis
+  - `generateId`: `uuid_v4` (uuid), `shortid` (crypto), `custom` throws error (no hook yet)
+  - `loggerImpl`: `console` is real console; `pino`/`winston` are console wrappers (need deps + wiring for real loggers)
+  - `httpClient`: `fetch` (default); `axios` adapter exists; `got/custom` not implemented
+  - `formatter`: `prettier` or `biome`; emitter calls `formatDirectory` (package.json only adds Prettier)
+  - `db`: optional `provider: "prisma", url`; if prisma is selected, schema+repo+Prisma deps and `db:generate/db:push` scripts are written
 - **Packaging**
-  - `package.json` menambah deps berdasarkan `generateId` (uuid), `httpClient` (axios/got), `loggerImpl` (pino/winston), `db` (prisma). Dev deps: prettier, typescript, tsx, vitest, @types, express tooling, jsonwebtoken, cors.
+  - `package.json` adds deps based on `generateId` (uuid), `httpClient` (axios/got), `loggerImpl` (pino/winston), `db` (prisma). Dev deps: prettier, typescript, tsx, vitest, @types, express tooling, jsonwebtoken, cors.
   - `tsconfig.json` CJS target, strict off
 - **Server runtime**
-  - Express server dengan CORS/JSON, request context (requestId + scoped logger), auth (conditional), validation (zod), pagination helper, envelope response
-  - CRUD routes per entity (CREATE/GET/LIST/UPDATE/REMOVE) dengan zod schema sederhana berdasar tipe primitif model
+  - Express server with CORS/JSON, request context (requestId + scoped logger), auth (conditional), validation (zod), pagination helper, envelope response
+  - CRUD routes per entity (CREATE/GET/LIST/UPDATE/REMOVE) with simple zod schemas based on primitive model types
 
-## Masih rencana / belum diimplementasikan
-- **JWT RS256/JWKS**: schema menerima `algorithm: "RS256"` + `jwksUrl`, tapi `lib/auth.ts` belum verifikasi JWKS; runtime pakai shared secret.
-- **httpClient "got"/"custom"**: adapter `lib/http.ts` belum ada implementasi.
-- **loggerImpl "pino"/"winston"**: adapter hanya wrapper console; tidak menginstansiasi logger sebenarnya.
-- **generateId "custom"**: adapter melempar error; belum ada hook injeksi implementasi.
-- **Transports non-REST**: hanya REST; tidak ada RPC/WS/GraphQL.
-- **Envelope/pagination varian lain**: hanya `standard_v1` dan `page_limit`.
-- **DB provider selain Prisma**: hanya Prisma (atau in-memory repo).
-- **Formatter "biome"**: schema menerima, tapi package.json tidak menambah Biome; formatDirectory tetap dipanggil dengan nilai tersebut.
+## Planned / not implemented yet
+- **JWT RS256/JWKS**: schema accepts `algorithm: "RS256"` + `jwksUrl`, but `lib/auth.ts` does not verify JWKS; runtime uses shared secret.
+- **httpClient "got"/"custom"**: `lib/http.ts` adapter has no implementation.
+- **loggerImpl "pino"/"winston"**: adapter only wraps console; does not instantiate a real logger.
+- **generateId "custom"**: adapter throws error; no injection hook yet.
+- **Non-REST transports**: REST only; no RPC/WS/GraphQL.
+- **Other envelope/pagination variants**: only `standard_v1` and `page_limit`.
+- **DB providers besides Prisma**: Prisma only (or in-memory repo).
+- **Formatter "biome"**: schema accepts it, but package.json does not add Biome; `formatDirectory` is still called with that value.
 
-## Default BackendPolicy (efektif out-of-box)
+## Default BackendPolicy (effective out-of-box)
 ```json
 {
   "interfaces": {
@@ -89,18 +89,17 @@ Dokumen ini merangkum **kebijakan backend yang benar-benar diterapkan** di kode 
 }
 ```
 
-## Cara mengubah sesuai kebutuhan
-- **Kebijakan via DSL**: `app("...", { policies: { backend: { ... } } }, ...)`
+## How to customize
+- **Policy via DSL**: `app("...", { policies: { backend: { ... } } }, ...)`
 - **Override via CLI**: `--policies='{"backend":{"loggerImpl":"pino","generateId":"shortid","db":{"provider":"prisma","url":"file:./dev.db"}}}'`
-- **Public routes**: tambahkan `interfaces.rest.publicRoutes` (mis. `["/auth/login","/health"]`) untuk bypass auth.
-- **OpenAPI**: matikan dengan `interfaces.rest.openapi.enabled=false` atau isi `serverUrl` untuk prod.
-- **JWT RS256 (rencana)**: schema sudah ada; runtime JWKS perlu ditambah dulu sebelum dipakai.
-- **DB**: set `core.db` ke `{"provider":"prisma","url":"file:./dev.db"}` untuk menulis schema + repos berbasis Prisma.
-- **Formatter**: pilih `prettier`/`biome`; hanya Prettier yang otomatis ditambahkan sebagai dev dependency.
-- **Custom ID/logger/http**: saat ini akan melempar error atau wrapper console; butuh extend adapter jika mau kustom.
+- **Public routes**: add `interfaces.rest.publicRoutes` (e.g., `["/auth/login","/health"]`) to bypass auth.
+- **OpenAPI**: disable with `interfaces.rest.openapi.enabled=false` or set `serverUrl` for prod.
+- **JWT RS256 (planned)**: schema exists; runtime JWKS must be added before use.
+- **DB**: set `core.db` to `{"provider":"prisma","url":"file:./dev.db"}` to write Prisma schema + repos.
+- **Formatter**: choose `prettier`/`biome`; only Prettier is added as a dev dependency automatically.
+- **Custom ID/logger/http**: currently throws error or wraps console; extend adapters for custom implementations.
 
-## Referensi cepat
+## Quick references
 - Schema: `src/ir/target/backend.policy.ts`
 - Lowering & legacy merge: `src/lowering/targets/to-backend.ts`
 - Emitters/adapters: `src/emit/backend/backend-tsmorph.ts`, `src/emit/backend/adapters.ts`, `src/emit/backend/server.ts`, `src/emit/backend/packaging.ts`
-
