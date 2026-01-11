@@ -375,7 +375,7 @@ export default defineConfig({
     manifest: true,
   },
   ssr: {
-    noExternal: ["react", "react-dom", "react-router", "react-router-dom"],
+    noExternal: ["react", "react-dom", "react-router", "react-router-dom", /react-syntax-highlighter/, /lucide-react/, "prismjs"],
   },` : ""}
 });
   `.trim();
@@ -766,20 +766,21 @@ if ('serviceWorker' in navigator) {
   });
 
   // index.html (SPA fallback / CSR entry)
-  const htmlBase = policy.framework.rendering.basePath.replace(/\/$/, "");
+  // Note: Vite handles prefixing based on 'base' config during build. 
+  // Scripts in index.html should point to the source path relative to project root.
   project.createSourceFile(path.join(outDir, "index.html"), `
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    ${ir.pwa?.enabled ? `<link rel="manifest" href="${htmlBase}/manifest.webmanifest" />` : ""}
+    ${ir.pwa?.enabled ? `<link rel="manifest" href="/manifest.webmanifest" />` : ""}
     ${ir.pwa?.enabled ? `<meta name="theme-color" content="${ir.pwa.themeColor}" />` : ""}
     <title>${ir.appName}</title>
   </head>
   <body>
     <div id="root" data-irgen-interactive="csr"></div>
-    <script type="module" src="${htmlBase}/src/entry-client.tsx"></script>
+    <script type="module" src="/src/entry-client.tsx"></script>
   </body>
 </html>
   `.trim(), { overwrite: true });
