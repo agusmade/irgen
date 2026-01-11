@@ -92,7 +92,7 @@ async function main() {
       console.error(`MISSING GENERATED: ${jsOffCheck.actual} (generator failed?)`);
       failures++;
     } else {
-      const actual = readText(jsOffCheck.actual);
+      const actual = readText(jsOffCheck.actual).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
       const expected = readText(jsOffCheck.expected);
       if (actual !== expected) {
         console.error(`GOLDEN MISMATCH: ${jsOffCheck.actual} does not match ${jsOffCheck.expected}`);

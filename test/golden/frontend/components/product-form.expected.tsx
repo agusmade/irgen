@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import * as Icons from "lucide-react";
 import { evalLogic, getByPath, isEmptyVal } from "../lib/logic";
+import { useOperation, useResource } from "../lib/hooks";
 
 export function ProductForm() {
   const [id, set_id] = useState("");
@@ -29,9 +30,9 @@ export function ProductForm() {
     set_errors(n);
     return Object.keys(n).length === 0;
   };
-  const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const submitOp = useOperation("");
   const onSubmit = async (e: any) => { e.preventDefault(); setSubmitSuccess(null); setSubmitError(null);
     if (!validate()) return;
     const payload = { id: id, name: name, price: price };
@@ -41,17 +42,13 @@ export function ProductForm() {
       if (shouldContinue === false) { setSubmitError("Submission cancelled"); return; }
     }
     if (!false) { setSubmitSuccess("Saved (mock)"); return; }
-    setSubmitting(true);
-    try {
-      const res = await fetch("", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (!res.ok) throw new Error("Submit failed");
+    const res = await submitOp.execute(payload);
+    if (res.ok) {
       setSubmitSuccess("Saved");
-      const hookCtx = { ...ctx, payload, response: await res.clone().json().catch(() => null) };
-    } catch (err: any) {
-      setSubmitError("Submit error");
-      const hookCtx = { ...ctx, payload, error: err?.message ?? err };
-    } finally {
-      setSubmitting(false);
+      const hookCtx = { ...ctx, payload, response: res.data };
+    } else {
+      setSubmitError(res.error?.message ?? "Submit error");
+      const hookCtx = { ...ctx, payload, error: res.error };
     }
   };
   return (
@@ -103,8 +100,8 @@ export function ProductForm() {
   
       {submitSuccess && <div className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 px-4 py-3 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2">{submitSuccess}</div>}
       {submitError && <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50 px-4 py-3 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2">{submitError}</div>}
-      <button className="inline-flex items-center justify-center rounded-lg border border-transparent py-2.5 px-5 text-sm font-semibold text-white shadow-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 w-full shadow-lg" style={{ backgroundColor: "#4f46e5" }} type="submit" disabled={submitting}>
-        {submitting ? (
+      <button className="inline-flex items-center justify-center rounded-lg border border-transparent py-2.5 px-5 text-sm font-semibold text-white shadow-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 w-full shadow-lg" style={{ backgroundColor: "#4f46e5" }} type="submit" disabled={submitOp.loading}>
+        {submitOp.loading ? (
           <span className="flex items-center gap-2">
             <Icons.Loader2 className="animate-spin" size={18} />
             Submitting...
