@@ -1,2 +1,2 @@
-export * from "./string";
-export * from "./array";
+export * from "./string.js";
+export * from "./array.js";

@@ -1,4 +1,4 @@
-import type { DeclBundle } from "../ir/decl";
+import type { DeclBundle } from "../ir/decl/index.js";
 import type { BackendIR } from "../ir/domain/backend.js";
 import type { FrontendIR } from "../ir/domain/frontend.js";
 
