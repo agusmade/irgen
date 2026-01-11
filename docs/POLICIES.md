@@ -198,11 +198,11 @@ Source: `src/ir/target/electron.policy.ts`
 
 Source: `src/ir/target/cli.ts`
 
-- Tidak ada policy khusus untuk target CLI saat ini (hanya domain IR).
-- Schema policy CLI adalah objek kosong `passthrough` (tidak divalidasi secara ketat).
+- No specific policies for the CLI target at this time (Domain IR only).
+- The CLI policy schema is an empty `passthrough` object (not strictly validated).
 
-## Prinsip implementasi (ringkas)
+## Core Principles (Summary)
 
-- Kebijakan diputuskan di lowering (TargetIR), emitter membaca hasilnya.
-- Static-site hanya emit JS jika capability benar-benar dipakai.
-- HTML-first: tanpa JS tetap terbaca.
+- Policies are decided in lowering (TargetIR); emitters read the results.
+- Static-site only emits JS if capabilities are actually used.
+- HTML-first: remains readable without JS.

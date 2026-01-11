@@ -1,159 +1,159 @@
 # Backend Checklist — REST v1
 
-**Status: scope ditetapkan, implementasi bertahap**
+**Status: Scope established, gradual implementation**
 
-Checklist ini mendefinisikan **apa saja yang harus diurusi** untuk backend REST v1 di *irgen*.
-Centang **hanya** jika sudah benar-benar diimplementasikan dan diverifikasi.
+This checklist defines **what needs to be handled** for the REST v1 backend in *irgen*.
+Check off **only** when it has been fully implemented and verified.
 
 ---
 
 ## 1) Backend Interface (Transport)
 
-* [ ] Backend mendukung **lebih dari satu interface**
-* [x] **REST** sebagai interface pertama
-* [ ] Interface bersifat **komposisional** (REST sekarang, RPC/WebSocket nanti)
-* [x] Interface dikonfigurasi via **BackendPolicy**, bukan emitter
+* [ ] Backend supports **more than one interface**
+* [x] **REST** as the first interface
+* [ ] Interfaces are **compositional** (REST now, RPC/WebSocket later)
+* [x] Interface configured via **BackendPolicy**, not the emitter
 
-📌 Catatan:
-Ini **fondasi konseptual**, belum dianggap selesai sebelum:
+📌 Notes:
+This is a **conceptual foundation**, not considered complete until:
 
-* policy ada
-* TargetIR memuatnya
-* emitter patuh
+* policy exists
+* TargetIR includes it
+* emitter complies
 
 ---
 
 ## 2) REST Resource Convention
 
-* [x] Resource berbasis **entity**
-* [x] CRUD standar:
+* [x] Resource-based on **entity**
+* [x] Standard CRUD:
 
   * `GET /resources`
   * `POST /resources`
   * `GET /resources/:id`
   * `PATCH /resources/:id`
   * `DELETE /resources/:id`
-* [x] Controller tipis (request/response only)
-* [x] Business logic di service
-* [x] Akses data lewat repository
+* [x] Thin controllers (request/response only)
+* [x] Business logic in services
+* [x] Data access via repositories
 
-📌 Belum termasuk v1:
+📌 Not included in v1:
 
-* nested resource kompleks
-* bulk mutation
+* complex nested resources
+* bulk mutations
 * soft delete semantics
 
 ---
 
 ## 3) Response Envelope
 
-* [x] Semua response memakai **envelope standar**
+* [x] All responses use a **standard envelope**
 
 ```json
 { "data": ..., "meta": ..., "error": ... }
 ```
 
-* [x] `data === null` saat error
-* [x] `error === null` saat sukses
-* [x] Struktur error distandarkan (`code`, `message`, `details`)
-* [x] Envelope dibangun via **adapter tunggal** (`lib/response.ts`)
-* [x] Controller tidak membuat response manual
+* [x] `data === null` on error
+* [x] `error === null` on success
+* [x] Standardized error structure (`code`, `message`, `details`)
+* [x] Envelope built via a **single adapter** (`lib/response.ts`)
+* [x] Controllers do not create responses manually
 
 ---
 
 ## 4) Pagination
 
-* [x] Strategi pagination: **page / limit**
-* [x] `page` mulai dari 1
-* [x] `limit` punya default & max
-* [x] Metadata pagination ada di `meta`
+* [x] Pagination strategy: **page / limit**
+* [x] `page` starts at 1
+* [x] `limit` has default & max
+* [x] Pagination metadata lives in `meta`
 
 ```json
 { "page", "limit", "total", "hasNext" }
 ```
 
-* [x] Semua list endpoint memakai helper yang sama (`lib/pagination.ts`)
+* [x] All list endpoints use the same helper (`lib/pagination.ts`)
 
 ---
 
 ## 5) Authentication
 
-* [ ] Mekanisme auth **bisa digabung**
-* [x] **JWT** sebagai auth pertama
-* [x] JWT diverifikasi via adapter (`lib/auth.ts`)
-* [x] Claims minimal:
+* [ ] Auth mechanisms **can be combined**
+* [x] **JWT** as the first auth method
+* [x] JWT verified via adapter (`lib/auth.ts`)
+* [x] Minimal claims:
 
   * `sub`
   * `roles`
-* [x] Auth guard di middleware
-* [x] Role guard terpisah dari controller
+* [x] Auth guard in middleware
+* [x] Role guard separate from controller
 
-📌 Tidak termasuk v1:
+📌 Not included in v1:
 
 * API key
-* session cookie
+* session cookies
 * wallet signature
 
 ---
 
 ## 6) Error Handling
 
-* [x] Semua error diturunkan dari `AppError`
-* [x] Mapping error → HTTP status tersentral
-* [x] Error response selalu memakai envelope
-* [x] Controller **tidak** set status code manual
-* [x] Error boundary global (`lib/http-handler.ts`)
+* [x] All errors derive from `AppError`
+* [x] Error-to-HTTP-status mapping is centralized
+* [x] Error responses always use the envelope
+* [x] Controllers **do not** set status codes manually
+* [x] Global error boundary (`lib/http-handler.ts`)
 
 ---
 
 ## 7) Request Context
 
-* [x] Setiap request punya `requestId`
-* [x] `requestId` tersedia di:
+* [x] Every request has a `requestId`
+* [x] `requestId` available in:
 
   * logger
   * response meta
-* [x] Context request disimpan di `req.ctx`
-* [x] Middleware context terpasang global
+* [x] Request context stored in `req.ctx`
+* [x] Context middleware installed globally
 
 ---
 
 ## 8) Validation
 
-* [x] Semua input divalidasi (body/query/params)
-* [x] Validation memakai schema (zod)
-* [x] Error validasi distandarkan (`VALIDATION_ERROR`)
-* [x] Controller tidak parsing input manual
+* [x] All inputs validated (body/query/params)
+* [x] Validation uses schemas (zod)
+* [x] Validation errors standardized (`VALIDATION_ERROR`)
+* [x] Controllers do not parse input manually
 
 ---
 
 ## 9) OpenAPI
 
-* [x] OpenAPI di-*emit* dari **TargetIR**
-* [x] OpenAPI mencerminkan:
+* [x] OpenAPI emitted from **TargetIR**
+* [x] OpenAPI reflects:
 
   * routes
   * schemas
   * pagination
   * JWT bearer auth
   * error responses
-* [x] OpenAPI menjadi artefak output resmi
+* [x] OpenAPI becomes an official output artifact
 
 ---
 
-## 10) Arsitektur & Prinsip Inti
+## 10) Architecture & Core Principles
 
-* [x] Semua keputusan backend berada di
+* [x] All backend decisions reside in
   **BackendPolicy → BackendTargetIR**
-* [x] Tidak ada default tersembunyi di emitter
-* [x] Adapter `/lib/*` sebagai single source of truth
-* [x] Regenerasi aman (generation gap terjaga)
+* [x] No hidden defaults in the emitter
+* [x] `/lib/*` adapters as single source of truth
+* [x] Safe regeneration (generation gap preserved)
 
 ---
 
-## 11) Sengaja **tidak termasuk** REST v1
+## 11) Intentionally **not included** in REST v1
 
-*(bukan pekerjaan, hanya penanda scope)*
+*(Scope markers, not pending tasks)*
 
 * [ ] RPC / WebSocket / Socket.IO
 * [ ] Offline-first sync
@@ -164,19 +164,19 @@ Ini **fondasi konseptual**, belum dianggap selesai sebelum:
 
 ---
 
-### Catatan penutup (penting secara praktik)
+### Closing Notes (Practical Importance)
 
-Checklist ini sekarang berfungsi sebagai:
+This checklist now serves as:
 
-* **peta kerja** (apa yang harus diurusi)
-* **alat kontrol scope**
-* **alat refleksi progres**
+* **workflow map** (what needs care)
+* **scope control tool**
+* **progress reflection tool**
 
-Begitu satu poin benar-benar:
+Once a point truly:
 
-* ada di policy
-* dibekukan di TargetIR
-* dipakai emitter
-* punya test/golden
+* exists in policy
+* is frozen in TargetIR
+* is used by the emitter
+* has tests/goldens
 
-➡️ **baru layak dicentang.**
+➡️ **only then it is worthy of a checkmark.**

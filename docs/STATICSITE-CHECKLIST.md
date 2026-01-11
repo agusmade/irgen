@@ -20,7 +20,7 @@
 * [x] `dist/` (or `generated/.../static/`) contains:
 
   * [x] `index.html`
-  * [x] `docs/<slug>/index.html` (route folder style)
+  * [x] `<slug>/index.html` (route folder style)
   * [x] `assets/style.css`
   * [x] `assets/app.js` (optional; only when enhancements are used)
   * [x] `assets/*.svg|png|woff2` (fonts/icons)
@@ -57,8 +57,8 @@
 
 * [x] `sidebarToggle` (hamburger / collapse)
 * [x] `copyCode` (copy button on code blocks)
-* [x] `themeToggle` (light/dark) **optional**
-* [x] `tocScrollSpy` **optional**
+* [x] `themeToggle` (light/dark)
+* [x] `tocScrollSpy`
 
 ### Additional features (can be delayed)
 
@@ -118,89 +118,89 @@
 
 Choose one mode (via policy + capability usage):
 
-* [x] `pre` (recommended): highlight saat build (output HTML tokenized)
+* [x] `pre` (recommended): highlight at build time (output HTML tokenized)
 
-  * [x] dependency highlight hanya untuk toolchain/build (bukan client)
-* [x] `client`: include runtime (mis. Prism) hanya jika ada `code` block
+  * [x] highlight dependency only for toolchain/build (not client)
+* [x] `client`: include runtime (e.g., Prism) only if `code` blocks exist
 
-  * [x] load ringan + defer
+  * [x] lightweight load + defer
 * [x] `none`: plain code block styling
 
 ---
 
-## Search (opsional v1)
+## Search (optional v1)
 
 * [x] `none` default
 * [x] `client_index`:
 
-  * [x] generate index JSON saat build
-  * [x] runtime search lib hanya jika search diaktifkan
+  * [x] generate index JSON at build time
+  * [x] runtime search lib only if search is enabled
 * [ ] `remote`:
 
-  * [ ] panggil endpoint eksternal (bisa nanti)
+  * [ ] call external endpoint (future)
 
 ---
 
 ## SEO & Metadata
 
-* [x] `<title>` per halaman (dari page meta)
+* [x] `<title>` per page (from page meta)
 * [x] `<meta name="description">`
-* [x] canonical URL (opsional v1)
-* [x] OpenGraph basic (opsional v1)
+* [x] canonical URL (optional v1)
+* [x] OpenGraph basic (optional v1)
 * [x] `sitemap.xml` generation (recommended)
-* [x] Heading structure valid (H1 satu kali, dst)
+* [x] Heading structure check (single H1, etc.)
 
 ---
 
-## Aksesibilitas
+## Accessibility
 
 * [x] Skip-to-content link
 * [x] Landmark tags (`<header> <nav> <main> <footer>`)
-* [x] Sidebar toggle button punya `aria-expanded`, `aria-controls`
-* [x] Contrast minimum terpenuhi (light/dark)
+* [x] Sidebar toggle button has `aria-expanded`, `aria-controls`
+* [x] Minimum contrast met (light/dark)
 
 ---
 
 ## Performance & Caching
 
-* [x] Asset hashing (CSS/JS) untuk cache busting
-* [x] `defer` untuk JS
-* [x] fonts `woff2` + preload (opsional)
+* [x] Asset hashing (CSS/JS) for cache busting
+* [x] `defer` attribute for JS
+* [x] `woff2` fonts + preload (optional)
 * [x] no heavy runtime by default
 
 ---
 
 ## Security
 
-* [x] Escape HTML untuk konten dinamis (code, text)
-* [x] CSP-friendly (no inline script; atau inline hanya jika policy mengizinkan)
-* [x] Link eksternal pakai `rel="noopener noreferrer"`
+* [x] Escape HTML for dynamic content (code, text)
+* [x] CSP-friendly (no inline scripts; or inline only if policy allows)
+* [x] External links use `rel="noopener noreferrer"`
 
 ---
 
-## Testing & Verification (wajib untuk “deterministic”)
+## Testing & Verification (mandatory for “deterministic”)
 
-* [x] Dua example minimal:
+* [x] Two minimal examples:
 
-  * [x] `static-no-enhance` → **tanpa** `assets/app.js` dan tanpa deps enhancement
-  * [x] `static-with-enhance` → **dengan** `assets/app.js` dan deps minimal
-* [x] Snapshot test untuk:
+  * [x] `static-no-enhance` → **without** `assets/app.js` and enhancement deps
+  * [x] `static-with-enhance` → **with** `assets/app.js` and minimal deps
+* [x] Snapshot tests for:
 
   * [x] `dist/index.html`
   * [x] `dist/assets/*`
-  * [x] memastikan “JS off still readable” (cek elemen nav & konten ada)
-* [ ] Audit manual:
+  * [x] ensure “JS off still readable” (check nav & content existence)
+* [ ] Manual audit:
 
-  * [ ] buka HTML langsung dari file system (tanpa server)
-  * [ ] matikan JS di browser → tetap usable
+  * [ ] open HTML directly from file system (no server)
+  * [ ] disable JS in browser → stays usable
 
 ---
 
 ## Exit Criteria v1
 
-* [ ] Bisa generate docs website irgen sebagai static-enhanced:
+* [ ] Can generate irgen docs website as static-enhanced:
 
-  * [ ] load cepat
-  * [ ] navigasi sidebar jalan
-  * [ ] code block enak dibaca + copy
-  * [ ] JS off tetap terbaca
+  * [ ] fast load
+  * [ ] working sidebar navigation
+  * [ ] legible code blocks + copy functionality
+  * [ ] readable with JS off
