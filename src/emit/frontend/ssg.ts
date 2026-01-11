@@ -6,72 +6,72 @@ import type { FrontendTargetIR } from "../../ir/target/frontend.js";
 import type { FrontendPolicy } from "../../ir/target/frontend.policy.js";
 
 function ensureDir(p: string) {
-    fs.mkdirSync(p, { recursive: true });
+  fs.mkdirSync(p, { recursive: true });
 }
 
 export function isInteractiveComponent(component: FrontendComponent): boolean {
-    const hasIpcButton = Boolean((component as any).props && (component as any).props["ipcChannel"]);
-    return Boolean(
-        component.themeToggle ||
-        hasIpcButton ||
-        (component.form && component.form.fields && component.form.fields.length > 0) ||
-        component.layout?.kind === "tabs"
-    );
+  const hasIpcButton = Boolean((component as any).props && (component as any).props["ipcChannel"]);
+  return Boolean(
+    component.themeToggle ||
+    hasIpcButton ||
+    (component.form && component.form.fields && component.form.fields.length > 0) ||
+    component.layout?.kind === "tabs"
+  );
 }
 
 export function inferInteractiveRoutes(ir: FrontendTargetIR, policy: FrontendPolicy): string[] {
-    if (policy.framework.rendering.mode !== "hybrid") return [];
-    // App shell uses interactive theme toggle, so hybrid requires hydration on all routes.
-    const appHasInteractivity = true;
-    if (appHasInteractivity) return ir.pages.map((page) => page.path);
+  if (policy.framework.rendering.mode !== "hybrid") return [];
+  // App shell uses interactive theme toggle, so hybrid requires hydration on all routes.
+  const appHasInteractivity = true;
+  if (appHasInteractivity) return ir.pages.map((page) => page.path);
 
-    const componentMap = new Map(ir.components.map((component) => [component.name, component]));
-    const collectRefs = (component: FrontendComponent) => {
-        const refs = new Set<string>();
-        if (component.layout?.items) {
-            component.layout.items.forEach((item) => refs.add(item));
-        }
-        component.layout?.tabs?.forEach((tab) => {
-            tab.items?.forEach((item) => refs.add(item));
-        });
-        return Array.from(refs);
-    };
+  const componentMap = new Map(ir.components.map((component) => [component.name, component]));
+  const collectRefs = (component: FrontendComponent) => {
+    const refs = new Set<string>();
+    if (component.layout?.items) {
+      component.layout.items.forEach((item) => refs.add(item));
+    }
+    component.layout?.tabs?.forEach((tab) => {
+      tab.items?.forEach((item) => refs.add(item));
+    });
+    return Array.from(refs);
+  };
 
-    const isPageInteractive = (page: FrontendPage) => {
-        const queue = [...page.components];
-        const visited = new Set<string>();
-        while (queue.length) {
-            const current = queue.shift();
-            if (!current) continue;
-            if (isInteractiveComponent(current)) return true;
-            for (const ref of collectRefs(current)) {
-                if (visited.has(ref)) continue;
-                visited.add(ref);
-                const child = componentMap.get(ref);
-                if (child) queue.push(child);
-            }
-        }
-        return false;
-    };
+  const isPageInteractive = (page: FrontendPage) => {
+    const queue = [...page.components];
+    const visited = new Set<string>();
+    while (queue.length) {
+      const current = queue.shift();
+      if (!current) continue;
+      if (isInteractiveComponent(current)) return true;
+      for (const ref of collectRefs(current)) {
+        if (visited.has(ref)) continue;
+        visited.add(ref);
+        const child = componentMap.get(ref);
+        if (child) queue.push(child);
+      }
+    }
+    return false;
+  };
 
-    return ir.pages.filter((page) => isPageInteractive(page)).map((page) => page.path);
+  return ir.pages.filter((page) => isPageInteractive(page)).map((page) => page.path);
 }
 
 export function emitSsgSupport(project: Project, outDir: string, frontendDir: string, ir: FrontendTargetIR) {
-    const policy = ir.policies.frontend;
-    const mode = policy.framework.rendering.mode;
+  const policy = ir.policies.frontend;
+  const mode = policy.framework.rendering.mode;
 
-    // Create entry-server.tsx
-    const serverEntry = project.createSourceFile(path.join(frontendDir, "entry-server.tsx"), "", { overwrite: true });
-    serverEntry.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React" });
-    serverEntry.addImportDeclaration({ moduleSpecifier: "react-dom/server", namedImports: ["renderToString"] });
-    serverEntry.addImportDeclaration({ moduleSpecifier: "react-router-dom/server", namedImports: ["StaticRouter"] });
-    serverEntry.addImportDeclaration({ moduleSpecifier: "./App", namedImports: ["App"] });
-    serverEntry.addStatements(`
+  // Create entry-server.tsx
+  const serverEntry = project.createSourceFile(path.join(frontendDir, "entry-server.tsx"), "", { overwrite: true });
+  serverEntry.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React" });
+  serverEntry.addImportDeclaration({ moduleSpecifier: "react-dom/server", namedImports: ["renderToString"] });
+  serverEntry.addImportDeclaration({ moduleSpecifier: "react-router-dom/server", namedImports: ["StaticRouter"] });
+  serverEntry.addImportDeclaration({ moduleSpecifier: "./App", namedImports: ["App"] });
+  serverEntry.addStatements(`
 export function render(url: string) {
   const html = renderToString(
     <React.StrictMode>
-      <StaticRouter location={url}>
+      <StaticRouter location={url} basename="${policy.framework.rendering.basePath}">
         <App />
       </StaticRouter>
     </React.StrictMode>
@@ -80,14 +80,14 @@ export function render(url: string) {
 }
   `.trim());
 
-    // Create SSG Template
-    const templateHtml = `
+  // Create SSG Template
+  const templateHtml = `
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    ${ir.pwa?.enabled ? `<link rel="manifest" href="/manifest.webmanifest" />` : ""}
+    ${ir.pwa?.enabled ? `<link rel="manifest" href="${policy.framework.rendering.basePath.replace(/\/$/, "")}/manifest.webmanifest" />` : ""}
     ${ir.pwa?.enabled ? `<meta name="theme-color" content="${ir.pwa.themeColor}" />` : ""}
     <!--app-head-->
     <title>${ir.appName}</title>
@@ -98,16 +98,16 @@ export function render(url: string) {
 </html>
   `.trim();
 
-    const scriptDir = path.join(outDir, "scripts");
-    ensureDir(scriptDir);
-    fs.writeFileSync(path.join(outDir, "ssg-template.html"), templateHtml, "utf-8");
+  const scriptDir = path.join(outDir, "scripts");
+  ensureDir(scriptDir);
+  fs.writeFileSync(path.join(outDir, "ssg-template.html"), templateHtml, "utf-8");
 
-    // Create Prerender Script
-    const prerenderRoutes = policy.framework.rendering.prerender.routes === "auto"
-        ? ir.pages.map((p) => p.path)
-        : policy.framework.rendering.prerender.routes;
-    const interactiveRoutes = inferInteractiveRoutes(ir, policy);
-    const prerenderScript = `
+  // Create Prerender Script
+  const prerenderRoutes = policy.framework.rendering.prerender.routes === "auto"
+    ? ir.pages.map((p) => p.path)
+    : policy.framework.rendering.prerender.routes;
+  const interactiveRoutes = inferInteractiveRoutes(ir, policy);
+  const prerenderScript = `
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -150,19 +150,20 @@ function resolveEntry(manifest) {
 function buildHead(entry, manifest, shouldHydrate) {
   if (!entry) return "";
   const tags = [];
+  const base = "${policy.framework.rendering.basePath}".replace(/\\/$/, "");
   if (entry.css) {
     for (const css of entry.css) {
-      tags.push(\`<link rel="stylesheet" href="/\${css}">\`);
+      tags.push(\`<link rel="stylesheet" href="\${base}/\${css}">\`);
     }
   }
   if (shouldHydrate && entry.imports) {
     for (const imp of entry.imports) {
       const file = manifest?.[imp]?.file ?? null;
-      if (file) tags.push(\`<link rel="modulepreload" href="/\${file}">\`);
+      if (file) tags.push(\`<link rel="modulepreload" href="\${base}/\${file}">\`);
     }
   }
   if (shouldHydrate && entry.file) {
-    tags.push(\`<script type="module" src="/\${entry.file}"></script>\`);
+    tags.push(\`<script type="module" src="\${base}/\${entry.file}"></script>\`);
   }
   return tags.join("\\n    ");
 }
@@ -199,10 +200,14 @@ async function prerender() {
     fs.writeFileSync(outFile, finalHtml, "utf-8");
   }
 
+  const base = "${policy.framework.rendering.basePath}".replace(/\\/$/, "");
   if (emitSitemap) {
     const urls = routes
       .filter((r) => !isDynamicRoute(r))
-      .map((route) => \`  <url><loc>\${new URL(route, siteUrl).href}</loc></url>\`)
+      .map((route) => {
+        const fullPath = (base + route).replace(/\\/\\//g, "/");
+        return \`  <url><loc>\${new URL(fullPath, siteUrl).href}</loc></url>\`;
+      })
       .join("\\n");
     const sitemap = \`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -212,9 +217,9 @@ async function prerender() {
   }
 
   if (emitRobotsTxt) {
-    const sitemapUrl = emitSitemap ? new URL("/sitemap.xml", siteUrl).href : null;
+    const sitemapUrl = emitSitemap ? new URL((base + "/sitemap.xml").replace(/\\/\\//g, "/"), siteUrl).href : null;
     const robotsTxt = \`User-agent: *
-Allow: /
+Allow: \${base || "/"}
 \${sitemapUrl ? "\\nSitemap: " + sitemapUrl : ""}\`;
     fs.writeFileSync(path.join(outDir, "robots.txt"), robotsTxt, "utf-8");
   }
@@ -226,5 +231,5 @@ prerender().catch((err) => {
 });
   `.trim();
 
-    fs.writeFileSync(path.join(scriptDir, "prerender.mjs"), prerenderScript, "utf-8");
+  fs.writeFileSync(path.join(scriptDir, "prerender.mjs"), prerenderScript, "utf-8");
 }

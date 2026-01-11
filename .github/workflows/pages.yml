@@ -41,10 +41,19 @@ jobs:
           --outDir=site
           --policies='{"frontend":{"framework":{"rendering":{"mode":"ssg","basePath":"/irgen/","prerender":{"enabled":true,"routes":"auto","outDir":"dist","emitSitemap":true,"emitRobotsTxt":true}}}}}'
 
+      - name: Build generated site
+        working-directory: site
+        run: |
+          npm install
+          npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: site/dist
 
   deploy:
     runs-on: ubuntu-latest
