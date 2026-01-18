@@ -50,7 +50,8 @@ export const cliReferenceSection: DocSection = {
           type: "paragraph",
           text: [
             "Override policies via --policies and load extensions with --ext. The CLI",
-            "supports .ts extension modules via the tsx loader.",
+            "supports .ts extension modules via the tsx loader, and can also resolve",
+            "installed npm packages by name.",
           ].join(" "),
         },
         {
@@ -59,6 +60,7 @@ export const cliReferenceSection: DocSection = {
           snippet: [
             "irgen examples/app.dsl.ts --targets=backend --policies='{\"backend\":{\"core\":{\"generateId\":\"uuid_v4\"}}}'",
             "irgen examples/app.dsl.ts --targets=backend --ext=./ext/my-ext.ts",
+            "irgen examples/app.dsl.ts --targets=backend --ext=irgen-ext-php-shared-hosting",
           ].join("\n"),
         },
       ],

@@ -1,5 +1,7 @@
 import path from "node:path";
+import fs from "node:fs";
 import { pathToFileURL } from "node:url";
+import { createRequire } from "node:module";
 import { app } from "./dsl/runtime.js";
 import { frontend } from "./dsl/frontend-runtime.js";
 import { aggregateDecls } from "./dsl/aggregator.js";
@@ -148,10 +150,30 @@ export type { ExtensionContext } from "./extensions/context.js";
 
 // helper for CLI-like extension loading
 export async function loadExtensionModule(modPath: string, ctx?: ExtensionContext) {
-  const abs = path.isAbsolute(modPath) ? modPath : path.resolve(process.cwd(), modPath);
-  const modUrl = pathToFileURL(abs).href;
+  const require = createRequire(import.meta.url);
+  const pickExtensionFn = (mod: any) => {
+    const candidate = (mod?.default ?? mod?.extension ?? mod);
+    if (typeof candidate === "function") return candidate;
+    if (candidate && typeof candidate === "object") {
+      if (typeof candidate.default === "function") return candidate.default;
+      if (typeof candidate.extension === "function") return candidate.extension;
+    }
+    return null;
+  };
+  const isPathLike = path.isAbsolute(modPath) || modPath.startsWith(".") || modPath.startsWith("/") || /^[A-Za-z]:[\\/]/.test(modPath);
+  let modUrl: string;
+  if (isPathLike) {
+    const abs = path.isAbsolute(modPath) ? modPath : path.resolve(process.cwd(), modPath);
+    if (!fs.existsSync(abs)) {
+      throw new Error(`extension module not found: ${modPath}`);
+    }
+    modUrl = pathToFileURL(abs).href;
+  } else {
+    const resolved = require.resolve(modPath, { paths: [process.cwd()] });
+    modUrl = pathToFileURL(resolved).href;
+  }
   const imported = await import(modUrl);
-  const fn = (imported.default ?? imported.extension ?? imported) as Extension;
+  const fn = pickExtensionFn(imported) as Extension | null;
   if (!ctx) ctx = createExtensionContext();
   if (typeof fn === "function") {
     await fn(ctx, imported.options ?? undefined);

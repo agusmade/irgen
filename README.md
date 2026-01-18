@@ -38,6 +38,7 @@ irgen focuses on **architecture and determinism**, not convenience shortcuts. ir
 - **Multi-app Support**: Set `basePath` to deploy multiple apps (e.g., `/admin`, `/docs`) under a single project or domain.
 - **Form Logic & UX**: JSONLogic predicates, dependency-tracked hooks, async select with debounce/pagination/search.
 - **Submission Pipeline**: Lifecycle hooks, confirm dialogs, response handling, and draft persistence.
+- **Auth + Table Contracts**: `frontend.auth` for login/logout flows; `form.load` for prefill; `table.rowNavigateTo` + `table.rowActions` for row navigation/actions.
 
 ### Static Site (HTML-first)
 - **HTML-only output**: emits final HTML (no React hydration), JS is strictly progressive enhancement.
@@ -149,7 +150,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details on:
 - Generation Gap Pattern
 - Port & Adapters (Hexagonal)
 - Frontend Runtime & IR
-- Frontend SSG plan: [docs/FRONTEND-SSG-PLAN.md](docs/FRONTEND-SSG-PLAN.md)
+- Macro System: [docs/MACRO-SYSTEM.md](docs/MACRO-SYSTEM.md)
 
 ## Roadmap
 - [x] Separation of Concerns (Generated vs User space)

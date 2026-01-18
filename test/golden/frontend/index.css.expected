@@ -2,19 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --irgen-font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --irgen-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --irgen-prose-h1: 2rem;
+  --irgen-prose-h2: 1.5rem;
+  --irgen-prose-h3: 1.25rem;
+  --irgen-prose-leading: 1.75;
+  --irgen-space-xs: 0.25rem;
+  --irgen-space-sm: 0.75rem;
+  --irgen-space-md: 1.25rem;
+  --irgen-space-lg: 1.5rem;
+  --irgen-space-xl: 2rem;
+  --irgen-radius-sm: 0.375rem;
+  --irgen-radius-md: 0.5rem;
+  --irgen-radius-lg: 0.75rem;
+  --irgen-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --irgen-shadow-md: 0 10px 15px rgba(15, 23, 42, 0.08);
+  --irgen-shadow-lg: 0 25px 50px rgba(15, 23, 42, 0.12);
+  --irgen-color-text: #0f172a;
+  --irgen-color-text-dark: #e2e8f0;
+  --irgen-color-muted: #94a3b8;
+  --irgen-color-muted-dark: #64748b;
+  --irgen-color-link: #2563eb;
+  --irgen-color-link-dark: #93c5fd;
+  --irgen-color-code-bg: rgba(15, 23, 42, 0.08);
+  --irgen-color-code-bg-dark: rgba(148, 163, 184, 0.2);
+  --irgen-color-pre-bg: #0f172a;
+  --irgen-color-pre-text: #e2e8f0;
+  --irgen-color-surface: #ffffff;
+  --irgen-color-surface-dark: #0f172a;
+  --irgen-motion-duration: 300ms;
+  --irgen-motion-easing: ease;
+}
+
 /* Markdown prose styling */
-.prose { color: #0f172a; }
-.dark .prose { color: #e2e8f0; }
-.prose p { margin: 0.75rem 0; line-height: 1.75; }
-.prose h1, .prose h2, .prose h3, .prose h4 { font-weight: 700; color: inherit; margin: 1.25rem 0 0.5rem; }
-.prose h1 { font-size: 2rem; }
-.prose h2 { font-size: 1.5rem; }
-.prose h3 { font-size: 1.25rem; }
-.prose a { color: #2563eb; text-decoration: underline; text-underline-offset: 3px; }
-.dark .prose a { color: #93c5fd; }
-.prose ul, .prose ol { margin: 0.75rem 0 0.75rem 1.25rem; }
-.prose li { margin: 0.25rem 0; }
-.prose code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: rgba(15, 23, 42, 0.08); padding: 0.1rem 0.35rem; border-radius: 0.375rem; font-size: 0.85em; }
-.dark .prose code { background: rgba(148, 163, 184, 0.2); }
-.prose pre { background: #0f172a; color: #e2e8f0; padding: 1rem 1.25rem; border-radius: 0.75rem; overflow-x: auto; overflow-y: hidden; font-size: 0.85rem; line-height: 1.6; }
+.prose { color: var(--irgen-color-text); font-family: var(--irgen-font-sans); }
+.dark .prose { color: var(--irgen-color-text-dark); }
+.prose p { margin: var(--irgen-space-sm) 0; line-height: var(--irgen-prose-leading); }
+.prose h1, .prose h2, .prose h3, .prose h4 { font-weight: 700; color: inherit; margin: var(--irgen-space-md) 0 var(--irgen-space-xs); }
+.prose h1 { font-size: var(--irgen-prose-h1); }
+.prose h2 { font-size: var(--irgen-prose-h2); }
+.prose h3 { font-size: var(--irgen-prose-h3); }
+.prose a { color: var(--irgen-color-link); text-decoration: underline; text-underline-offset: 3px; }
+.dark .prose a { color: var(--irgen-color-link-dark); }
+.prose ul, .prose ol { margin: var(--irgen-space-sm) 0 var(--irgen-space-sm) var(--irgen-space-lg); }
+.prose li { margin: var(--irgen-space-xs) 0; }
+.prose code { font-family: var(--irgen-font-mono); background: var(--irgen-color-code-bg); padding: 0.1rem 0.35rem; border-radius: var(--irgen-radius-sm); font-size: 0.85em; }
+.dark .prose code { background: var(--irgen-color-code-bg-dark); }
+.prose pre { background: var(--irgen-color-pre-bg); color: var(--irgen-color-pre-text); padding: var(--irgen-space-md) var(--irgen-space-lg); border-radius: var(--irgen-radius-lg); overflow-x: auto; overflow-y: hidden; font-size: 0.85rem; line-height: 1.6; box-shadow: var(--irgen-shadow-sm); }
 .prose pre code { background: transparent; padding: 0; color: inherit; }

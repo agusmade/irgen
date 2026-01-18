@@ -13,7 +13,8 @@
   - Prefer namespaced registrations to avoid collisions (`ctx.namespace("myExt").registerMapper("frontend", ...)` → mapper name `myExt:frontend`).
   - If you register a name that already exists and `force` is not set, registration will throw; use namespacing instead of `force` where possible.
 - **CLI usage**: `npx irgen --targets=<...> --ext=path/to/ext1.ts,path/to/ext2.ts <dsl>`.  
-  `.ts` extension files work because the CLI registers the tsx loader at runtime.
+  `.ts` extension files work because the CLI registers the tsx loader at runtime.  
+  You can also pass an installed package name (e.g., `--ext=irgen-ext-php-shared-hosting`) as long as it exports a function (ESM default export or CJS `module.exports`).
 - **Programmatic usage**:
   ```ts
   import { Codegen } from "irgen";

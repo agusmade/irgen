@@ -176,6 +176,7 @@ function emitRuntimeImplementation(project: Project, libDir: string) {
 
 export class BaseRuntime implements T.Runtime {
   private authStates: Record<string, T.AuthState> = {};
+  private listeners: Record<string, Array<(payload: any) => void>> = {};
 
   constructor(
     private datasources: T.DataSourceRuntimeConfig[],
@@ -249,6 +250,17 @@ export class BaseRuntime implements T.Runtime {
           headers["Content-Type"] = op.body.contentType || "application/json";
         } else if (op.body.type === "text") {
           headers["Content-Type"] = op.body.contentType || "text/plain";
+        } else if (op.body.type === "formUrlEncoded") {
+          if (body instanceof URLSearchParams) {
+            body = body.toString();
+          } else if (body && typeof body === "object") {
+            const params = new URLSearchParams();
+            for (const [key, val] of Object.entries(body)) {
+              if (val !== undefined && val !== null) params.append(key, String(val));
+            }
+            body = params.toString();
+          }
+          headers["Content-Type"] = op.body.contentType || "application/x-www-form-urlencoded";
         }
       }
 
@@ -283,6 +295,9 @@ export class BaseRuntime implements T.Runtime {
 
       if (!response.ok) {
         result.error = await this.normalizeError(response);
+        if (op.resultHandling) {
+          await this.handleResultSignals(op.resultHandling, result);
+        }
         return result;
       }
 
@@ -308,9 +323,16 @@ export class BaseRuntime implements T.Runtime {
         if (adapter) result.pagination = adapter.extract(rawPayload);
       }
 
+      if (op.resultHandling) {
+        await this.handleResultSignals(op.resultHandling, result);
+      }
       return result;
     } catch (err: any) {
-      return { ok: false, error: { code: "INTERNAL_ERROR", message: err.message, cause: err } };
+      const result = { ok: false, error: { code: "INTERNAL_ERROR", message: err.message, cause: err } } as T.OperationResultNormalized;
+      if (op?.resultHandling) {
+        await this.handleResultSignals(op.resultHandling, result);
+      }
+      return result;
     }
   }
 
@@ -334,7 +356,97 @@ export class BaseRuntime implements T.Runtime {
   }
 
   invalidate(targets: any[]): void {
-      // hook for UI-level cache invalidation
+      this.emit("invalidate", { targets });
+  }
+
+  on(event: string, fn: (payload: any) => void) {
+    if (!this.listeners[event]) this.listeners[event] = [];
+    this.listeners[event].push(fn);
+    return () => {
+      this.listeners[event] = this.listeners[event].filter((l) => l !== fn);
+    };
+  }
+
+  emit(event: string, payload: any) {
+    const fns = this.listeners[event] || [];
+    fns.forEach((fn) => fn(payload));
+  }
+
+  private resolveSignalValue(value: any, result: T.OperationResultNormalized) {
+    if (value && typeof value === "object" && "logic" in value) {
+      return (this as any).evalLogic(value.logic, undefined, { result });
+    }
+    if (typeof value === "function") {
+      return value(result, this);
+    }
+    return value;
+  }
+
+  private async handleResultSignals(spec: T.ResultHandlingSpec, result: T.OperationResultNormalized) {
+    if (spec.invalidate && typeof this.invalidate === "function") {
+      this.invalidate(spec.invalidate);
+    }
+
+    if (result.ok && spec.toastOnSuccess) {
+      this.emit("toast", { kind: spec.toastOnSuccess.kind, message: spec.toastOnSuccess.message });
+    } else if (!result.ok && spec.toastOnError) {
+      this.emit("toast", { kind: spec.toastOnError.kind, message: spec.toastOnError.message });
+    }
+
+    if (result.ok && spec.redirectTo) {
+      const url = await this.resolveSignalValue(spec.redirectTo, result);
+      if (url) {
+        this.emit("redirect", { to: url });
+        if (typeof window !== "undefined") {
+          const nav = (window as any).__IRGEN_NAVIGATE__;
+          if (typeof nav === "function") {
+            nav(String(url));
+          } else {
+            const base = (window as any).__IRGEN_BASE_PATH__ || "";
+            const target = (typeof url === "string" && url.startsWith("/") && base && base !== "/")
+              ? String(base).replace(/\\/$/, "") + String(url)
+              : String(url);
+            window.location.assign(target);
+          }
+        }
+      }
+
+      if (typeof window !== "undefined" && spec.invalidate) {
+        (window as any).__IRGEN_INVALIDATE_KEY__ = ((window as any).__IRGEN_INVALIDATE_KEY__ || 0) + 1;
+      }
+    }
+
+    if (result.ok && spec.openUrl) {
+      const url = await this.resolveSignalValue(spec.openUrl, result);
+      if (url) {
+        this.emit("openUrl", { url });
+        if (typeof window !== "undefined") {
+          window.open(String(url), "_blank");
+        }
+      }
+    }
+
+    if (result.ok && spec.downloadAs) {
+      const opts = await this.resolveSignalValue(spec.downloadAs, result);
+      if (opts && opts.filename) {
+        this.emit("download", { filename: opts.filename, data: result.data, raw: result.raw });
+        if (typeof window !== "undefined") {
+          const payload = result.raw ?? result.data ?? "";
+          const blob = payload instanceof Blob
+            ? payload
+            : new Blob(
+              [typeof payload === "string" ? payload : JSON.stringify(payload, null, 2)],
+              { type: "application/octet-stream" },
+            );
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = String(opts.filename);
+          link.click();
+          URL.revokeObjectURL(url);
+        }
+      }
+    }
   }
 }
 `;
@@ -363,6 +475,7 @@ function emitRuntimeConfig(project: Project, libDir: string, ir: FrontendTargetI
     ${op.resultHandling ? `resultHandling: ${JSON.stringify(op.resultHandling)},` : ""}
   }`);
 
+    const runtimeText = (ir.policies.frontend as any).visual?.copy?.runtimeText ?? {};
     const content = `import { BaseRuntime } from "./runtime";
 import * as T from "./runtime-contract";
 
@@ -387,11 +500,97 @@ export const runtime = new BaseRuntime(
   datasources,
   operations,
   { envelope: envelopeAdapters, pagination: paginationAdapters },
-  { auth: {}, csrf: {} }
+  { auth: {}, csrf: {} },
+  ${JSON.stringify(runtimeText)}
 );
 
+const getByPath = (obj: any, path?: string) => {
+  if (!path) return undefined;
+  return path.split(".").reduce((acc: any, key: string) => (acc && typeof acc === "object") ? acc[key] : undefined, obj);
+};
+const isEmptyVal = (v: any): boolean => {
+  if (Array.isArray(v)) return v.length === 0;
+  if (typeof v === "object" && v !== null) {
+    const vals = Object.values(v);
+    return vals.length === 0 ? true : vals.every(isEmptyVal);
+  }
+  if (typeof v === "boolean") return !v;
+  return (!v || v.toString().trim() === "");
+};
+const evalLogic = (logic: any, fallback?: any, logicCtx: any = {}): any => {
+  const evalNode = (node: any): any => {
+    if (node === undefined || node === null) return undefined;
+    if (typeof node === "string") {
+      const trimmed = node.trim();
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === "object") return evalNode(parsed);
+      } catch (_) {}
+      const match = trimmed.match(/^([A-Za-z0-9_\\.]+)\\s*(==|===|!=|!==|>=|<=|>|<)\\s*(.+)$/);
+      if (match) {
+        const [, lhsKey, opSym, rhsRaw] = match;
+        const lhs = getByPath(logicCtx, lhsKey);
+        let rhs: any = rhsRaw;
+        if (rhsRaw === "true") rhs = true;
+        else if (rhsRaw === "false") rhs = false;
+        else if (!isNaN(Number(rhsRaw))) rhs = Number(rhsRaw);
+        else rhs = rhsRaw.replace(/^['"]|['"]$/g, "");
+        switch (opSym) {
+          case "==": return lhs == rhs;
+          case "===": return lhs === rhs;
+          case "!=": return lhs != rhs;
+          case "!==": return lhs !== rhs;
+          case ">": return lhs > rhs;
+          case "<": return lhs < rhs;
+          case ">=": return lhs >= rhs;
+          case "<=": return lhs <= rhs;
+        }
+      }
+      return getByPath(logicCtx, trimmed) ?? trimmed;
+    }
+    if (Array.isArray(node)) return node.map(evalNode);
+    if (typeof node !== "object") return node;
+    const entries = Object.entries(node);
+    if (entries.length === 0) return undefined;
+    const [op, valRaw] = entries[0];
+    const list = Array.isArray(valRaw) ? valRaw : [valRaw];
+    const values = list.map(evalNode);
+    switch (op) {
+      case "var": return getByPath(logicCtx, values[0] as any);
+      case "==": return values[0] == values[1];
+      case "===": return values[0] === values[1];
+      case "!=": return values[0] != values[1];
+      case "!==": return values[0] !== values[1];
+      case ">": return values[0] > values[1];
+      case "<": return values[0] < values[1];
+      case ">=": return values[0] >= values[1];
+      case "<=": return values[0] <= values[1];
+      case "and": return values.every(Boolean);
+      case "or": return values.some(Boolean);
+      case "!": return !values[0];
+      case "!!": return !!values[0];
+      case "if": return values[0] ? values[1] : values[2];
+      case "in": return Array.isArray(values[1]) ? values[1].includes(values[0]) : false;
+      case "+": return values.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
+      case "-": return values.length === 1 ? -(Number(values[0]) || 0) : (Number(values[0]) || 0) - (Number(values[1]) || 0);
+      case "*": return values.reduce((a, b) => (Number(a) || 0) * (Number(b) || 0), 1);
+      case "/": return values.length === 1 ? (Number(values[0]) || 0) : (Number(values[1]) ? (Number(values[0]) || 0) / (Number(values[1]) || 1) : undefined);
+      case "%": return values.length === 1 ? Number(values[0]) % 1 : (Number(values[0]) || 0) % (Number(values[1]) || 1);
+      default: {
+        const out: any = {};
+        for (const [k, v] of entries) {
+          out[k] = evalNode(v);
+        }
+        return out;
+      }
+    }
+  };
+  const res = evalNode(logic);
+  return (typeof res === "undefined") ? fallback : res;
+};
+
 (runtime as any).evalLogic = (logic: any, fallback: any, ctx: any) => {
-    return logic; 
+  return evalLogic(logic, fallback, ctx);
 };
 `;
     project.createSourceFile(filePath, content, { overwrite: true });
@@ -399,7 +598,7 @@ export const runtime = new BaseRuntime(
 
 function emitRuntimeHooks(project: Project, libDir: string) {
     const filePath = path.join(libDir, "hooks.ts");
-    const content = `import { useState, useCallback } from "react";
+    const content = `import { useState, useCallback, useEffect, useRef } from "react";
 import { runtime } from "./runtime-instance";
 import * as T from "./runtime-contract";
 
@@ -407,8 +606,12 @@ export function useOperation(operationId: string) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<T.NormalizedError | null>(null);
+  const lastInputRef = useRef<any>({});
+  const lastCtxRef = useRef<T.OperationContext>({ kind: "system", reason: "hook" });
 
   const execute = useCallback(async (input: any = {}, ctx: T.OperationContext = { kind: "system", reason: "hook" }) => {
+    lastInputRef.current = input;
+    lastCtxRef.current = ctx;
     setLoading(true);
     setError(null);
     try {
@@ -424,6 +627,22 @@ export function useOperation(operationId: string) {
       setLoading(false);
     }
   }, [operationId]);
+
+  useEffect(() => {
+    const unsubscribe = runtime.on("invalidate", (payload: any) => {
+      const targets = payload?.targets ?? [];
+      const hit = Array.isArray(targets) && targets.some((t: any) => {
+        if (!t) return false;
+        if (t.operationId && t.operationId === operationId) return true;
+        if (t.kind === "operation" && t.operationId === operationId) return true;
+        return false;
+      });
+      if (hit) {
+        execute(lastInputRef.current, lastCtxRef.current);
+      }
+    });
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, [operationId, execute]);
 
   return { data, loading, error, execute };
 }

@@ -36,6 +36,9 @@ pnpm-debug.log*
 .nyc_output/
 coverage/
 coverage-final.json
+generated/
+generated-*/
+manual-*/
 
 # Tooling caches
 .cache/

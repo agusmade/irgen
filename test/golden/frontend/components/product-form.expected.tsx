@@ -2,13 +2,16 @@ import React, { useEffect, useState } from "react";
 import * as Icons from "lucide-react";
 import { evalLogic, getByPath, isEmptyVal } from "../lib/logic";
 import { useOperation, useResource } from "../lib/hooks";
+import { useParams } from "react-router-dom";
 
 export function ProductForm() {
   const [id, set_id] = useState("");
   const [name, set_name] = useState("");
   const [price, set_price] = useState("");
   const [errors, set_errors] = useState({} as Record<string,string>);
-  const ctx = { id: id, name: name, price: price };
+  const params = useParams();
+  const paramsKey = JSON.stringify(params);
+  const ctx = { id: id, name: name, price: price, params };
   const getFieldVal = (field: string) => getByPath(ctx, field.replace(/[^a-zA-Z0-9_]/g, "_"));
   const validate = () => {
     const n: Record<string,string> = {};
@@ -52,7 +55,7 @@ export function ProductForm() {
     }
   };
   return (
-    <form className="space-y-8 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none px-6 py-8 sm:rounded-2xl" onSubmit={onSubmit}>
+    <form className="space-y-[var(--irgen-space-xl)] bg-[var(--irgen-color-surface)] dark:bg-[var(--irgen-color-surface-dark)] border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none px-[var(--irgen-space-lg)] py-[var(--irgen-space-xl)] sm:rounded-2xl" onSubmit={onSubmit}>
       {(() => {
         const disabledVal = false;
         return (
@@ -100,13 +103,13 @@ export function ProductForm() {
   
       {submitSuccess && <div className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 px-4 py-3 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2">{submitSuccess}</div>}
       {submitError && <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50 px-4 py-3 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2">{submitError}</div>}
-      <button className="inline-flex items-center justify-center rounded-lg border border-transparent py-2.5 px-5 text-sm font-semibold text-white shadow-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 w-full shadow-lg" style={{ backgroundColor: "#4f46e5" }} type="submit" disabled={submitOp.loading}>
+      <button className="inline-flex items-center justify-center rounded-[var(--irgen-radius-md)] border border-transparent py-2.5 px-5 text-sm font-semibold text-white shadow-[var(--irgen-shadow-md)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 w-full shadow-lg" style={{ backgroundColor: "#4f46e5" }} type="submit" disabled={submitOp.loading}>
         {submitOp.loading ? (
           <span className="flex items-center gap-2">
             <Icons.Loader2 className="animate-spin" size={18} />
             Submitting...
           </span>
-        ) : "Submit Application"}
+        ) : "Submit"}
       </button>
     </form>
   );

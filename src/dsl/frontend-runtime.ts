@@ -11,7 +11,7 @@ function assert(cond: unknown, msg: string): asserts cond {
 }
 
 // Runtime types with helper methods
-export type RuntimeComponent = Omit<DeclComponent, "agentChat" | "cliUsage" | "table"> & {
+export type RuntimeComponent = Omit<DeclComponent, "agentChat" | "cliUsage" | "table" | "macro"> & {
   field: (fieldName: string, type: string, label?: string, validators?: Record<string, any>, config?: any) => void;
   prop: (key: string, value: string) => void;
   // helpers (these are functions in DSL, but they populate IR properties)
@@ -28,16 +28,19 @@ export type RuntimeComponent = Omit<DeclComponent, "agentChat" | "cliUsage" | "t
   enableThemeToggle: () => void;
   code: (snippet: string, language?: string, options?: { showLineNumbers?: boolean }) => void;
   table: (data: { resourceId?: string; operationId?: string; columns?: Array<{ header: string; accessor: string; render?: string }> }) => void;
+  useMacro: (type: string, props?: Record<string, any>) => void;
 };
 
 type FrontendOptions = {
   basePath?: string;
   pwa?: DeclFrontendApp["pwa"];
+  auth?: DeclFrontendApp["auth"];
   meta?: Record<string, any>;
   policies?: Record<string, any>;
   datasources?: DeclFrontendApp["datasources"];
   operations?: DeclFrontendApp["operations"];
   resources?: DeclFrontendApp["resources"];
+  requiredComponentKeys?: string[];
 };
 
 function mergePolicy(target: string, value: Record<string, any>) {
@@ -63,6 +66,7 @@ const RUNTIME_HELPERS = [
   "enableThemeToggle",
   "code",
   "table",
+  "useMacro",
 ];
 
 function stripRuntimeHelpers(comp: Record<string, any>) {
@@ -97,6 +101,11 @@ export function meta(key: string, value: unknown) {
 export function policy(target: string, value: Record<string, any>) {
   assert(_global.__IR_CURRENT_FRONTEND, "policy() harus di dalam frontend()");
   mergePolicy(target, value);
+}
+
+export function requiredComponents(keys: string[]) {
+  assert(_global.__IR_CURRENT_FRONTEND, "requiredComponents() harus di dalam frontend()");
+  _global.__IR_CURRENT_FRONTEND.requiredComponentKeys = keys;
 }
 
 export function page(pName: string, opts: { path: string, hideHeader?: boolean, description?: string, docsLayout?: boolean, docsGroupLabel?: string }, cb?: (p: { component: (name: string, cb?: (c: RuntimeComponent) => void) => void }) => void) {
@@ -144,6 +153,10 @@ export function page(pName: string, opts: { path: string, hideHeader?: boolean, 
           (comp as any).codeBlock = { snippet, language, showLineNumbers: options?.showLineNumbers ?? true };
         };
         comp.table = function (data: any) { (comp as any).table = data; };
+        comp.useMacro = function (type: string, props?: Record<string, any>) {
+          (comp as any).macro = type;
+          if (props) comp.props = props;
+        };
 
         if (typeof cCb === "function") cCb(comp);
         stripRuntimeHelpers(comp as any);
@@ -191,6 +204,10 @@ export function component(name: string, cb: (c: RuntimeComponent) => void) {
     (comp as any).codeBlock = { snippet, language, showLineNumbers: options?.showLineNumbers ?? true };
   };
   comp.table = function (data: any) { (comp as any).table = data; };
+  comp.useMacro = function (type: string, props?: Record<string, any>) {
+    (comp as any).macro = type;
+    if (props) comp.props = props;
+  };
 
   if (typeof cb === "function") cb(comp);
   stripRuntimeHelpers(comp as any);
@@ -208,6 +225,7 @@ type FrontendCallbackArgs = {
   resource: typeof resource;
   meta: typeof meta;
   policy: typeof policy;
+  requiredComponents: typeof requiredComponents;
 };
 
 export function frontend(
@@ -233,6 +251,8 @@ export function frontend(
     operations: opts?.operations ?? [],
     resources: opts?.resources ?? [],
     ...(opts?.pwa ? { pwa: opts.pwa } : {}),
+    ...(opts?.auth ? { auth: opts.auth } : {}),
+    ...(opts?.requiredComponentKeys ? { requiredComponentKeys: opts.requiredComponentKeys } : {}),
     meta: { ...baseMeta },
   };
   if (opts?.policies) {
@@ -249,6 +269,7 @@ export function frontend(
     component,
     meta,
     policy,
+    requiredComponents,
   });
 
   const parsed = DeclFrontendAppSchema.parse(_global.__IR_CURRENT_FRONTEND);

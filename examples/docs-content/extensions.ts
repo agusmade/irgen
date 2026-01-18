@@ -71,13 +71,16 @@ export const extensionsSection: DocSection = {
           type: "paragraph",
           text: [
             "Load extensions with --ext in the CLI. Order matters and follows the",
-            "provided list.",
+            "provided list. You can point to a file path or an installed npm package.",
           ].join(" "),
         },
         {
           type: "code",
           language: "bash",
-          snippet: "npx irgen --targets=frontend --ext=./ext/my-ext.ts examples/app.dsl.ts",
+          snippet: [
+            "npx irgen --targets=frontend --ext=./ext/my-ext.ts examples/app.dsl.ts",
+            "npx irgen --targets=frontend --ext=irgen-ext-php-shared-hosting examples/app.dsl.ts",
+          ].join("\n"),
         },
       ],
     },

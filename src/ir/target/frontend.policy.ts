@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const FrontendStylingPolicySchema = z.object({
     cssFramework: z.enum(["tailwind", "none"]).default("tailwind"),
+    themePack: z.enum(["default", "admin"]).default("default"),
     theme: z.object({
         primaryColor: z.string().default("#4f46e5"), // indigo-600
         borderRadius: z.enum(["none", "sm", "md", "lg", "full"]).default("md"),
@@ -29,6 +30,21 @@ export const FrontendFrameworkPolicySchema = z.object({
 export const FrontendPolicySchema = z.object({
     styling: FrontendStylingPolicySchema,
     framework: FrontendFrameworkPolicySchema,
+    build: z.object({
+        postbuild: z.string().optional(),
+        copyTo: z.object({
+            enabled: z.boolean().default(false),
+            targetRoot: z.string().default("../php-shared-hosting/public"),
+            basePath: z.string().optional(),
+            fromDir: z.string().default("dist"),
+        }).optional(),
+        copyToPublic: z.object({
+            enabled: z.boolean().default(false),
+            targetRoot: z.string().default("../php-shared-hosting/public"),
+            basePath: z.string().optional(),
+            fromDir: z.string().default("dist"),
+        }).optional(),
+    }).default({}),
 }).default({});
 
 export type FrontendPolicy = z.infer<typeof FrontendPolicySchema>;

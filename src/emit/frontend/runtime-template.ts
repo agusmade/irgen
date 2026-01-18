@@ -17,6 +17,7 @@ import type {
  */
 export class BaseRuntime implements Runtime {
     private authStates: Record<string, AuthState> = {};
+    private text: Record<string, string> = {};
 
     constructor(
         private datasources: DataSourceRuntimeConfig[],
@@ -28,12 +29,19 @@ export class BaseRuntime implements Runtime {
         private strategies: {
             auth: any; // Mapping of strategy ID to implementation
             csrf: any; // Mapping of strategy ID to implementation
-        }
-    ) { }
+        },
+        runtimeText: Record<string, string> = {}
+    ) {
+        this.text = runtimeText;
+    }
+
+    private t(key: string, fallback: string): string {
+        return this.text[key] || fallback;
+    }
 
     getDataSource(dsId: string): DataSourceRuntimeConfig {
         const ds = this.datasources.find((d) => d.id === dsId);
-        if (!ds) throw new Error(`DataSource not found: ${dsId}`);
+        if (!ds) throw new Error(this.t("errors.dataSourceNotFound", `DataSource not found: ${dsId}`));
         return ds;
     }
 
@@ -51,7 +59,7 @@ export class BaseRuntime implements Runtime {
         ctx: OperationContext
     ): Promise<OperationResultNormalized> {
         const op = this.operations.find((o) => o.id === operationId);
-        if (!op) throw new Error(`Operation not found: ${operationId}`);
+        if (!op) throw new Error(this.t("errors.operationNotFound", `Operation not found: ${operationId}`));
 
         const ds = this.getDataSource(op.datasourceId);
 
@@ -224,31 +232,126 @@ export class BaseRuntime implements Runtime {
     private normalizePayloadError(payload: any, status?: number): NormalizedError {
         return {
             code: "UNKNOWN_ERROR",
-            message: typeof payload === "string" ? payload : (payload.message || "Operation failed"),
+            message: typeof payload === "string" ? payload : (payload.message || this.t("errors.operationFailed", "Operation failed")),
             details: payload,
             status,
         };
     }
 
     private normalizeException(err: any): NormalizedError {
-        if (err.name === "AbortError") return { code: "TIMEOUT", message: "Request timed out" };
-        if (err instanceof TypeError) return { code: "NETWORK_ERROR", message: "Network error or CORS issue" };
+        if (err.name === "AbortError") return { code: "TIMEOUT", message: this.t("errors.timeout", "Request timed out") };
+        if (err instanceof TypeError) return { code: "NETWORK_ERROR", message: this.t("errors.network", "Network error or CORS issue") };
         return {
             code: "INTERNAL_ERROR",
-            message: err.message || "An unexpected error occurred",
+            message: err.message || this.t("errors.unexpected", "An unexpected error occurred"),
             cause: err,
         };
     }
 
-    private handleResultSignals(spec: any, result: OperationResultNormalized) {
-        // In a real implementation, this would trigger event emitters or state updates
-        // that the UI hooks (useOperation) listen to.
+    private listeners: Record<string, Function[]> = {};
+
+    on(event: string, fn: Function) {
+        if (!this.listeners[event]) this.listeners[event] = [];
+        this.listeners[event].push(fn);
+        return () => {
+            this.listeners[event] = this.listeners[event].filter((l) => l !== fn);
+        };
+    }
+
+    emit(event: string, payload: any) {
+        const fns = this.listeners[event] || [];
+        fns.forEach((fn) => fn(payload));
+    }
+
+    private async handleResultSignals(spec: any, result: OperationResultNormalized) {
+        const ctx: any = {}; // TODO: populate context if needed
+
+        // 1. Invalidate
         if (spec.invalidate && typeof this.invalidate === "function") {
             this.invalidate(spec.invalidate);
         }
+
+        // 2. Toast
+        if (result.ok && spec.toastOnSuccess) {
+            this.emit("toast", { kind: spec.toastOnSuccess.kind, message: spec.toastOnSuccess.message });
+        } else if (!result.ok && spec.toastOnError) {
+            this.emit("toast", { kind: spec.toastOnError.kind, message: spec.toastOnError.message });
+        }
+
+        // 3. Redirect
+        if (result.ok && spec.redirectTo) {
+            // Note: serializeLogic generates async functions, so we await them
+            // The generated code looks like: async (input, ctx, rt) => ...
+            // But spec.redirectTo might be the serialized function itself or a raw value
+            // We'll treat it as a function if it is one, otherwise use simpler evaluation
+            let url: string | null = null;
+            if (typeof spec.redirectTo === 'function') {
+                url = await spec.redirectTo(result, ctx, this);
+            } else {
+                url = String(spec.redirectTo);
+            }
+
+            if (url) {
+                this.emit("navigate", { to: url });
+                if (typeof window !== 'undefined') {
+                    const nav = (window as any).__IRGEN_NAVIGATE__;
+                    if (typeof nav === 'function') {
+                        nav(String(url));
+                    } else if (!(window as any).__SPA_ROUTER__) {
+                        const base = (window as any).__IRGEN_BASE_PATH__ || '';
+                        const target = (typeof url === 'string' && url.startsWith('/') && base && base !== '/')
+                            ? String(base).replace(/\/$/, '') + String(url)
+                            : String(url);
+                        window.location.assign(target);
+                    }
+                }
+            }
+        }
+
+        // 4. Open URL
+        if (result.ok && spec.openUrl) {
+            let url: string | null = null;
+            if (typeof spec.openUrl === 'function') {
+                url = await spec.openUrl(result, ctx, this);
+            } else {
+                url = String(spec.openUrl);
+            }
+
+            if (url) {
+                this.emit("openUrl", { url });
+                if (typeof window !== 'undefined') {
+                    window.open(url, '_blank');
+                }
+            }
+        }
+
+        // 5. Download
+        if (result.ok && spec.downloadAs) {
+            let opts: any = null;
+            if (typeof spec.downloadAs === 'function') {
+                opts = await spec.downloadAs(result, ctx, this);
+            } else {
+                opts = spec.downloadAs;
+            }
+
+            if (opts && opts.filename) {
+                // Handle blob download if data is blob, or json download
+                // This logic is best handled by the component hook, but we emit the signal
+                this.emit("download", { filename: opts.filename, data: result.data, raw: result.raw });
+            }
+        }
+    }
+
+    evalLogic(logic: any, ctx: any, input: any): any {
+        // Basic Logic Evaluation implementation
+        // For C3 patch, we assume logic is pre-compiled into JS functions by the emitter serializer
+        // If logic is passed as raw JSON Logic (not yet implemented in emitter), we would evaluate it here.
+        // For now, identity or simple property access.
+        return logic;
     }
 
     invalidate(targets: any): void {
         // Implementation for cache invalidation (e.g. TanStack Query integration)
+        this.emit("invalidate", targets);
     }
 }

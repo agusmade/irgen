@@ -133,6 +133,7 @@ flowchart TB
 - CLI target is scaffolded (Decl + mapper + target + `cli-fake` emitter producing `CLI.md`) and registered as a target.
 - Backend policies resolved in target lowering (generateId/loggerImpl/httpClient/formatter/db); backend emitter consumes policies from TargetIR.
 - **Frontend Policies & Theming**: Styling policies (primary colors, radius, fonts) flow into the React emitter. **Global Dark Mode** is implemented via a `themeToggle` property in components, resulting in a persistent state manager in `App.tsx` and adaptive Tailwind `dark:` variants across all templates.
+- **Frontend Runtime Request Encoding**: The headless runtime supports JSON bodies by default and `formUrlEncoded` for operations that require classic form submissions (e.g., login/session flows). Path parameters can be computed from runtime values using object mappings (e.g., `{ slug: { var: "slug" } }`).
 - **Multi-page & Routing**: Lowering transforms multiple `page` declarations into a `react-router-dom` configuration. The emitter generates a global Navbar and Footer to wrap these routes.
 - **Specialized Components**: New `marketing` sections and the **Syntax Highlighter** (`codeBlock`) use a policy-driven dependency tracker. The emitter detects these properties to conditionally inject third-party dependencies (like `react-syntax-highlighter`) into the generated `package.json`.
 - **SSG & Prerendering**: Frontend emitter includes logic to generate a custom `prerender.mjs` script and `entry-server.tsx` when `mode="ssg"` or `mode="hybrid"`. This enables build-time static HTML generation without requiring a separate framework meta-dependency.
@@ -176,6 +177,28 @@ This is a practical, incremental plan. Each phase lists goals, key tasks, and su
 **Notes / follow-ups:**
 - Remaining polish items (not required for Phase 4 acceptance): add a formatting/printer step (Prettier/Biome) before saving files, and add golden tests to assert emitted artifacts. These are tracked as follow-ups and fit into Phase 7 (Tests & Golden Files).
 
+## Resolved Core Debt (v0.2.2)
+These items were previously temporary heuristics but are now backed by explicit IR schemas or policy contracts (with tests).
+
+- **Auth-aware routing in the React emitter**  
+  **Resolved in v0.2.2:** moved to `frontend.auth` contract (loginPath/meOperationId/logoutOperationId/hideLoginWhenAuthed).
+- **Runtime request encoding overrides**  
+  **Resolved in v0.2.2:** now an explicit `Operation.body.type` contract (`formUrlEncoded` supported in runtime).
+- **Form prefill (`form.load`) lifecycle**  
+  **Resolved in v0.2.2:** now a formal `form.load` contract (load args/when/mapFields).
+- **Table row actions**  
+  **Resolved in v0.2.2:** now a formal `table.rowActions` contract (ActionSpec per row).
+
+- **Runtime request encoding overrides**  
+  **Location:** frontend runtime template.  
+  `formUrlEncoded` was added directly to support session login flows.  
+  **Exit criteria:** promote this to a documented operation-level policy (request encoding contract).
+
+- **Form prefill (`form.load`) lifecycle**  
+  **Location:** lowering + emitter glue.  
+  Auto-load + field mapping is supported pragmatically.  
+  **Exit criteria:** define a first-class form lifecycle contract (`load/refresh/clear`) in IR/runtime.
+
 ### Phase 5 — Shared Adapters & Library (2–4 days) — **Done** ✅
 - Implemented `/lib/*` adapters generation: `lib/id.ts`, `lib/logger.ts`, and `lib/http.ts` via the backend emitter.
 - Wired policies (`loggerImpl`, `httpClient`) into the lowering step and registered zod validation for them.
@@ -207,6 +230,14 @@ This is a practical, incremental plan. Each phase lists goals, key tasks, and su
 - **DSL Modernization**: Updated the `frontend()` DSL to support entity definitions in options and as standalone functions, improving developer flexibility.
 - **Table Component**: Introduced a first-class `Table` component with native operation/resource binding and automatic state management.
 - Acceptance: `examples/phase1-acceptance.dsl.ts` verifies multi-app, multi-datasource, and operation-oriented interactions.
+
+### Phase 10 — Core Extensions & Generalization (3–5 days) — **Done** ✅
+- **Operation-Backed Forms**: Refactored `DeclFormSchema` to support `operationId` directly, removing legacy URL-centric binding constraints.
+- **Universal Action Model**: Introduced `ActionSpec` for buttons and interactions, allowing any UI element to invoke operations or navigate via consistent schema.
+- **Runtime Signals**: Implemented execution of `toast`, `redirect`, `openUrl`, and `downloadAs` signals in the headless runtime, making `resultHandling` declarative and functional.
+- **Micro-Frontend/Macro Support**: Added `macro` field to `DeclComponentSchema` to support "Page Templates" (like TablePage, EditorPage) as single components.
+- **Dependency Declaration**: Added `requiredComponentKeys` to allow extensions and presets to declare their hard dependencies.
+- Acceptance: Audit report validates that core is now ready for generic extensions (like the PHP Shared Hosting extension).
 
 ---
 

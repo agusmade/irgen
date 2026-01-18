@@ -55,11 +55,17 @@ export interface LoweredValidationRule {
   params?: Record<string, any>;
 }
 
+export type FrontendActionSpec =
+  | { kind: "invoke"; operationId: string; args?: LoweredLogicExpression; confirmMessage?: string }
+  | { kind: "navigate"; to: LoweredLogicExpression; confirmMessage?: string };
+
 export interface FrontendForm {
   fields: FrontendField[];
   submit?: {
+    operationId?: string;
     url?: string;
     method?: "POST" | "PUT" | "PATCH";
+    label?: string;
     successMessage?: string;
     errorMessage?: string;
     draftKey?: string;
@@ -69,6 +75,14 @@ export interface FrontendForm {
     redirect?: string;
     onError?: string;
     afterSubmit?: string;
+  };
+  load?: {
+    operationId: string;
+    args?: LoweredLogicExpression;
+    when?: LoweredLogicExpression;
+    mapFields?: Record<string, LoweredLogicExpression>;
+    onSuccess?: LoweredLogicExpression;
+    onError?: LoweredLogicExpression;
   };
 }
 
@@ -98,10 +112,12 @@ export interface FrontendComponent {
     tabs?: { label: string; content?: string; items?: string[] }[];
   };
   content?: string;
-  button?: { label: string; variant?: "primary" | "secondary" | "ghost"; icon?: string };
+  button?: { label: string; variant?: "primary" | "secondary" | "ghost"; icon?: string; onClick?: FrontendActionSpec };
   table?: {
     resourceId?: string;
     operationId?: string;
+    rowNavigateTo?: string;
+    rowActions?: Array<{ label: string; onClick?: FrontendActionSpec }>;
     columns?: Array<{ header: string; accessor: string; render?: string }>;
   };
   themeToggle?: boolean;
@@ -126,7 +142,8 @@ export interface FrontendMarketing {
   }[];
   actions?: {
     label: string;
-    href: string;
+    href?: string;
+    onClick?: FrontendActionSpec;
     variant?: "primary" | "secondary" | "ghost";
     icon?: string;
   }[];
@@ -180,4 +197,12 @@ export interface FrontendIR {
   operations: OperationSpec[];
   resources: ResourceSpec[];
   pwa?: FrontendPwaConfig;
+  auth?: {
+    enabled?: boolean;
+    loginPath?: string;
+    meOperationId?: string;
+    logoutOperationId?: string;
+    hideLoginWhenAuthed?: boolean;
+  };
+  requiredComponentKeys?: string[];
 }

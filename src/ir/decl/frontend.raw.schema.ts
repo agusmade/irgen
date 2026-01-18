@@ -82,8 +82,10 @@ export const DeclFieldSchema = z.object({
 export const DeclFormSchema = z.object({
   fields: z.array(DeclFieldSchema).default([]),
   submit: z.object({
+    operationId: z.string().optional(),
     url: z.string().url().optional(),
     method: z.enum(["POST", "PUT", "PATCH"]).optional(),
+    label: z.string().optional(),
     successMessage: z.string().optional(),
     errorMessage: z.string().optional(),
     confirmMessage: z.string().optional(),
@@ -93,7 +95,20 @@ export const DeclFormSchema = z.object({
     onError: LogicExprSchema.optional(),
     redirect: z.string().optional(),
   }).optional(),
+  load: z.object({
+    operationId: z.string(),
+    args: LogicExprSchema.optional(),
+    when: LogicExprSchema.optional(),
+    mapFields: z.record(LogicExprSchema).optional(),
+    onSuccess: LogicExprSchema.optional(),
+    onError: LogicExprSchema.optional(),
+  }).optional(),
 });
+
+const DeclActionSpecSchema = z.union([
+  z.object({ kind: z.literal("invoke"), operationId: z.string(), args: LogicExprSchema.optional(), confirmMessage: z.string().optional() }),
+  z.object({ kind: z.literal("navigate"), to: LogicExprSchema, confirmMessage: z.string().optional() }),
+]);
 
 export const DeclMarketingSchema = z.object({
   kind: z.enum(["hero", "features", "testimonials", "faq", "logos", "cta", "stats", "timeline"]),
@@ -112,7 +127,8 @@ export const DeclMarketingSchema = z.object({
   })).optional(),
   actions: z.array(z.object({
     label: z.string(),
-    href: z.string(),
+    href: z.string().optional(),
+    onClick: DeclActionSpecSchema.optional(),
     variant: z.enum(["primary", "secondary", "ghost"]).optional(),
     icon: z.string().optional(),
   })).optional(),
@@ -122,7 +138,7 @@ export const DeclMarketingSchema = z.object({
 export const DeclComponentSchema = z.object({
   type: z.literal("component"),
   name: z.string().min(1),
-  props: z.record(z.string()).optional(),
+  props: z.record(z.any()).optional(),
   form: DeclFormSchema.optional(),
   entityRef: z.string().optional(),
   agentChat: z.object({
@@ -153,10 +169,20 @@ export const DeclComponentSchema = z.object({
     })).optional(),
   }).optional(),
   content: z.string().optional(),
-  button: z.object({ label: z.string(), variant: z.enum(["primary", "secondary", "ghost"]).optional(), icon: z.string().optional() }).optional(),
+  button: z.object({
+    label: z.string(),
+    variant: z.enum(["primary", "secondary", "ghost"]).optional(),
+    icon: z.string().optional(),
+    onClick: DeclActionSpecSchema.optional(),
+  }).optional(),
   table: z.object({
     resourceId: z.string().optional(),
     operationId: z.string().optional(),
+    rowNavigateTo: z.string().optional(),
+    rowActions: z.array(z.object({
+      label: z.string(),
+      onClick: DeclActionSpecSchema.optional(),
+    })).optional(),
     columns: z.array(z.object({
       header: z.string(),
       accessor: z.string(),
@@ -169,6 +195,7 @@ export const DeclComponentSchema = z.object({
     language: z.string().default("typescript"),
     showLineNumbers: z.boolean().default(true),
   }).optional(),
+  macro: z.string().optional(),
   marketing: DeclMarketingSchema.optional(),
 });
 
@@ -280,7 +307,15 @@ export const DeclFrontendAppSchema = z.object({
   operations: z.array(DeclOperationSchema).default([]),
   resources: z.array(DeclResourceSchema).default([]),
   pwa: DeclPwaConfigSchema.optional(),
+  auth: z.object({
+    enabled: z.boolean().optional(),
+    loginPath: z.string().optional(),
+    meOperationId: z.string().optional(),
+    logoutOperationId: z.string().optional(),
+    hideLoginWhenAuthed: z.boolean().optional(),
+  }).optional(),
   meta: z.record(z.any()).default({}),
+  requiredComponentKeys: z.array(z.string()).optional(),
 });
 
 export type DeclComponent = z.infer<typeof DeclComponentSchema>;

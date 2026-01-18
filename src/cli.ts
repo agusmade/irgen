@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import path from "node:path";
+import fs from "node:fs";
 import { pathToFileURL } from "node:url";
+import { createRequire } from "node:module";
 import { aggregateDecls } from "./dsl/aggregator.js";
 import { registerBuiltins, runMapper } from "./mappers/index.js";
 
@@ -191,13 +193,37 @@ Examples:
     if (!extModules.length) return;
     const { createExtensionContext } = await import("./extensions/context.js");
     const ctx = createExtensionContext();
+    const require = createRequire(import.meta.url);
+
+    const pickExtensionFn = (mod: any) => {
+      const candidate = (mod?.default ?? mod?.extension ?? mod);
+      if (typeof candidate === "function") return candidate;
+      if (candidate && typeof candidate === "object") {
+        if (typeof candidate.default === "function") return candidate.default;
+        if (typeof candidate.extension === "function") return candidate.extension;
+      }
+      return null;
+    };
+
+    const resolveExtensionModule = (spec: string) => {
+      const isPathLike = path.isAbsolute(spec) || spec.startsWith(".") || spec.startsWith("/") || /^[A-Za-z]:[\\/]/.test(spec);
+      if (isPathLike) {
+        const abs = path.isAbsolute(spec) ? spec : path.resolve(process.cwd(), spec);
+        if (!fs.existsSync(abs)) {
+          throw new Error(`extension module not found: ${spec}`);
+        }
+        return pathToFileURL(abs).href;
+      }
+      const resolved = require.resolve(spec, { paths: [process.cwd()] });
+      return pathToFileURL(resolved).href;
+    };
+
     for (const modPath of extModules) {
-      const abs = path.isAbsolute(modPath) ? modPath : path.resolve(process.cwd(), modPath);
-      const modUrl = pathToFileURL(abs).href;
+      const modUrl = resolveExtensionModule(modPath);
       const imported = await import(modUrl);
-      const fn = (imported.default ?? imported.extension ?? imported);
+      const fn = pickExtensionFn(imported);
       if (typeof fn === "function") {
-        fn(ctx, imported.options ?? undefined);
+        await fn(ctx, imported.options ?? undefined);
       } else {
         console.warn(`extension module ${modPath} did not export a function`);
       }

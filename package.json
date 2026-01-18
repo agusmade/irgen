@@ -82,11 +82,16 @@
     "test:emitter-registry": "tsx scripts/emitter-registry.test.js",
     "test:cli-target": "tsx scripts/cli-target.test.js",
     "test:gen-frontend": "node scripts/gen-frontend.test.js",
+    "test:form-operation": "node scripts/form-operation.test.js",
+    "test:v022-features": "node scripts/v022-features.test.js",
+    "test:frontend-contracts": "node scripts/frontend-contracts.test.js",
     "test:golden:backend": "node scripts/backend-golden.test.js",
     "test:golden:electron": "node scripts/electron-golden.test.js",
     "test:golden:static-site": "node scripts/static-site-golden.test.js",
     "test:ci": "npm run test:golden && npm run test:golden:backend && npm run test:golden:electron",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "preversion": "npm test:ci",
+    "postversion": "git push origin main --follow-tags"
   },
   "files": [
     "dist",

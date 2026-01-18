@@ -2,6 +2,41 @@
 
 All notable changes to the `irgen` project will be documented in this file.
 
+## [0.2.2] - 2026-01-18
+
+### Core Extensions & Architecture (Phase 10)
+- **Universal Action Model**: Introduced `ActionSpec` type and `onClick` support for buttons, enabling a consistent "invoke operation" or "navigate" behavior across all UI components.
+- **Operation-Backed Forms**: Updated `DeclFormSchema` to support `operationId` in submission configuration, allowing forms to bind directly to backend operations instead of hardcoded URLs.
+- **Micro-Frontend Support**: Added `macro` field to `DeclComponentSchema`, enabling the definition of "Page Templates" (like `TablePage`, `EditorPage`) as single high-level components with props.
+- **Dependency Declaration**: Added `requiredComponentKeys` to `DeclFrontendAppSchema`, allowing extensions and presets to explicitly declare their UI component dependencies.
+- **Active Runtime Signals**: Implemented functional execution of `toast`, `redirect`, `openUrl`, and `downloadAs` signals in the headless runtime (`BaseRuntime`), replacing passive data with active behavior.
+- **Frontend auth contract**: Added `frontend.auth` to declare login/logout operations, login path, and nav visibility rules in a deterministic, policy-driven way.
+- **Form lifecycle upgrades**: Added `form.load` with args/when/mapFields, plus `form.submit.label` for configurable submit text.
+- **Table UX contracts**: Added `table.rowNavigateTo` (row click navigation) and `table.rowActions` with per-row actions and optional confirm dialogs.
+- **Runtime logic evaluation**: Frontend runtime now evaluates logic expressions for path params, action arguments, and field mapping, enabling dynamic behaviors without recompilation.
+- **Frontend build hooks**: Added `build.copyTo`/`build.postbuild` policy to emit postbuild copy scripts in frontend outputs (`copyToPublic` is deprecated).
+- **Component UI variants**: Added `component.props.uiVariant` (`header`/`inline`) and `component.props.layoutVariant` (`header`) to control header-style layouts without card wrappers.
+- **Visual policy (best-effort)**: Emitter reads `policies.frontend.visual` knobs (`navLayout`, `contentWidth`, `density`) without adding schema validation.
+- **Topbar controls (best-effort)**: `visual.topbarControls` controls right-side navbar items (search/notifications/theme/avatar), avatar visibility, and optional custom links.
+- **Branding controls (best-effort)**: `visual.brand` can hide/show logos and override logo src/text/icon in topbar/sidebar.
+- **Nav overrides (best-effort)**: `visual.navItems` can define separate menus for topbar and sidebar, and hide topbar.
+- **Footer/search overrides (best-effort)**: `visual.footerLinks` and `visual.search` allow replacing footer links and search copy without core edits.
+- **Footer layout (best-effort)**: `visual.footer` can disable or compact footer and override footer text.
+- **Form styling (best-effort)**: `visual.form` allows overriding form label/input/error/button/form classes.
+- **Button styling (best-effort)**: `visual.button` allows overriding base/variant button classes.
+- **Table styling (best-effort)**: `visual.table` allows overriding table container/row/cell/action classes.
+- **Tabs styling (best-effort)**: `visual.tabs` allows overriding tabs container/header/button/panel classes.
+- **Marketing blocks (best-effort)**: `visual.marketing` allows overriding hero/features/logos/etc container/title classes.
+- **Card styling (best-effort)**: `visual.cards` allows overriding card/empty/placeholder classes.
+- **Prose styling (best-effort)**: `visual.prose` allows overriding markdown/prose wrapper class.
+- **Motion styling (best-effort)**: `visual.motion` allows overriding page enter + hover/alert/tag motion classes.
+- **Copy overrides (best-effort)**: `visual.copy` allows overriding empty/placeholder/table/tab strings plus common UI labels, including runtime error text.
+- **Token overrides (best-effort)**: `visual.tokens` allows overriding typography/spacing/radius/shadow/color/motion tokens.
+- **Icon overrides (best-effort)**: `visual.icons` allows overriding default UI chrome icons, including docs section + docs item + nav + footer + search modal + row action icons.
+- **Breakpoint overrides (best-effort)**: `visual.breakpoints` allows overriding responsive layout classes (padding/sidebar/docs grid).
+- **Docs/background overrides (best-effort)**: `visual.docs` and `visual.background` control docs labels/sidebar/TOC and decorative gradients.
+- **Labels/avatar overrides (best-effort)**: `visual.labels.sidebarLabel` and `visual.topbarControls.avatar.src` replace hardcoded sidebar label and avatar URL.
+
 ## [0.2.1] - 2026-01-11
 
 ### GitHub Pages (SSG/Hybrid)

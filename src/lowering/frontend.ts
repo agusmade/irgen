@@ -1,6 +1,7 @@
 import type { DeclFrontendApp } from "../ir/decl/frontend.raw.schema.js";
 import type { FrontendIR, FrontendPwaConfig, FrontendField, LoweredValidationRule } from "../ir/domain/frontend.js";
 import { pascal } from "../utils/index.js";
+import { initMacros, getMacro } from "./frontend/macros/index.js";
 
 export type FrontendPolicies = {
   pwa?: Partial<FrontendPwaConfig> & { enabled?: boolean };
@@ -135,7 +136,7 @@ function extractLogicDependencies(logic: any): string[] {
   return Array.from(deps).map(d => d.split(".")[0]); // only top-level for state tracking
 }
 
-function lowerLogicExpression(logic: string | undefined): any {
+function lowerLogicExpression(logic: any): any {
   if (!logic) return undefined;
   let parsed = logic;
   try {
@@ -147,32 +148,91 @@ function lowerLogicExpression(logic: string | undefined): any {
   };
 }
 
+function lowerActionSpec(action?: any) {
+  if (!action) return undefined;
+  if (action.kind === "invoke") {
+    return {
+      ...action,
+      confirmMessage: action.confirmMessage,
+      args: action.args ? lowerLogicExpression(action.args) : undefined,
+    };
+  }
+  if (action.kind === "navigate") {
+    return {
+      ...action,
+      confirmMessage: action.confirmMessage,
+      to: lowerLogicExpression(action.to),
+    };
+  }
+  return action;
+}
+
 export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): FrontendIR {
-  const mapComponent = (c: any) => ({
-    name: c.name,
-    props: c.props,
-    entityRef: c.entityRef,
-    agentChat: c.agentChat,
-    cliUsage: c.cliUsage,
-    form: c.form ? {
-      ...c.form,
-      fields: (c.form.fields ?? []).map((f: any) => ({
-        ...f,
-        loweredValidators: lowerValidators(f),
-        loweredVisibleIf: lowerLogicExpression(f.visibleIf),
-        loweredDisabledIf: lowerLogicExpression(f.disabledIf),
-        loweredDefaultValue: lowerLogicExpression(f.defaultValue),
-        loweredComputeValue: lowerLogicExpression(f.computeValue),
-      }))
-    } : undefined,
-    layout: c.layout,
-    content: c.content,
-    button: c.button,
-    themeToggle: c.themeToggle,
-    codeBlock: c.codeBlock,
-    marketing: c.marketing,
-    table: c.table,
-  });
+  // Initialize macros registry
+  initMacros();
+
+  const mapComponent = (c: any): any[] => {
+    // 1. Check for Macro
+    if (c.macro) {
+      const expander = getMacro(c.macro);
+      if (!expander) {
+        throw new Error(`Unknown macro: ${c.macro}`);
+      }
+      // Expand
+      const expandedDecl = expander(c.props ?? {}, c);
+
+      // Recursively lower the resulting components
+      // (This flattening approach handles the 1-to-many expansion)
+      return expandedDecl.flatMap(mapComponent);
+    }
+
+    // 2. Normal Component Mapping
+    return [{
+      name: c.name,
+      props: c.props,
+      entityRef: c.entityRef,
+      agentChat: c.agentChat,
+      cliUsage: c.cliUsage,
+      form: c.form ? {
+        ...c.form,
+        load: c.form.load ? {
+          ...c.form.load,
+          args: lowerLogicExpression(c.form.load.args),
+          when: lowerLogicExpression(c.form.load.when),
+          mapFields: c.form.load.mapFields
+            ? Object.fromEntries(Object.entries(c.form.load.mapFields).map(([k, v]) => [k, lowerLogicExpression(v)]))
+            : undefined,
+          onSuccess: lowerLogicExpression(c.form.load.onSuccess),
+          onError: lowerLogicExpression(c.form.load.onError),
+        } : undefined,
+        submit: c.form.submit ? {
+          ...c.form.submit,
+        } : undefined,
+        fields: (c.form.fields ?? []).map((f: any) => ({
+          ...f,
+          loweredValidators: lowerValidators(f),
+          loweredVisibleIf: lowerLogicExpression(f.visibleIf),
+          loweredDisabledIf: lowerLogicExpression(f.disabledIf),
+          loweredDefaultValue: lowerLogicExpression(f.defaultValue),
+          loweredComputeValue: lowerLogicExpression(f.computeValue),
+        }))
+      } : undefined,
+      layout: c.layout,
+      content: c.content,
+      button: c.button ? { ...c.button, onClick: lowerActionSpec(c.button.onClick) } : undefined,
+      themeToggle: c.themeToggle,
+      codeBlock: c.codeBlock,
+      marketing: c.marketing ? {
+        ...c.marketing,
+        actions: c.marketing.actions ? c.marketing.actions.map((a: any) => ({ ...a, onClick: lowerActionSpec(a.onClick) })) : undefined,
+      } : undefined,
+      table: c.table ? {
+        ...c.table,
+        rowActions: c.table.rowActions ? c.table.rowActions.map((a: any) => ({ ...a, onClick: lowerActionSpec(a.onClick) })) : undefined,
+      } : undefined,
+      // Macro is purposely excluded here
+    }];
+  };
 
   const pages = (decl.pages ?? []).map((p: any) => ({
     name: p.name,
@@ -181,9 +241,21 @@ export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): Fronten
     description: p.description,
     docsLayout: p.docsLayout,
     docsGroupLabel: p.docsGroupLabel,
-    components: (p.components ?? []).map(mapComponent)
+    // Flatten components (handle macro expansion results)
+    components: (p.components ?? []).flatMap(mapComponent)
   }));
-  const components = (decl.components ?? []).map(mapComponent);
+
+  const auth = decl.auth
+    ? {
+      enabled: decl.auth.enabled ?? true,
+      loginPath: decl.auth.loginPath ?? "/login",
+      meOperationId: decl.auth.meOperationId ?? "auth.me",
+      logoutOperationId: decl.auth.logoutOperationId ?? "auth.logout",
+      hideLoginWhenAuthed: decl.auth.hideLoginWhenAuthed ?? true,
+    }
+    : undefined;
+
+  const components = (decl.components ?? []).flatMap(mapComponent);
 
   return {
     domain: "frontend",
@@ -211,6 +283,8 @@ export function declToFrontendIR(decl: DeclFrontendApp, policies?: any): Fronten
     })),
     resources: decl.resources ?? [],
     pwa: resolvePwaConfig(decl, policies),
+    auth,
+    requiredComponentKeys: decl.requiredComponentKeys,
   };
 }
 
