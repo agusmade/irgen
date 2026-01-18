@@ -90,7 +90,7 @@
     "test:golden:static-site": "node scripts/static-site-golden.test.js",
     "test:ci": "npm run test:golden && npm run test:golden:backend && npm run test:golden:electron",
     "prepublishOnly": "npm run build",
-    "preversion": "npm test:ci",
+    "preversion": "npm run test:ci",
     "postversion": "git push origin main --follow-tags"
   },
   "files": [
