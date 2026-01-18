@@ -183,7 +183,7 @@ if ('serviceWorker' in navigator) {
   // App.tsx
   const appFile = project.createSourceFile(path.join(frontendDir, "App.tsx"), "", { overwrite: true });
   const appReactImports = ["useEffect", "useMemo", "useState"];
-  appFile.addImportDeclaration({ moduleSpecifier: "react", namedImports: appReactImports });
+  appFile.addImportDeclaration({ moduleSpecifier: "react", defaultImport: "React", namedImports: appReactImports });
   const authConfig = ir.auth?.enabled ? ir.auth : undefined;
   const authMeOpId = authConfig?.meOperationId ?? "auth.me";
   const authLogoutOpId = authConfig?.logoutOperationId ?? "auth.logout";

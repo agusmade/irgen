@@ -33,6 +33,7 @@ All notable changes to the `irgen` project will be documented in this file.
 - **Copy overrides (best-effort)**: `visual.copy` allows overriding empty/placeholder/table/tab strings plus common UI labels, including runtime error text.
 - **Token overrides (best-effort)**: `visual.tokens` allows overriding typography/spacing/radius/shadow/color/motion tokens.
 - **Icon overrides (best-effort)**: `visual.icons` allows overriding default UI chrome icons, including docs section + docs item + nav + footer + search modal + row action icons.
+- **SSR fix**: ensure `App.tsx` imports React when using `React.createElement` in generated UI.
 - **Breakpoint overrides (best-effort)**: `visual.breakpoints` allows overriding responsive layout classes (padding/sidebar/docs grid).
 - **Docs/background overrides (best-effort)**: `visual.docs` and `visual.background` control docs labels/sidebar/TOC and decorative gradients.
 - **Labels/avatar overrides (best-effort)**: `visual.labels.sidebarLabel` and `visual.topbarControls.avatar.src` replace hardcoded sidebar label and avatar URL.
