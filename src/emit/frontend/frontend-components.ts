@@ -1235,6 +1235,24 @@ export function emitComponent(project: Project, frontendDir: string, component: 
 
 export function emitMarketingComponent(writer: any, m: FrontendMarketing, policy: FrontendPolicy, actionHandlers?: Array<string | null>) {
   const primaryColor = policy.styling.theme.primaryColor;
+  const basePath = policy.framework?.rendering?.basePath ?? "/";
+  const normalizeBasePath = (value: string) => {
+    if (!value || value === "/") return "";
+    let normalized = value.trim();
+    if (!normalized.startsWith("/")) normalized = `/${normalized}`;
+    if (normalized.endsWith("/")) normalized = normalized.slice(0, -1);
+    return normalized;
+  };
+  const resolveHref = (href?: string) => {
+    if (!href) return "#";
+    if (href.startsWith("#")) return href;
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(href) || href.startsWith("//")) return href;
+    const base = normalizeBasePath(basePath);
+    if (!base) return href;
+    if (!href.startsWith("/")) return `${base}/${href}`;
+    if (href === base || href.startsWith(`${base}/`)) return href;
+    return `${base}${href}`;
+  };
   const marketingVisual = (policy as any).visual?.marketing ?? {};
   const radiusMap: Record<string, string> = { none: "rounded-none", sm: "rounded-sm", md: "rounded-md", lg: "rounded-lg", full: "rounded-full" };
   const radius = radiusMap[policy.styling.theme.borderRadius] || "rounded-xl";
@@ -1263,10 +1281,11 @@ export function emitMarketingComponent(writer: any, m: FrontendMarketing, policy
       m.actions.forEach((a, idx) => {
         const btnCls = a.variant === "primary" ? `bg-[${primaryColor}] text-white` : "bg-white/10 text-white border border-white/20 hover:bg-white/20";
         const handler = actionHandlers?.[idx];
+        const href = resolveHref(a.href);
         if (handler) {
           writer.writeLine(`          <button type="button" onClick={${handler}} className="inline-flex items-center gap-2 px-6 py-3 font-semibold ${radius} transition-all ${btnCls}">`);
         } else {
-          writer.writeLine(`          <a href="${a.href ?? "#"}" className="inline-flex items-center gap-2 px-6 py-3 font-semibold ${radius} transition-all ${btnCls}">`);
+          writer.writeLine(`          <a href="${href}" className="inline-flex items-center gap-2 px-6 py-3 font-semibold ${radius} transition-all ${btnCls}">`);
         }
         if (a.icon) writer.writeLine(`            {React.createElement((Icons as any)["${a.icon}"], { size: 20 })}`);
         writer.writeLine(`            {${JSON.stringify(a.label)}}`);
@@ -1381,10 +1400,11 @@ export function emitMarketingComponent(writer: any, m: FrontendMarketing, policy
       writer.writeLine(`      <div className="flex justify-center gap-4 pt-4">`);
       m.actions.forEach((a, idx) => {
         const handler = actionHandlers?.[idx];
+        const href = resolveHref(a.href);
         if (handler) {
           writer.writeLine(`        <button type="button" onClick={${handler}} className="inline-flex items-center gap-2 px-8 py-3.5 font-bold ${radius} bg-[${primaryColor}] text-white hover:scale-105 active:scale-95 shadow-xl shadow-[${primaryColor}]/20 transition-all">`);
         } else {
-          writer.writeLine(`        <a href="${a.href ?? "#"}" className="inline-flex items-center gap-2 px-8 py-3.5 font-bold ${radius} bg-[${primaryColor}] text-white hover:scale-105 active:scale-95 shadow-xl shadow-[${primaryColor}]/20 transition-all">`);
+          writer.writeLine(`        <a href="${href}" className="inline-flex items-center gap-2 px-8 py-3.5 font-bold ${radius} bg-[${primaryColor}] text-white hover:scale-105 active:scale-95 shadow-xl shadow-[${primaryColor}]/20 transition-all">`);
         }
         if (a.icon) writer.writeLine(`          {React.createElement((Icons as any)["${a.icon}"], { size: 20 })}`);
         writer.writeLine(`          {${JSON.stringify(a.label)}}`);

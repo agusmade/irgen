@@ -297,7 +297,9 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("const adminMainClass = `${adminOffsetClass} max-w-none mx-auto ${contentPaddingClass} py-6`;");
     writer.writeLine("const defaultMainClass = `${contentWidthClass} mx-auto ${contentPaddingClass} ${densityClass} ${motionPageEnter}`;");
     writer.writeLine("const docsMainClass = `${visualContentWidth === \"full\" ? \"max-w-none\" : \"max-w-[1400px]\"} mx-auto ${docsPaddingClass} ${docsDensityClass} ${motionDocsEnter}`;");
-    writer.writeLine("const isActivePath = (path: string) => relativePath === path;");
+    writer.writeLine("const normalizePath = (p: string) => (p && p.length > 1 ? p.replace(/\\/$/, \"\") : p || \"/\");");
+    writer.writeLine("const normalizedPath = normalizePath(relativePath);");
+    writer.writeLine("const isActivePath = (path: string) => normalizePath(path) === normalizedPath;");
     writer.writeLine(`const docsLinks = ${JSON.stringify(docsLinks, null, 2)};`);
     writer.writeLine(`const defaultDocsGroupLabel = ${JSON.stringify(docsGroupLabel)};`);
     writer.writeLine("const docsSidebarGroups = docsLinks.reduce((acc, link) => {");
@@ -307,8 +309,8 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("  group.items.push(link);");
     writer.writeLine("  return acc;");
     writer.writeLine("}, [] as Array<{ label: string; items: typeof docsLinks }>)");
-    writer.writeLine("const docsPaths = docsLinks.map((link) => link.path);");
-    writer.writeLine("const isDocsRoute = docsPaths.includes(relativePath);");
+    writer.writeLine("const docsPaths = docsLinks.map((link) => normalizePath(link.path));");
+    writer.writeLine("const isDocsRoute = docsPaths.includes(normalizedPath);");
     writer.writeLine("const topbarLinks = Array.isArray(visualNavItems.topbar) && visualNavItems.topbar.length > 0 ? visualNavItems.topbar : " + JSON.stringify(navbarLinks) + ";");
     writer.writeLine("const sidebarLinks = Array.isArray(visualNavItems.sidebar) && visualNavItems.sidebar.length > 0 ? visualNavItems.sidebar : " + JSON.stringify(navbarLinks) + ";");
     writer.writeLine("const footerLinks = Array.isArray(visualFooterLinks) ? visualFooterLinks : [{ label: \"Terms\", href: \"#\" }, { label: \"Privacy\", href: \"#\" }, { label: \"Contact\", href: \"#\" }];");

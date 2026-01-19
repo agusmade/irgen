@@ -125,7 +125,7 @@ export const policyReferenceSection: DocSection = {
     {
       type: "calloutLinks",
       links: [
-        { label: "See Policies", href: "/policies/" },
+        { label: "See Policies", href: "/docs/policies/" },
       ],
     },
   ],

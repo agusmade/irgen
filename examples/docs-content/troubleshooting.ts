@@ -81,8 +81,8 @@ export const troubleshootingSection: DocSection = {
     {
       type: "calloutLinks",
       links: [
-        { label: "See CLI Reference", href: "/cli-reference/" },
-        { label: "See Policy Reference", href: "/policy-reference/" },
+        { label: "See CLI Reference", href: "/docs/cli-reference/" },
+        { label: "See Policy Reference", href: "/docs/policy-reference/" },
       ],
     },
   ],

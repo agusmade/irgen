@@ -121,8 +121,8 @@ export const cliReferenceSection: DocSection = {
     {
       type: "calloutLinks",
       links: [
-        { label: "See Install & CLI", href: "/install-cli/" },
-        { label: "See DSL Reference", href: "/dsl-reference/" },
+        { label: "See Install & CLI", href: "/docs/install-cli/" },
+        { label: "See DSL Reference", href: "/docs/dsl-reference/" },
       ],
     },
   ],

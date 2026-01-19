@@ -82,8 +82,8 @@ export const backendSection: DocSection = {
     {
       type: "calloutLinks",
       links: [
-        { label: "See Policies", href: "/policies/" },
-        { label: "See Policy Reference", href: "/policy-reference/" },
+        { label: "See Policies", href: "/docs/policies/" },
+        { label: "See Policy Reference", href: "/docs/policy-reference/" },
       ],
     },
   ],

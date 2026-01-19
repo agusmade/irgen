@@ -141,9 +141,9 @@ export const frontendSection: DocSection = {
     {
       type: "calloutLinks",
       links: [
-        { label: "See DSL Reference", href: "/dsl-reference/" },
-        { label: "See Policies", href: "/policies/" },
-        { label: "See React SSG Detail", href: "/react-ssg/" },
+        { label: "See DSL Reference", href: "/docs/dsl-reference/" },
+        { label: "See Policies", href: "/docs/policies/" },
+        { label: "See React SSG Detail", href: "/docs/react-ssg/" },
       ],
     },
   ],

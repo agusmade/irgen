@@ -119,8 +119,8 @@ registerTargetEmitter("my-target", "my-custom");`,
         {
             type: "calloutLinks",
             links: [
-                { label: "View Architecture", href: "/architecture" },
-                { label: "See Policy Reference", href: "/policy-reference" }
+                { label: "View Architecture", href: "/docs/architecture" },
+                { label: "See Policy Reference", href: "/docs/policy-reference" }
             ],
         }
     ],

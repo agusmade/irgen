@@ -187,8 +187,8 @@ export const dslReferenceSection: DocSection = {
     {
       type: "calloutLinks",
       links: [
-        { label: "See Frontend Docs", href: "/frontend/" },
-        { label: "See Policies", href: "/policies/" },
+        { label: "See Frontend Docs", href: "/docs/frontend/" },
+        { label: "See Policies", href: "/docs/policies/" },
       ],
     },
   ],
