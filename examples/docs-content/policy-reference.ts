@@ -45,7 +45,7 @@ export const policyReferenceSection: DocSection = {
         {
           type: "paragraph",
           text: [
-            "frontend.framework (rendering.mode, prerender), frontend.styling, frontend.pwa.",
+            "frontend.framework (mode, prerender), frontend.auth (meOperationId, loginPath, hideLoginWhenAuthed), frontend.visual (navLayout, contentWidth, density, brand, topbarControls, navItems, footer, form, etc.).",
           ].join(" "),
         },
         {
@@ -55,7 +55,8 @@ export const policyReferenceSection: DocSection = {
             "policies: {",
             "  frontend: {",
             "    framework: { rendering: { mode: \"csr\" } },",
-            "    styling: { cssFramework: \"tailwind\" }",
+            "    auth: { enabled: true, loginPath: \"/signin\" },",
+            "    visual: { navLayout: \"sidebar\", contentWidth: \"wide\" }",
             "  }",
             "}",
           ].join("\n"),

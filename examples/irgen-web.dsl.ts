@@ -197,7 +197,7 @@ frontend("irgen", {
       { title: "Compiler-Style IR", description: "Transform system descriptions through explicit IR stages—ensuring multi-target consistency and determinism.", icon: "Cpu" },
       { title: "Policy-Driven", description: "Control architectural rules and emitter behavior globally without touching manual implementation code.", icon: "ShieldCheck" },
       { title: "Generation Gap", description: "Hard separation between generated plumbing and your manual logic. Regenerate with zero conflicts.", icon: "Layers" }
-    ], { title: "Engineered for Architectural Clarity", subtitle: "Stop building scaffolds. Use a toolchain that handles complexity like a compiler.", align: "center"});
+    ], { title: "Engineered for Architectural Clarity", subtitle: "Stop building scaffolds. Use a toolchain that handles complexity like a compiler.", align: "center" });
   });
 
   app.component("PipelineRow", (c) => {
@@ -262,7 +262,7 @@ frontend("irgen", {
       { title: "Base Classes", description: "Automatically generated and always up-to-date with your DSL.", icon: "Box" },
       { title: "Hook Methods", description: "Pre-defined interceptors for business logic like beforeCreate/afterDelete.", icon: "Anchor" },
       { title: "Clean Inheritance", description: "Your custom code lives in separate files, making version control a breeze.", icon: "GitBranch" }
-    ], { title: "The Generation Gap Pattern", subtitle: "Never face a merge conflict with a generator again.", align: "center"});
+    ], { title: "The Generation Gap Pattern", subtitle: "Never face a merge conflict with a generator again.", align: "center" });
   });
 
   app.component("BackendCapabilities", (c) => {
@@ -270,15 +270,15 @@ frontend("irgen", {
       { title: "Prisma Integration", description: "Type-safe database access with automated schema generation.", icon: "Database" },
       { title: "Repository Pattern", description: "Encapsulated data logic with built-in support for relationships.", icon: "Table" },
       { title: "Service Layer", description: "Robust business logic housing with dependency injection.", icon: "Cpu" }
-    ], { title: "Powerful Backend Emitter", align: "center"});
+    ], { title: "Powerful Backend Emitter", align: "center" });
   });
 
   app.component("FrontendRichness", (c) => {
     c.features([
-      { title: "Dynamic Forms", description: "Visibility logic, validation, and async data source binding.", icon: "FileText" },
-      { title: "PWA Support", description: "One-click Service Worker, manifest, and icon generation.", icon: "Smartphone" },
-      { title: "Navigation Engine", description: "Automated React Router setup with breadcrumbs and layout nesting.", icon: "Map" }
-    ], { title: "Premium Frontend Emitter", align: "center"});
+      { title: "Universal Actions", description: "Unified invoke/navigate behavior for all UI components—eliminating boilerplate interaction code.", icon: "MousePointer" },
+      { title: "Macro System", description: "Expand high-level templates like TablePage or AuthPage with one line, while maintaining full IR control.", icon: "Box" },
+      { title: "Dynamic Forms", description: "Visibility logic, validation, and async data source binding.", icon: "FileText" }
+    ], { title: "Premium Frontend Emitter", align: "center" });
   });
 
   app.component("ElectronSecurity", (c) => {
@@ -286,7 +286,7 @@ frontend("irgen", {
       { title: "Context Isolation", description: "Hardened renderer with zero direct access to Node.js APIs.", icon: "ShieldCheck" },
       { title: "IPC Whitelists", description: "Strictly defined communication channels between main and renderer.", icon: "MessageSquare" },
       { title: "Auto-Updates", description: "Built-in wiring for seamless application delivery.", icon: "RefreshCw" }
-    ], { title: "Hardened Desktop Shell", align: "center"});
+    ], { title: "Hardened Desktop Shell", align: "center" });
   });
 
   // -- Showcase Components --

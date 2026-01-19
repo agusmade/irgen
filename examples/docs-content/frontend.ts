@@ -18,9 +18,40 @@ export const frontendSection: DocSection = {
     {
       type: "features",
       items: [
-        { title: "Operation-Oriented", description: "Operations are the atom of the contract, not just CRUD.", icon: "Activity" },
-        { title: "Headless Runtime", description: "Backend-agnostic lib/runtime.ts handles auth and data.", icon: "Ghost" },
-        { title: "Any Rendering", description: "Choose CSR, SSG, or Hybrid without changing DSL.", icon: "Waves" },
+        { title: "Universal Actions", description: "Unified invoke/navigate behavior for all UI components.", icon: "MousePointer" },
+        { title: "Macro System", description: "High-level page templates like TablePage and AuthPage.", icon: "Box" },
+        { title: "Operation-Backed Forms", description: "Forms bind directly to operations with auto-loading.", icon: "ClipboardList" },
+        { title: "Auth Contracts", description: "Deterministic login/logout and nav visibility logic.", icon: "Lock" },
+      ],
+    },
+    {
+      type: "section",
+      title: "Universal Action Model",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "v0.2.2 introduces a unified way to handle interactions. Every component can now",
+            "trigger an **Action**, which is either an `invoke` (triggering an operation) or",
+            "a `navigate` (moving to a URL). This removes the need for custom event handlers",
+            "for common tasks.",
+          ].join(" "),
+        },
+      ],
+    },
+    {
+      type: "section",
+      title: "Macro System (Micro-Frontend Templates)",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "Macros allow you to define complex page patterns with a single line of DSL.",
+            "Built-in macros like `TablePage`, `AuthPage`, and `EditorPage` expand into",
+            "standard components, giving you high-level abstractions without losing",
+            "the flexibility of the underlying IR.",
+          ].join(" "),
+        },
       ],
     },
     {

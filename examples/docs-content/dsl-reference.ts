@@ -159,26 +159,88 @@ export const dslReferenceSection: DocSection = {
     },
     {
       type: "section",
-      title: "Component Helpers",
+      title: "Universal Actions",
       blocks: [
         {
           type: "paragraph",
           text: [
-            "New helpers like `table()` allow binding UI components directly to operations.",
+            "Actions provide a unified way to handle clicks and other events.",
           ].join(" "),
         },
         {
           type: "code",
           language: "typescript",
           snippet: [
-            "app.component(\"PostTable\", (c) => {",
-            "  c.table({",
-            "    operationId: \"list-posts\",",
-            "    columns: [",
-            "      { header: \"Title\", accessor: \"title\" },",
-            "      { header: \"Status\", accessor: \"status\" }",
-            "    ]",
-            "  });",
+            "// Invoke an operation",
+            "c.onClick = {",
+            "  kind: \"invoke\",",
+            "  operationId: \"signup\",",
+            "  args: { email: \"user@example.com\" },",
+            "  confirmMessage: \"Are you sure?\"",
+            "};",
+            "",
+            "// Simple navigation",
+            "c.onClick = {",
+            "  kind: \"navigate\",",
+            "  to: \"/dashboard\"",
+            "};",
+          ].join("\n"),
+        },
+      ],
+    },
+    {
+      type: "section",
+      title: "Macro System",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "Use macros to expand complex page patterns with ease.",
+          ].join(" "),
+        },
+        {
+          type: "code",
+          language: "typescript",
+          snippet: [
+            "// Using the micro-frontend macro helper",
+            "p.macro(\"TablePage\", {",
+            "  title: \"User Management\",",
+            "  operationId: \"list-users\",",
+            "  columns: [\"name\", \"email\"]",
+            "});",
+            "",
+            "// Or using a component directly",
+            "p.component(\"Login\", (c) => {",
+            "  c.macro = \"AuthPage\";",
+            "});",
+          ].join("\n"),
+        },
+      ],
+    },
+    {
+      type: "section",
+      title: "Operation-Backed Forms",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "Forms can now bind directly to operations for submission and loading.",
+          ].join(" "),
+        },
+        {
+          type: "code",
+          language: "typescript",
+          snippet: [
+            "c.form({",
+            "  fields: [\"name\", \"email\"],",
+            "  submit: {",
+            "    operationId: \"create-user\",",
+            "    successMessage: \"User created!\"",
+            "  },",
+            "  load: {",
+            "    operationId: \"get-user\",",
+            "    args: { id: \"user-1\" }",
+            "  }",
             "});",
           ].join("\n"),
         },

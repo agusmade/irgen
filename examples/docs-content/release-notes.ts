@@ -15,7 +15,29 @@ export const releaseNotesSection: DocSection = {
     },
     {
       type: "section",
-      title: "Latest: v0.2.0 - The General Purpose Release",
+      title: "Latest: v0.2.2 - Universal Actions & Macros",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "This release introduces the Universal Action Model and a powerful Macro system,",
+            "along with deep visual policy overrides and unified frontend authentication contracts.",
+          ].join(" "),
+        },
+      ],
+    },
+    {
+      type: "features",
+      items: [
+        { title: "Universal Actions", description: "Unified invoke/navigate behavior for all components.", icon: "MousePointer" },
+        { title: "Macro System", description: "Expand TablePage, AuthPage, and EditorPage with one line.", icon: "Box" },
+        { title: "Operation-Backed Forms", description: "Forms bind directly to operations with auto-loading.", icon: "ClipboardList" },
+        { title: "Auth Contracts", description: "Deterministic login/logout and nav visibility logic.", icon: "Lock" },
+      ],
+    },
+    {
+      type: "section",
+      title: "v0.2.0 - The General Purpose Release",
       blocks: [
         {
           type: "paragraph",

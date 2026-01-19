@@ -52,8 +52,8 @@ export function emitComponent(project: Project, frontendDir: string, component: 
       namedImports: ["Prism as SyntaxHighlighter"],
     });
     sf.addImportDeclaration({
-      moduleSpecifier: "react-syntax-highlighter/dist/esm/styles/prism",
-      namedImports: ["oneDark"],
+      moduleSpecifier: "react-syntax-highlighter/dist/esm/styles/prism/one-dark",
+      defaultImport: "oneDark",
     });
   }
 
@@ -578,7 +578,7 @@ export function emitComponent(project: Project, frontendDir: string, component: 
       if (isInline) {
         writer.writeLine(`  <div className="space-y-3">`);
       } else {
-      writer.writeLine(`  <div className="${cardContainerClass} ${cardBodyClass}">`);
+        writer.writeLine(`  <div className="${cardContainerClass} ${cardBodyClass}">`);
       }
       if (component.content) writer.writeLine(`    <div className="${proseClass}" dangerouslySetInnerHTML={{ __html: ${JSON.stringify(renderMarkdownToHtml(component.content))} }} />`);
       if (component.codeBlock) writer.writeLine(`    {codeBlock}`);
@@ -966,8 +966,8 @@ export function emitComponent(project: Project, frontendDir: string, component: 
           writer.writeLine(`          {${varName}.map((tag: string, idx: number) => (`);
           writer.writeLine(`            <span key={idx} className="inline-flex items-center gap-1.5 bg-slate-900 text-white pl-2.5 pr-1.5 py-1 rounded-full text-xs font-semibold shadow-sm ${tagEnterClass}">`);
           writer.writeLine(`              {tag}`);
-              writer.writeLine(`              <button type="button" onClick={() => set_${varName}(${varName}.filter((_: any,i: number)=>i!==idx))} className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors" aria-label="Remove tag">`);
-              writer.writeLine(`                {React.createElement((Icons as any)["${iconTagRemove}"] || Icons.X, { size: 10 })}`);
+          writer.writeLine(`              <button type="button" onClick={() => set_${varName}(${varName}.filter((_: any,i: number)=>i!==idx))} className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors" aria-label="Remove tag">`);
+          writer.writeLine(`                {React.createElement((Icons as any)["${iconTagRemove}"] || Icons.X, { size: 10 })}`);
           writer.writeLine(`              </button>`);
           writer.writeLine(`            </span>`);
           writer.writeLine(`          ))}`);
@@ -1264,7 +1264,7 @@ export function emitMarketingComponent(writer: any, m: FrontendMarketing, policy
     const heroSubtitleClass = heroVisual.subtitleClass || "text-lg md:text-xl text-slate-300 max-w-2xl leading-relaxed";
     writer.writeLine(`    <div className="${heroContainerClass}">`);
     writer.writeLine(`      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, ${primaryColor}, transparent)' }}></div>`);
-      writer.writeLine(`      <div className="relative max-w-4xl space-y-[var(--irgen-space-xl)]">`);
+    writer.writeLine(`      <div className="relative max-w-4xl space-y-[var(--irgen-space-xl)]">`);
     if (m.badge) {
       writer.writeLine(`        <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-sm font-medium border border-white/10 text-slate-300">`);
       writer.writeLine(`          {${JSON.stringify(m.badge)}}`);

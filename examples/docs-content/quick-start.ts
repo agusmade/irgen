@@ -24,9 +24,9 @@ export const quickStartSection: DocSection = {
     {
       type: "features",
       items: [
-        { title: "Operation-Oriented", description: "Define operations (contracts) and bind UI to them.", icon: "Activity" },
-        { title: "Full-Stack", description: "Generate frontend only, backend only, or both from one DSL.", icon: "Layers" },
-        { title: "Policy-Driven", description: "Same intent, different rendering/persistence via policies.", icon: "Shield" },
+        { title: "Compiler-Style IR", description: "Transform descriptions through explicit IR stages for multi-target consistency.", icon: "Cpu" },
+        { title: "Policy-Driven", description: "Control architectural rules and emitter behavior globally via policies.", icon: "Shield" },
+        { title: "Operation-Oriented", description: "Define contracts once and bind UI/Backend to them consistently.", icon: "Activity" },
       ],
     },
     {
