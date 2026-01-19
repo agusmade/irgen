@@ -61,7 +61,13 @@ frontend("irgen", {
       docsLayout: true,
       docsGroupLabel: DOCS_GROUP_BY_ID.get(section.id) ?? "Docs",
     }, (p) => {
-      const emitBlock = (block: any, idx: number, prefix: string, scope: "page" | "app"): string => {
+      const emitBlock = (
+        block: any,
+        idx: number,
+        prefix: string,
+        scope: "page" | "app",
+        parentType?: string,
+      ): string => {
         const name = safeComponentName(`${prefix}Block${idx}`);
         const defineComponent = (cb: (c: any) => void) => {
           if (scope === "page") {
@@ -74,6 +80,7 @@ frontend("irgen", {
           defineComponent((c) => {
             c.content = block.text;
             c.prop("hideTitle", "true");
+            c.prop("uiVariant", "inline");
           });
           return name;
         }
@@ -81,6 +88,7 @@ frontend("irgen", {
           defineComponent((c) => {
             c.code(block.snippet, block.language);
             c.prop("hideTitle", "true");
+            if (parentType === "section") c.prop("uiVariant", "inline");
           });
           return name;
         }
@@ -88,6 +96,7 @@ frontend("irgen", {
           defineComponent((c) => {
             c.features(block.items, { align: "center" });
             c.prop("hideTitle", "true");
+            if (parentType === "section") c.prop("uiVariant", "inline");
           });
           return name;
         }
@@ -99,6 +108,7 @@ frontend("irgen", {
               subtitle: block.subtitle
             });
             c.prop("hideTitle", "true");
+            if (parentType === "section") c.prop("uiVariant", "inline");
           });
           return name;
         }
@@ -110,13 +120,14 @@ frontend("irgen", {
             }));
             c.cta("", "", links);
             c.prop("hideTitle", "true");
+            if (parentType === "section") c.prop("uiVariant", "inline");
           });
           return name;
         }
         if (block.type === "section") {
           const childNames = (block.blocks ?? [])
             .map((child: any, childIdx: number) =>
-              emitBlock(child, childIdx, `${name}Child`, "app"),
+              emitBlock(child, childIdx, `${name}Child`, "app", "section"),
             )
             .filter((childName: string) => !!childName);
           p.component(name, (c) => {

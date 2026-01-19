@@ -53,7 +53,13 @@ frontend("irgen Docs", {
       hideHeader: (section as any).hideHeader,
       description: (section as any).description
     }, (p) => {
-      const emitBlock = (block: any, idx: number, prefix: string, scope: "page" | "app"): string => {
+      const emitBlock = (
+        block: any,
+        idx: number,
+        prefix: string,
+        scope: "page" | "app",
+        parentType?: string,
+      ): string => {
         const name = `${prefix}Block${idx}`;
         const defineComponent = (cb: (c: any) => void) => {
           if (scope === "page") {
@@ -66,6 +72,7 @@ frontend("irgen Docs", {
           defineComponent((c) => {
             c.content = block.text;
             c.prop("hideTitle", "true");
+            c.prop("uiVariant", "inline");
           });
           return name;
         }
@@ -73,6 +80,7 @@ frontend("irgen Docs", {
           defineComponent((c) => {
             c.code(block.snippet, block.language);
             c.prop("hideTitle", "true");
+            if (parentType === "section") c.prop("uiVariant", "inline");
           });
           return name;
         }
@@ -80,6 +88,7 @@ frontend("irgen Docs", {
           defineComponent((c) => {
             c.features(block.items);
             c.prop("hideTitle", "true");
+            if (parentType === "section") c.prop("uiVariant", "inline");
           });
           return name;
         }
@@ -91,6 +100,7 @@ frontend("irgen Docs", {
               subtitle: block.subtitle
             });
             c.prop("hideTitle", "true");
+            if (parentType === "section") c.prop("uiVariant", "inline");
           });
           return name;
         }
@@ -102,12 +112,13 @@ frontend("irgen Docs", {
             }));
             c.cta("", "", links);
             c.prop("hideTitle", "true");
+            if (parentType === "section") c.prop("uiVariant", "inline");
           });
           return name;
         }
         if (block.type === "section") {
           const childNames = (block.blocks ?? []).map((child: any, childIdx: number) =>
-            emitBlock(child, childIdx, `${name}Child`, "app"),
+            emitBlock(child, childIdx, `${name}Child`, "app", "section"),
           );
           p.component(name, (c) => {
             c.layout = { kind: "panel", title: block.title, items: childNames };
