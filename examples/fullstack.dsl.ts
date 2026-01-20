@@ -1,4 +1,4 @@
-import { app } from "../src/dsl/runtime";
+import { app } from "../src/dsl/runtime.js";
 
 app("FullstackApp", (a) => {
     a.meta("description", "A complete fullstack application");

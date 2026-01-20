@@ -1179,8 +1179,10 @@ export function emitComponent(project: Project, frontendDir: string, component: 
               const toExpr = actionExpr(action.onClick.to);
               const confirmMsg = action.onClick.confirmMessage;
               const confirmSnippet = confirmMsg ? `if (!window.confirm(${JSON.stringify(confirmMsg)})) return; ` : "";
+              const iconName = rowActionIcons[label];
+              const iconSnippet = iconName ? `React.createElement((Icons as any)["${iconName}"] || Icons.Square, { size: 14, className: "mr-1.5" })` : "null";
               writer.writeLine(`                  <button type="button" className="${tableActionButtonClass}" onClick={(e) => { e.stopPropagation(); ${confirmSnippet} let target = evalLogic(${toExpr}, undefined, { item }); if (typeof target === "string" && target.includes(":")) { target = target.replace(/:([A-Za-z0-9_]+)/g, (_: any, key: string) => String(item[key] ?? "")); } if (target) navigate(String(target)); }}>`);
-              writer.writeLine(`                    {rowActionIcons["${label}"] ? React.createElement((Icons as any)[rowActionIcons["${label}"]] || Icons.Square, { size: 14, className: "mr-1.5" }) : null}`);
+              writer.writeLine(`                    {${iconSnippet}}`);
               writer.writeLine(`                    ${label}`);
               writer.writeLine(`                  </button>`);
             } else if (action.onClick?.kind === "invoke") {
@@ -1188,8 +1190,10 @@ export function emitComponent(project: Project, frontendDir: string, component: 
               const argsCode = argsExpr !== "undefined" ? `evalLogic(${argsExpr}, undefined, { item })` : "{}";
               const confirmMsg = action.onClick.confirmMessage;
               const confirmSnippet = confirmMsg ? `if (!window.confirm(${JSON.stringify(confirmMsg)})) return; ` : "";
+              const iconName = rowActionIcons[label];
+              const iconSnippet = iconName ? `React.createElement((Icons as any)["${iconName}"] || Icons.Square, { size: 14, className: "mr-1.5" })` : "null";
               writer.writeLine(`                  <button type="button" className="${tableActionButtonClass}" onClick={(e) => { e.stopPropagation(); ${confirmSnippet} const input = ${argsCode}; rowActionOp_${idx}.execute(input, { kind: "tableRow", pageId: "", rowId: String(item["slug"] ?? i) }); }}>`);
-              writer.writeLine(`                    {rowActionIcons["${label}"] ? React.createElement((Icons as any)[rowActionIcons["${label}"]] || Icons.Square, { size: 14, className: "mr-1.5" }) : null}`);
+              writer.writeLine(`                    {${iconSnippet}}`);
               writer.writeLine(`                    ${label}`);
               writer.writeLine(`                  </button>`);
             }

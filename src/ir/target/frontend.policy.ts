@@ -45,7 +45,8 @@ export const FrontendPolicySchema = z.object({
             fromDir: z.string().default("dist"),
         }).optional(),
     }).default({}),
-}).default({});
+    visual: z.record(z.any()).optional(),
+}).passthrough().default({});
 
 export type FrontendPolicy = z.infer<typeof FrontendPolicySchema>;
 

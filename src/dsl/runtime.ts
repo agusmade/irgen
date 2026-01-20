@@ -129,7 +129,9 @@ export async function loadDsl(entry: string): Promise<DeclApp> {
   _global.__IR_CURRENT_BACKEND = null;
 
   try {
-    await import(url);
+    // Add cache buster to force re-execution if file is already in module cache
+    const cacheBuster = `?cb=${Date.now()}`;
+    await import(url + cacheBuster);
   } catch (err: unknown) {
     const errMessage = err instanceof Error ? err.message : String(err);
     console.warn("backend loader dynamic import failed, attempting transpile fallback:", errMessage);

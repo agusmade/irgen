@@ -285,7 +285,9 @@ export async function loadFrontendDsl(entry: string): Promise<DeclFrontendApp> {
   _global.__IR_CURRENT_FRONTEND = null;
 
   try {
-    await import(url);
+    // Add cache buster to force re-execution if file is already in module cache
+    const cacheBuster = `?cb=${Date.now()}`;
+    await import(url + cacheBuster);
   } catch (err: any) {
     // Some environments (tsx ESM loader) may fail resolving .ts imports via file URL.
     // Fall back to transpile the TypeScript file to a temporary .mjs and import that.
