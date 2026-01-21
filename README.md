@@ -160,3 +160,5 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details on:
 - [x] Automated Testing
 - [x] Rich Frontend Components & Routing
 - [x] Frontend SSG/Hybrid (Vite prerender)
+
+See [docs/ROADMAP-FUTURE.md](docs/ROADMAP-FUTURE.md) for the upcoming **v0.3.0 (Enterprise & Ecosystem)** plan.

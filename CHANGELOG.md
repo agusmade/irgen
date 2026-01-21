@@ -2,6 +2,16 @@
 
 All notable changes to the `irgen` project will be documented in this file.
 
+## [0.2.3] - 2026-01-21
+
+### Bug Fixes
+- **Frontend Emitter**: Fixed `ReferenceError: rowActionIcons is not defined` in `frontend-react.ts` when rendering table row actions.
+- **Frontend Components**: Resolved `[object Object]` AST leak in code blocks by ensuring `React` is correctly imported and utilized for runtime element creation.
+
+### Documentation & Verification
+- **Test Suite**: Verified all core golden tests (Backend, Electron, Static Site) pass with the latest fixes.
+- **Cleanup**: Improved documentation quality and consistency in core emitters.
+
 ## [0.2.2] - 2026-01-18
 
 ### Core Extensions & Architecture (Phase 10)
