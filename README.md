@@ -18,15 +18,16 @@ irgen focuses on **architecture and determinism**, not convenience shortcuts. ir
 ## Key Features
 
 ### Backend (Node.js/TypeScript)
-- **Generation Gap Architecture**: Separates generated base classes from user implementation. Regenerate safely without losing manual changes.
-- **Repository Pattern**: Auto-generated repositories with Dependency Injection (DI) support.
+- **Generation Gap Architecture**: Separates generated base classes from user implementation.
+- **Built-in Logging**: Structured JSON logging via `pino`.
+- **Health-check Emitter**: Automatic `/health` and `/metrics` (Prometheus) generation.
 - **Prisma Integration**: Database schema and client management out-of-the-box.
-- **Extensibility Hooks**: `beforeCreate`, `afterCreate`, etc., in services for custom business logic.
-- **Automated Testing**: Auto-generated `vitest` unit tests for services.
+- **Automated Testing**: Auto-generated `vitest` unit tests.
 
 ### Frontend (React/Vite)
-- **General-Purpose Webapp Generator**: Move beyond "dashboard-only" UIs. Generate any web application by defining operations and data sources.
-- **Headless Client Runtime**: Decoupled `lib/runtime.ts` and React hooks (`useOperation`, `useResource`) manage interaction with any backend (REST, GraphQL, etc.).
+- **General-Purpose Webapp Generator**: Move beyond "dashboard-only" UIs.
+- **Error Boundary Contract**: Wrap your application in a policy-driven Error Boundary.
+- **Headless Client Runtime**: Decoupled `lib/runtime.ts` and React hooks.
 - **Operation-Oriented Architecture**: Actions (Operations) are the fundamental units of the client, allowing for complex command-oriented UIs.
 - **DataSource Abstraction**: Connect to multiple backends with pluggable `AuthStrategy`, `EnvelopeAdapter`, and `PaginationAdapter`.
 - **Global Dark Mode**: Built-in persistence (`localStorage`) and toggle in a sleek, glassmorphism Navbar.
@@ -90,6 +91,17 @@ npx irgen examples/app.dsl.ts --targets=backend,frontend --outDir=generated/full
 
 # Static-site (HTML-first)
 npx irgen examples/docs.dsl.ts --targets=static-site --outDir=generated/static-docs
+
+## Specialized Commands
+
+### Project Scaffolding
+npx irgen init my-new-project
+
+### Semantic Validation (Linker)
+npx irgen check examples/*.dsl.ts
+
+### Preview Studio
+npx irgen studio examples/app.dsl.ts
 ```
 
 ### Optional: enable PWA for frontend outputs
@@ -160,5 +172,10 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details on:
 - [x] Automated Testing
 - [x] Rich Frontend Components & Routing
 - [x] Frontend SSG/Hybrid (Vite prerender)
+- [x] **v0.3.0 Release (Enterprise & Observability)**
+  - [x] Structured Logging (Pino)
+  - [x] Health-check & Metrics Emitters
+  - [x] Error Boundary Policy
+  - [x] `irgen init`, `check`, and `studio` commands
 
-See [docs/ROADMAP-FUTURE.md](docs/ROADMAP-FUTURE.md) for the upcoming **v0.3.0 (Enterprise & Ecosystem)** plan.
+See [docs/ROADMAP-FUTURE.md](docs/ROADMAP-FUTURE.md) for the Stage 4 (Deployment & Cloud Native) plan.

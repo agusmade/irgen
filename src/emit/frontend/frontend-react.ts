@@ -14,6 +14,7 @@ import { emitTailwindConfig } from "./frontend-tailwind.js";
 import { emitSharedLogic, emitRequiredComponents } from "./frontend-shared.js";
 import { emitPage } from "./frontend-pages.js";
 import { emitComponent } from "./frontend-components.js";
+import { emitErrorBoundary } from "./frontend-error-boundary.js";
 import {
   buildSearchIndex,
   escapeHtml,
@@ -76,6 +77,7 @@ export function emitFrontend(project: Project, outDir: string, ir: FrontendTarge
   emitViteConfig(project, outDir, policy);
   emitSharedLogic(project, frontendDir);
   emitRequiredComponents(project, frontendDir, ir);
+  emitErrorBoundary(project, frontendDir, policy);
   emitRuntime(project, frontendDir, ir);
 
   const searchIndex = buildSearchIndex(ir);
@@ -202,6 +204,13 @@ if ('serviceWorker' in navigator) {
     appFile.addImportDeclaration({ moduleSpecifier: "mermaid", defaultImport: "mermaid" });
   }
   appFile.addImportDeclaration({ moduleSpecifier: "./lib/search-index", namedImports: ["SEARCH_INDEX"] });
+
+  if (policy.errorBoundary?.enabled) {
+    appFile.addImportDeclaration({
+      moduleSpecifier: `./components/${policy.errorBoundary.componentName}`,
+      namedImports: [policy.errorBoundary.componentName]
+    });
+  }
 
   // Import all pages
   ir.pages.forEach(p => {
@@ -430,6 +439,9 @@ if ('serviceWorker' in navigator) {
     }
     writer.writeLine("");
     writer.writeLine("return (");
+    if (policy.errorBoundary?.enabled) {
+      writer.writeLine(`    <${policy.errorBoundary.componentName}>`);
+    }
     writer.writeLine('    <div data-irgen-theme={themePack} style={motionStyle || undefined} className={isAdminTheme ? `min-h-screen bg-[var(--irgen-color-surface)] dark:bg-[var(--irgen-color-surface-dark)] text-slate-900 dark:text-slate-100 font-sans ${motionThemeTransition}` : `min-h-screen bg-[var(--irgen-color-surface)]/60 dark:bg-[var(--irgen-color-surface-dark)] text-slate-900 dark:text-slate-100 font-sans selection:bg-slate-900 selection:text-white ${motionThemeTransition}`}>');
     writer.writeLine("        {showSidebar && (");
     writer.writeLine("          <aside className={`fixed inset-y-0 left-0 ${visualBreakpoints.sidebarWidth || \"w-64\"} ${sidebarResponsiveClass} bg-[var(--irgen-color-surface)]/95 dark:bg-[var(--irgen-color-surface-dark)]/95 border-r border-slate-200 dark:border-slate-800 z-40`}>");
@@ -681,6 +693,9 @@ if ('serviceWorker' in navigator) {
     writer.writeLine("        </footer>");
     writer.writeLine("        )}");
     writer.writeLine("      </div>");
+    if (policy.errorBoundary?.enabled) {
+      writer.writeLine(`    </${policy.errorBoundary.componentName}>`);
+    }
     writer.writeLine("  );");
   });
 

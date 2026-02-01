@@ -76,6 +76,15 @@ Source: `src/ir/target/backend.policy.ts`
   - `httpClient` = `fetch` | `axios` | `got` | `custom`
   - `formatter` = `prettier` | `biome`
   - `db` (`provider` = `prisma`, `url`)
+- `backend.logging`
+  - `enabled` (boolean)
+  - `level` = `debug` | `info` | `warn` | `error`
+  - `format` = `json` | `pretty`
+  - `redact` (string[])
+- `backend.health`
+  - `enabled` (boolean)
+  - `endpoint` (string)
+  - `metrics` (`enabled`, `endpoint`)
 
 ## Frontend Policies (`frontend`)
 
@@ -91,6 +100,10 @@ Source: `src/ir/target/frontend.policy.ts`
   - `runtime` = `vite` | `none`
   - `router` = `react-router-dom` | `none`
   - `iconLibrary` = `lucide-react` | `none`
+- `frontend.errorBoundary`
+  - `enabled` (boolean)
+  - `componentName` (string)
+  - `fallback` = `simple` | `detailed`
   - `rendering`
     - `mode` = `csr` | `ssg` | `hybrid`
     - `prerender`

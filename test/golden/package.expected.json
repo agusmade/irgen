@@ -4,6 +4,8 @@
   "private": true,
   "dependencies": {
     "uuid": "^9.0.0",
+    "pino": "^9.0.0",
+    "pino-http": "^9.0.0",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "cors": "^2.8.5"

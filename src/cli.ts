@@ -50,6 +50,24 @@ Examples:
     process.exit(0);
   }
 
+  if (process.argv[2] === "check") {
+    const { runCheck } = await import("./cli/check.js");
+    await runCheck(process.argv.slice(3));
+    process.exit(0);
+  }
+
+  if (process.argv[2] === "studio") {
+    const { runStudio } = await import("./cli/studio.js");
+    await runStudio(process.argv.slice(3));
+    return; // Keep alive as server
+  }
+
+  if (process.argv[2] === "init") {
+    const { runInit } = await import("./cli/init.js");
+    await runInit(process.argv.slice(3));
+    process.exit(0);
+  }
+
   try {
     const { register } = await import("tsx/esm/api");
     register();

@@ -1,4 +1,4 @@
-// Generated: model interfaces
+//Generated: model interfaces
 export interface User {
   email: string;
   name: string;

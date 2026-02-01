@@ -20,6 +20,8 @@ async function main() {
     const checks = [
       { actual: "generated/backend-policy/server.ts", expected: "test/golden/backend/server.expected.ts", type: "text" },
       { actual: "generated/backend-policy/openapi.json", expected: "test/golden/backend/openapi.expected.json", type: "json" },
+      { actual: "generated/backend-policy/lib/health.ts", expected: "test/golden/backend/health.expected.ts", type: "text" },
+      { actual: "generated/backend-policy/lib/logger.ts", expected: "test/golden/backend/logger.expected.ts", type: "text" },
     ];
 
     let failures = 0;

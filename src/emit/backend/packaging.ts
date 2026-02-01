@@ -24,9 +24,23 @@ export function emitPackageJson(outDir: string, appName: string, policies?: any)
   if (httpClient === "axios") pkg.dependencies.axios = "^1.4.0";
   if (httpClient === "got") pkg.dependencies.got = "^12.0.0";
 
-  const loggerImpl = policies?.loggerImpl ?? policies?.core?.loggerImpl ?? "console";
-  if (loggerImpl === "pino") pkg.dependencies.pino = "^8.0.0";
-  if (loggerImpl === "winston") pkg.dependencies.winston = "^4.0.0";
+  const loggerImpl = policies?.loggerImpl ?? policies?.core?.loggerImpl;
+  const logging = policies?.logging ?? { enabled: true, format: "json" };
+
+  if (logging.enabled !== false || loggerImpl === "pino") {
+    pkg.dependencies.pino = "^9.0.0";
+    pkg.dependencies["pino-http"] = "^9.0.0";
+    if (logging.format === "pretty") {
+      pkg.devDependencies["pino-pretty"] = "^11.0.0";
+    }
+  } else if (loggerImpl === "winston") {
+    pkg.dependencies.winston = "^3.0.0";
+  }
+
+  const health = policies?.health;
+  if (health?.metrics?.enabled) {
+    pkg.dependencies["prom-client"] = "^14.0.0";
+  }
 
   const db = policies?.db ?? policies?.core?.db;
   if (db?.provider === "prisma") {

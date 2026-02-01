@@ -100,11 +100,30 @@ export const BackendCorePolicySchema = z.object({
   }).optional(),
 }).default({});
 
+// Logging v1 (Pino-based)
+export const BackendLoggingPolicySchema = z.object({
+  enabled: z.boolean().default(true),
+  level: z.enum(["debug", "info", "warn", "error"]).default("info"),
+  format: z.enum(["json", "pretty"]).default("json"),
+  redact: z.array(z.string().min(1)).default(["password", "token", "secret", "authorization"]),
+}).default({});
+
+export const BackendHealthPolicySchema = z.object({
+  enabled: z.boolean().default(true),
+  endpoint: z.string().default("/health"),
+  metrics: z.object({
+    enabled: z.boolean().default(false),
+    endpoint: z.string().default("/metrics"),
+  }).default({}),
+}).default({});
+
 export const BackendPolicySchema = z.object({
   interfaces: BackendInterfacesPolicySchema,
   envelope: BackendEnvelopePolicySchema,
   pagination: BackendPaginationPolicySchema,
   auth: BackendAuthPolicySchema,
+  logging: BackendLoggingPolicySchema,
+  health: BackendHealthPolicySchema,
   core: BackendCorePolicySchema,
 }).default({});
 

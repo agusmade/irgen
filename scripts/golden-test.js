@@ -37,6 +37,8 @@ async function main() {
       { actual: "generated/frontend/src/pages/product.tsx", expected: "test/golden/frontend/pages/product.expected.tsx", type: "text" },
       { actual: "generated/frontend/src/components/product-detail.tsx", expected: "test/golden/frontend/components/product-detail.expected.tsx", type: "text" },
       { actual: "generated/frontend/src/components/product-form.tsx", expected: "test/golden/frontend/components/product-form.expected.tsx", type: "text" },
+      { actual: "generated/frontend/src/components/ErrorBoundary.tsx", expected: "test/golden/frontend/components/ErrorBoundary.expected.tsx", type: "text" },
+      { actual: "generated/frontend/src/App.tsx", expected: "test/golden/frontend/App.expected.tsx", type: "text" },
     ];
 
     let failures = 0;

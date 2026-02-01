@@ -10,8 +10,22 @@
       "get": {
         "summary": "List User",
         "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1 } }
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -21,18 +35,35 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/User" } },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/User"
+                      }
+                    },
                     "meta": {
                       "type": "object",
                       "properties": {
-                        "requestId": { "type": "string" },
-                        "page": { "type": "integer" },
-                        "limit": { "type": "integer" },
-                        "total": { "type": "integer" },
-                        "hasNext": { "type": "boolean" }
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "hasNext": {
+                          "type": "boolean"
+                        }
                       }
                     },
-                    "error": { "nullable": true }
+                    "error": {
+                      "nullable": true
+                    }
                   }
                 }
               }
@@ -42,7 +73,16 @@
       },
       "post": {
         "summary": "Create User",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Created",
@@ -51,9 +91,20 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": { "$ref": "#/components/schemas/User" },
-                    "meta": { "type": "object", "properties": { "requestId": { "type": "string" } } },
-                    "error": { "nullable": true }
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "error": {
+                      "nullable": true
+                    }
                   }
                 }
               }
@@ -65,56 +116,15 @@
     "/api/user/{id}": {
       "get": {
         "summary": "Get User by id",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": { "$ref": "#/components/schemas/User" },
-                    "meta": { "type": "object", "properties": { "requestId": { "type": "string" } } },
-                    "error": { "nullable": true }
-                  }
-                }
-              }
-            }
-          },
-          "404": { "description": "Not found" }
-        }
-      },
-      "patch": {
-        "summary": "Update User",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": { "$ref": "#/components/schemas/User" },
-                    "meta": { "type": "object", "properties": { "requestId": { "type": "string" } } },
-                    "error": { "nullable": true }
-                  }
-                }
-              }
-            }
-          },
-          "404": { "description": "Not found" }
-        }
-      }
-    },
-    "/api/post": {
-      "get": {
-        "summary": "List Post",
         "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1 } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -124,18 +134,143 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Post" } },
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    },
                     "meta": {
                       "type": "object",
                       "properties": {
-                        "requestId": { "type": "string" },
-                        "page": { "type": "integer" },
-                        "limit": { "type": "integer" },
-                        "total": { "type": "integer" },
-                        "hasNext": { "type": "boolean" }
+                        "requestId": {
+                          "type": "string"
+                        }
                       }
                     },
-                    "error": { "nullable": true }
+                    "error": {
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update User",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "error": {
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/post": {
+      "get": {
+        "summary": "List Post",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Post"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "hasNext": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "error": {
+                      "nullable": true
+                    }
                   }
                 }
               }
@@ -145,7 +280,16 @@
       },
       "post": {
         "summary": "Create Post",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Post" } } } },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Post"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Created",
@@ -154,9 +298,20 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": { "$ref": "#/components/schemas/Post" },
-                    "meta": { "type": "object", "properties": { "requestId": { "type": "string" } } },
-                    "error": { "nullable": true }
+                    "data": {
+                      "$ref": "#/components/schemas/Post"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "error": {
+                      "nullable": true
+                    }
                   }
                 }
               }
@@ -168,64 +323,15 @@
     "/api/post/{id}": {
       "get": {
         "summary": "Get Post by id",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": { "$ref": "#/components/schemas/Post" },
-                    "meta": { "type": "object", "properties": { "requestId": { "type": "string" } } },
-                    "error": { "nullable": true }
-                  }
-                }
-              }
-            }
-          },
-          "404": { "description": "Not found" }
-        }
-      },
-      "patch": {
-        "summary": "Update Post",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Post" } } } },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": { "$ref": "#/components/schemas/Post" },
-                    "meta": { "type": "object", "properties": { "requestId": { "type": "string" } } },
-                    "error": { "nullable": true }
-                  }
-                }
-              }
-            }
-          },
-          "404": { "description": "Not found" }
-        }
-      },
-      "delete": {
-        "summary": "Delete Post",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
-        "responses": {
-          "200": { "description": "Deleted" },
-          "404": { "description": "Not found" }
-        }
-      }
-    },
-    "/api/comment": {
-      "get": {
-        "summary": "List Comment",
         "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1 } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -235,18 +341,164 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Comment" } },
+                    "data": {
+                      "$ref": "#/components/schemas/Post"
+                    },
                     "meta": {
                       "type": "object",
                       "properties": {
-                        "requestId": { "type": "string" },
-                        "page": { "type": "integer" },
-                        "limit": { "type": "integer" },
-                        "total": { "type": "integer" },
-                        "hasNext": { "type": "boolean" }
+                        "requestId": {
+                          "type": "string"
+                        }
                       }
                     },
-                    "error": { "nullable": true }
+                    "error": {
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update Post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Post"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "error": {
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/comment": {
+      "get": {
+        "summary": "List Comment",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Comment"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "hasNext": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "error": {
+                      "nullable": true
+                    }
                   }
                 }
               }
@@ -256,7 +508,16 @@
       },
       "post": {
         "summary": "Create Comment",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Comment" } } } },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Comment"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Created",
@@ -265,9 +526,20 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": { "$ref": "#/components/schemas/Comment" },
-                    "meta": { "type": "object", "properties": { "requestId": { "type": "string" } } },
-                    "error": { "nullable": true }
+                    "data": {
+                      "$ref": "#/components/schemas/Comment"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "error": {
+                      "nullable": true
+                    }
                   }
                 }
               }
@@ -279,11 +551,66 @@
   },
   "components": {
     "schemas": {
-      "User": { "type": "object", "properties": { "email": { "type": "string" }, "name": { "type": "string" }, "isActive": { "type": "boolean" } } },
-      "Post": { "type": "object", "properties": { "title": { "type": "string" }, "content": { "type": "string" }, "published": { "type": "boolean" }, "viewCount": { "type": "number" }, "authorId": { "type": "string" } } },
-      "Comment": { "type": "object", "properties": { "text": { "type": "string" }, "postId": { "type": "string" }, "userId": { "type": "string" } } }
+      "User": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Post": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "viewCount": {
+            "type": "number"
+          },
+          "authorId": {
+            "type": "string"
+          }
+        }
+      },
+      "Comment": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "postId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          }
+        }
+      }
     },
-    "securitySchemes": { "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" } }
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
   },
-  "security": [{ "bearerAuth": [] }]
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
 }

@@ -88,6 +88,9 @@
     "test:golden:backend": "node scripts/backend-golden.test.js",
     "test:golden:electron": "node scripts/electron-golden.test.js",
     "test:golden:static-site": "node scripts/static-site-golden.test.js",
+    "test:cli": "tsx scripts/cli-init.test.ts",
+    "test:check": "tsx scripts/cli-check.test.ts",
+    "test:studio": "tsx scripts/cli-studio.test.ts",
     "test:ci": "npm run test:golden && npm run test:golden:backend && npm run test:golden:electron",
     "prepublishOnly": "npm run build",
     "preversion": "npm run test:ci",
@@ -99,16 +102,21 @@
     "CHANGELOG.md"
   ],
   "dependencies": {
+    "express": "^5.2.1",
     "mermaid": "^10.9.1",
     "minisearch": "^6.1.0",
+    "open": "^10.2.0",
     "prismjs": "^1.29.0",
+    "prompts": "^2.4.2",
     "shiki": "^1.10.1",
-    "tsx": "^4.19.2",
     "ts-morph": "^23.0.0",
+    "tsx": "^4.19.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^22.10.2",
+    "@types/prompts": "^2.4.9",
     "jsonwebtoken": "^9.0.3",
     "prettier": "^2.8.8",
     "rimraf": "^6.0.1",

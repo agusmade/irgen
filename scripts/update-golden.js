@@ -25,9 +25,11 @@ function main() {
   execSync("npm run gen", { stdio: "inherit" });
   execSync("tsx src/cli.ts examples/static-no-enhance.dsl.ts --targets=static-site --outDir=generated/static-no-enhance", { stdio: "inherit" });
   execSync("tsx src/cli.ts examples/static-with-enhance.dsl.ts --targets=static-site --outDir=generated/static-with-enhance", { stdio: "inherit" });
+  execSync("npm run gen:backend-policy", { stdio: "inherit" });
 
   ensureDir(path.join("test", "golden"));
   ensureDir(path.join("test", "golden", "frontend", "lib"));
+  ensureDir(path.join("test", "golden", "backend"));
   ensureDir(path.join("test", "golden", "static-site", "no-enhance"));
   ensureDir(path.join("test", "golden", "static-site", "with-enhance"));
 
@@ -48,6 +50,8 @@ function main() {
     ["generated/frontend/src/components/product-card.tsx", "test/golden/frontend/components/product-card.expected.tsx"],
     ["generated/frontend/src/components/product-detail.tsx", "test/golden/frontend/components/product-detail.expected.tsx"],
     ["generated/frontend/src/components/product-form.tsx", "test/golden/frontend/components/product-form.expected.tsx"],
+    ["generated/frontend/src/components/ErrorBoundary.tsx", "test/golden/frontend/components/ErrorBoundary.expected.tsx"],
+    ["generated/frontend/src/App.tsx", "test/golden/frontend/App.expected.tsx"],
     ["generated/static-no-enhance/dist/index.html", "test/golden/static-site/no-enhance/index.expected.html"],
     ["generated/static-no-enhance/dist/assets/style.css", "test/golden/static-site/no-enhance/style.expected.css"],
     ["generated/static-with-enhance/dist/index.html", "test/golden/static-site/with-enhance/index.expected.html"],
@@ -55,6 +59,11 @@ function main() {
     ["generated/static-with-enhance/dist/assets/app.js", "test/golden/static-site/with-enhance/app.expected.js"],
     ["generated/static-with-enhance/dist/assets/search-index.json", "test/golden/static-site/with-enhance/search-index.expected.json"],
     ["generated/static-with-enhance/dist/index.html", "test/golden/static-site/with-enhance/js-off.expected.html"],
+    // Backend Policy specific checks (from backend-golden.test.js)
+    ["generated/backend-policy/server.ts", "test/golden/backend/server.expected.ts"],
+    ["generated/backend-policy/openapi.json", "test/golden/backend/openapi.expected.json"],
+    ["generated/backend-policy/lib/health.ts", "test/golden/backend/health.expected.ts"],
+    ["generated/backend-policy/lib/logger.ts", "test/golden/backend/logger.expected.ts"],
   ];
 
   for (const [s, d] of mapping) {

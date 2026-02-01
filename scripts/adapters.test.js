@@ -36,6 +36,30 @@ async function main() {
     const httpContent = fs.readFileSync(httpFile, "utf-8");
     if (!httpContent.includes("Generated: http client adapter (fetch)")) throw new Error("http adapter content mismatch");
 
+    if (!fs.existsSync(httpFile)) throw new Error("http.ts not generated");
+
+    // Test Health Adapter (basic check)
+    // We didn't enable health in the default run above, so let's run a quick targeted emit or just check it's NOT there by default?
+    // Actually, let's run a second pass with health enabled to verify it generates.
+
+    console.log("Running second pass with health policy enabled...");
+    const healthOutDir = path.resolve(process.cwd(), "generated-adapters-health-test");
+    if (fs.existsSync(healthOutDir)) fs.rmSync(healthOutDir, { recursive: true, force: true });
+
+    // transform with health policy
+    const healthIR = await engine.runTransform("backend", decl, {
+      health: { enabled: true, endpoint: "/health" },
+      logging: { enabled: true, level: "info" }
+    });
+
+    await emitterEngine.runEmitter("backend-tsmorph", healthIR, healthOutDir);
+
+    const healthFile = path.join(healthOutDir, "lib", "health.ts");
+    if (!fs.existsSync(healthFile)) throw new Error("health.ts not generated when policy enabled");
+
+    const healthContent = fs.readFileSync(healthFile, "utf-8");
+    if (!healthContent.includes("export async function healthCheck")) throw new Error("health.ts missing healthCheck");
+
     console.log("Adapters test passed");
     process.exit(0);
   } catch (err) {

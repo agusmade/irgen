@@ -7,6 +7,8 @@ import { ok, fail, withRequestId } from "./lib/response";
 import { AppError, toAppError, errorMiddleware } from "./lib/errors";
 import { validateBody, validateParams, validateQuery } from "./lib/validation";
 import { parsePagination, sliceWithMeta } from "./lib/pagination";
+import { logger } from "./lib/logger";
+import { pinoHttp } from "pino-http";
 import { UserController } from "./controllers/user.controller";
 import { UserService } from "./services/user.service";
 import { PostController } from "./controllers/post.controller";
@@ -17,6 +19,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(requestContextMiddleware());
+app.use(pinoHttp({ logger }));
+// Health Check
+import { healthCheck, metricsCheck } from "./lib/health";
+app.get("/health", healthCheck);
+app.get("/metrics", metricsCheck);
 const BASE_PATH = "/api";
 const publicRoutes = [];
 const getRequestId = (req: any) =>
@@ -190,5 +197,5 @@ app.get(`${BASE_PATH}/comment`, validateQuery(), async (req, res) => {
 app.use(errorMiddleware);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("Backend server listening on port", PORT);
+  logger.info("Backend server listening on port", PORT);
 });

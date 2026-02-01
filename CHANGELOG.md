@@ -2,6 +2,20 @@
 
 All notable changes to the `irgen` project will be documented in this file.
 
+## [0.3.0] - 2026-02-01
+
+### New Features
+- **Project Scaffolding**: Introduced `irgen init` for interactive project setup and best-practice templates.
+- **Semantic Validator (Linker)**: New `irgen check` command to validate DSL integrity, including entity references, name uniqueness, and cross-file consistency.
+- **Studio Preview Dashboard**: Real-time web-based visualization tool (`irgen studio`) to see project architecture and component trees as you edit.
+- **Structured Logging**: Built-in `pino` integration in generated backends for production-ready observability.
+- **Health & Metrics**: Automatic generation of `/health` and `/metrics` (Prometheus) endpoints.
+- **Error Boundary Contract**: Policy-driven Error Boundary for frontend reliability and user feedback.
+
+### Enhancements
+- **CLI Robustness**: Resolved command fall-through issues and improved error reporting.
+- **Documentation**: Significant updates to policy references, architecture guides, and roadmaps.
+
 ## [0.2.3] - 2026-01-21
 
 ### Bug Fixes

@@ -17,7 +17,9 @@ export function emitHttpServer(project: Project, outDir: string, ir: BackendTarg
     `import { ok, fail, withRequestId } from "./lib/response";`,
     `import { AppError, toAppError, errorMiddleware } from "./lib/errors";`,
     `import { validateBody, validateParams, validateQuery } from "./lib/validation";`,
-    `import { parsePagination, sliceWithMeta } from "./lib/pagination";`,
+    `import { parsePagination, sliceWithMeta } from "./lib/pagination";
+    import { logger } from "./lib/logger";
+    import { pinoHttp } from "pino-http";`,
   ]);
 
   ir.entities.forEach((entity) => {
@@ -37,6 +39,12 @@ export function emitHttpServer(project: Project, outDir: string, ir: BackendTarg
     `app.use(cors());`,
     `app.use(express.json());`,
     `app.use(requestContextMiddleware());`,
+    `app.use(pinoHttp({ logger }));`,
+    ``,
+    `// Health Check`,
+    `import { healthCheck, metricsCheck } from "./lib/health";`,
+    `app.get("/health", healthCheck);`,
+    `app.get("/metrics", metricsCheck);`,
     ``,
     `const BASE_PATH = ${JSON.stringify(rest.basePath)};`,
     `const publicRoutes = ${JSON.stringify(rest.publicRoutes)};`,
@@ -162,6 +170,6 @@ export function emitHttpServer(project: Project, outDir: string, ir: BackendTarg
     `app.use(errorMiddleware);`,
     ``,
     `const PORT = process.env.PORT || 3000;`,
-    `app.listen(PORT, () => { console.log("Backend server listening on port", PORT); });`,
+    `app.listen(PORT, () => { logger.info("Backend server listening on port", PORT); });`,
   ]);
 }

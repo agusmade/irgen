@@ -22,7 +22,12 @@ This document summarizes **backend policies that are actually implemented** in t
   - `claims.subjectKey` & `claims.rolesKey` map into `req.user`; `requireRoles` helper is available
 - **Core knobs**
   - `generateId`: `uuid_v4` (uuid), `shortid` (crypto), `custom` throws error (no hook yet)
-  - `loggerImpl`: `console` is real console; `pino`/`winston` are console wrappers (need deps + wiring for real loggers)
+- **Logging**
+  - `loggerImpl`: `console` is real console; `pino` is a fully integrated structured JSON logger.
+  - `logging` policy controls level, format (pretty/json), and redaction.
+- **Health & Metrics**
+  - `health` policy generates `/health` and `/metrics` (via `prom-client`).
+- **HTTP Client**
   - `httpClient`: `fetch` (default); `axios` adapter exists; `got/custom` not implemented
   - `formatter`: `prettier` or `biome`; emitter calls `formatDirectory` (package.json only adds Prettier)
   - `db`: optional `provider: "prisma", url`; if prisma is selected, schema+repo+Prisma deps and `db:generate/db:push` scripts are written
@@ -36,7 +41,7 @@ This document summarizes **backend policies that are actually implemented** in t
 ## Planned / not implemented yet
 - **JWT RS256/JWKS**: schema accepts `algorithm: "RS256"` + `jwksUrl`, but `lib/auth.ts` does not verify JWKS; runtime uses shared secret.
 - **httpClient "got"/"custom"**: `lib/http.ts` adapter has no implementation.
-- **loggerImpl "pino"/"winston"**: adapter only wraps console; does not instantiate a real logger.
+- **loggerImpl "winston"**: adapter only wraps console.
 - **generateId "custom"**: adapter throws error; no injection hook yet.
 - **Non-REST transports**: REST only; no RPC/WS/GraphQL.
 - **Other envelope/pagination variants**: only `standard_v1` and `page_limit`.

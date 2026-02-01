@@ -30,8 +30,9 @@ flowchart TB
   subgraph B["Build Pipeline (deterministic)"]
     CLI["CLI / Runner\n(mytool build ...)"]
     RT["DSL Runtime / Evaluator\n(exec DSL, collect declarations)"]
+    VALID["Semantic Validator (Linker)\n(irgen check / naming rules)"]
     DECL["DeclIR (Unified Declarative IR)\nagnostic, close to the DSL"]
-    VALID["Validate + Normalize\ncanonical naming rules"]
+    NORM["Normalize\ncanonical naming rules"]
     MAP["Domain Mapper\nDeclIR -> DomainIR"]
   end
 
@@ -124,6 +125,10 @@ flowchart TB
 - The **Lowering Pipeline** applies policies and conventions to the DomainIR to produce TargetIRs (e.g., ReactIR, NestIR) — this is where choices such as `GENERATE_ID` implementations are decided.
 - Backend and frontend targets are independent: enabling one does not auto-enable the other, and each emitter writes its own package/tooling (backend stays backend-only; frontend ships React/router/Tailwind).
 - **Emitters** use AST builders (no string templates), printers and file emitters to write the final project scaffolding and code.
+- **Developer Tools**:
+  - **`irgen check`**: A semantic linker/validator that ensures cross-file referential integrity before emission.
+  - **`irgen studio`**: A local web dashboard that consumes the IR-over-HTTP API to provide real-time architectural visualization.
+
 
 **Implementation notes (current code)**
 - Pipeline follows: Decl (DSL) ➜ bundle/normalize ➜ mapper ➜ DomainIR ➜ target lowering ➜ emitter. CLI always goes through mapper + lowering engine + emitter registry; `--emitter/--emitter-map` pick emitters per target.

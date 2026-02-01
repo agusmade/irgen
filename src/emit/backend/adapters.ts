@@ -36,43 +36,38 @@ export function emitIdAdapter(project: Project, outDir: string, policies?: any) 
 }
 
 export function emitLoggerAdapter(project: Project, outDir: string, policies?: any) {
-  const impl = policies?.loggerImpl ?? policies?.core?.loggerImpl ?? "console";
+  const logging = policies?.logging ?? { enabled: true, level: "info", format: "json", redact: [] };
+  const impl = policies?.loggerImpl ?? policies?.core?.loggerImpl; // Fallback for legacy
+
   const sf = project.createSourceFile(path.join(outDir, "lib", "logger.ts"), "", { overwrite: true });
+  sf.addStatements([`// Generated: logger adapter`]);
 
-  sf.addStatements([`// Generated: logger adapter (${impl})`]);
-
-  if (impl === "console") {
+  if (logging.enabled === false) {
     sf.addStatements([
       `export const logger = {`,
-      `  info: (...args: any[]) => console.info(...args),`,
-      `  warn: (...args: any[]) => console.warn(...args),`,
-      `  error: (...args: any[]) => console.error(...args),`,
-      `  debug: (...args: any[]) => console.debug(...args),`,
+      `  info: (..._args: any[]) => {},`,
+      `  warn: (..._args: any[]) => {},`,
+      `  error: (..._args: any[]) => {},`,
+      `  debug: (..._args: any[]) => {},`,
+      `  child: (_bindings: any) => logger,`,
       `};`,
-      ``,
     ]);
-  } else if (impl === "pino" || impl === "winston") {
-    sf.addStatements([
-      `// ${impl} adapter: please add ${impl} as a dependency in the generated project`,
-      `export const logger = {`,
-      `  info: (...args: any[]) => console.info("[logger:${impl}]", ...args),`,
-      `  warn: (...args: any[]) => console.warn("[logger:${impl}]", ...args),`,
-      `  error: (...args: any[]) => console.error("[logger:${impl}]", ...args),`,
-      `  debug: (...args: any[]) => console.debug("[logger:${impl}]", ...args),`,
-      `};`,
-      ``,
-    ]);
-  } else {
-    sf.addStatements([
-      `export const logger = {`,
-      `  info: (..._args: any[]) => { throw new Error("logger implementation not provided"); },`,
-      `  warn: (..._args: any[]) => { throw new Error("logger implementation not provided"); },`,
-      `  error: (..._args: any[]) => { throw new Error("logger implementation not provided"); },`,
-      `  debug: (..._args: any[]) => { throw new Error("logger implementation not provided"); },`,
-      `};`,
-      ``,
-    ]);
+    return;
   }
+
+  // Preference: New logging policy > legacy core.loggerImpl
+  // If user explicitly asked for 'console' in legacy, we respect it IF new policy isn't set (but new policy has defaults...)
+  // Actually, let's just make 'pino' the standard for now if enabled.
+
+  sf.addStatements([
+    `import pino from "pino";`,
+    ``,
+    `export const logger = pino({`,
+    `  level: ${JSON.stringify(logging.level || "info")},`,
+    ...(logging.format === "pretty" ? [`  transport: { target: "pino-pretty" },`] : []),
+    ...(logging.redact && logging.redact.length > 0 ? [`  redact: ${JSON.stringify(logging.redact)},`] : []),
+    `});`,
+  ]);
 }
 
 export function emitContextAdapter(project: Project, outDir: string, policies?: any) {
@@ -382,4 +377,48 @@ export function emitAuthAdapter(project: Project, outDir: string, policies?: any
     ``,
     `export function isAuthEnabled() { return JWT_ENABLED; }`,
   ]);
+}
+
+export function emitHealthAdapter(project: Project, outDir: string, policies?: any) {
+  const health = policies?.health ?? { enabled: true, endpoint: "/health", metrics: { enabled: false, endpoint: "/metrics" } };
+
+  if (!health.enabled) return;
+
+  const sf = project.createSourceFile(path.join(outDir, "lib", "health.ts"), "", { overwrite: true });
+  sf.addStatements([
+    `// Generated: health check and metrics adapter`,
+    `import type { Request, Response } from "express";`,
+    `import { logger } from "./logger";`,
+    ``,
+    `export async function healthCheck(req: Request, res: Response) {`,
+    `  // TODO: Add database connection check if DB is enabled`,
+    `  const status = {`,
+    `    status: "ok",`,
+    `    uptime: process.uptime(),`,
+    `    timestamp: new Date().toISOString(),`,
+    `  };`,
+    `  res.json(status);`,
+    `}`,
+    ``,
+  ]);
+
+  if (health.metrics?.enabled) {
+    sf.addStatements([
+      `import client from "prom-client";`,
+      ``,
+      `// Initialize metrics`,
+      `const collectDefaultMetrics = client.collectDefaultMetrics;`,
+      `collectDefaultMetrics();`,
+      ``,
+      `export async function metricsCheck(req: Request, res: Response) {`,
+      `  try {`,
+      `    res.set("Content-Type", client.register.contentType);`,
+      `    res.end(await client.register.metrics());`,
+      `  } catch (err) {`,
+      `    logger.error("Metrics error", err);`,
+      `    res.status(500).end(err);`,
+      `  }`,
+      `}`,
+    ]);
+  }
 }

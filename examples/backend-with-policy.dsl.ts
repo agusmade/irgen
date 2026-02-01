@@ -41,6 +41,11 @@ app(
           httpClient: "fetch",
           generateId: "uuid_v4",
         },
+        health: {
+          enabled: true,
+          endpoint: "/health",
+          metrics: { enabled: true, endpoint: "/metrics" },
+        },
       },
     },
   },

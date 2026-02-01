@@ -27,9 +27,16 @@ export const FrontendFrameworkPolicySchema = z.object({
     }).default({}),
 }).default({});
 
+export const FrontendErrorBoundaryPolicySchema = z.object({
+    enabled: z.boolean().default(true),
+    componentName: z.string().default("ErrorBoundary"),
+    fallback: z.enum(["simple", "detailed"]).default("simple"),
+}).default({});
+
 export const FrontendPolicySchema = z.object({
     styling: FrontendStylingPolicySchema,
     framework: FrontendFrameworkPolicySchema,
+    errorBoundary: FrontendErrorBoundaryPolicySchema,
     build: z.object({
         postbuild: z.string().optional(),
         copyTo: z.object({

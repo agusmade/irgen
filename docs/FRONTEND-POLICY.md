@@ -14,6 +14,9 @@ This document summarizes **frontend policies that are actually implemented** in 
   - `styling.theme.primaryColor` is used for primary accents (CTA/button, icon tint, marketing sections).
   - `styling.theme.borderRadius` is used for marketing components (hero/features/cta/timeline/testimonials/faq).
   - Tailwind is used as the CSS framework (default).
+- **Error Boundary**
+  - `errorBoundary.enabled=true` generates a React Error Boundary component and wraps the App.
+  - Fallback UI can be configured as `simple` or `detailed`.
 - **Component UI variants**
   - `component.props.uiVariant = "header" | "inline"` renders non-form content/button components without the default card wrapper.
   - `component.props.layoutVariant = "header"` renders `layout.kind = "row"` as a header row (title left, actions right) instead of a grid of cards.
