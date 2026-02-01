@@ -1,6 +1,6 @@
 {
   "name": "irgen",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "private": false,
   "license": "MIT",
   "description": "a policy-driven, IR-based code generation toolchain for backend, frontend, and beyond.",
