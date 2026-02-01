@@ -17,8 +17,14 @@ export const cliReferenceSection: DocSection = {
       type: "code",
       language: "bash",
       snippet: [
+        "# Standard generation commands:",
         "irgen examples/app.dsl.ts --targets=backend,frontend --outDir=generated/fullstack",
         "irgen examples/docs.dsl.ts --targets=static-site --outDir=generated/static-docs",
+        "",
+        "# Specialized v0.3.0 Developer Commands:",
+        "irgen init my-project",
+        "irgen check examples/*.dsl.ts",
+        "irgen studio examples/app.dsl.ts",
       ].join("\n"),
     },
     {

@@ -22,6 +22,7 @@ export const frontendSection: DocSection = {
         { title: "Macro System", description: "High-level page templates like TablePage and AuthPage.", icon: "Box" },
         { title: "Operation-Backed Forms", description: "Forms bind directly to operations with auto-loading.", icon: "ClipboardList" },
         { title: "Auth Contracts", description: "Deterministic login/logout and nav visibility logic.", icon: "Lock" },
+        { title: "Error Boundaries", description: "New in v0.3.0: Policy-driven reliability contracts.", icon: "Shield" },
       ],
     },
     {
@@ -122,6 +123,20 @@ export const frontendSection: DocSection = {
             "PWA settings (manifest, icons, service workers) belong to the frontend target.",
             "They configure installability and offline capabilities for web outputs",
             "regardless of the rendering mode chosen.",
+          ].join(" "),
+        },
+      ],
+    },
+    {
+      type: "section",
+      title: "Reliability (Error Boundaries)",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "Use the `errorBoundary` policy to automatically wrap your application in a",
+            "robust React Error Boundary. This ensures that runtime failures don't crash",
+            "the entire app and provide clean feedback to the user.",
           ].join(" "),
         },
       ],

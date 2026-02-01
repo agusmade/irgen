@@ -171,12 +171,12 @@ frontend("irgen", {
 
   app.component("HeroSection", (c) => {
     c.hero({
-      badge: "Policy-Driven IR Toolchain",
+      badge: "v0.3.0: Enterprise & Observability",
       title: "Write domain and policy. Let irgen handle the rest.",
-      subtitle: "irgen is a compiler-style code generation toolchain that transforms system descriptions into high-quality, multi-target source code—built for architectural clarity and long-term maintainability.",
+      subtitle: "irgen is a compiler-style code generation toolchain that transforms system descriptions into high-quality, multi-target source code—now enhanced with built-in logging, health checks, and professional developer tools.",
       actions: [
-        { label: "Explore Features", href: "/features", variant: "primary", icon: "Zap" },
-        { label: "View Docs", href: "/docs", variant: "secondary", icon: "BookOpen" }
+        { label: "Explore v0.3.0 Features", href: "/features", variant: "primary", icon: "Zap" },
+        { label: "Read the Docs", href: "/docs", variant: "secondary", icon: "BookOpen" }
       ]
     });
   });
@@ -187,6 +187,7 @@ frontend("irgen", {
       { title: "Vite", icon: "Zap" },
       { title: "Tailwind", icon: "Palette" },
       { title: "Prisma", icon: "Database" },
+      { title: "Pino", icon: "Activity" },
       { title: "Vitest", icon: "CheckCircle" },
       { title: "TypeScript", icon: "Code" }
     ], { title: "BUILT WITH MODERN STANDARDS" });
@@ -196,7 +197,9 @@ frontend("irgen", {
     c.features([
       { title: "Compiler-Style IR", description: "Transform system descriptions through explicit IR stages—ensuring multi-target consistency and determinism.", icon: "Cpu" },
       { title: "Policy-Driven", description: "Control architectural rules and emitter behavior globally without touching manual implementation code.", icon: "ShieldCheck" },
-      { title: "Generation Gap", description: "Hard separation between generated plumbing and your manual logic. Regenerate with zero conflicts.", icon: "Layers" }
+      { title: "Generation Gap", description: "Hard separation between generated plumbing and your manual logic. Regenerate with zero conflicts.", icon: "Layers" },
+      { title: "Built-in Observability", description: "New in v0.3.0: Structured logging and Prometheus health endpoints generated automatically.", icon: "Activity" },
+      { title: "Studio Dashboard", description: "New in v0.3.0: Visualize your architecture in real-time with the `irgen studio` web dashboard.", icon: "Layout" }
     ], { title: "Engineered for Architectural Clarity", subtitle: "Stop building scaffolds. Use a toolchain that handles complexity like a compiler.", align: "center" });
   });
 

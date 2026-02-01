@@ -15,7 +15,29 @@ export const releaseNotesSection: DocSection = {
     },
     {
       type: "section",
-      title: "Latest: v0.2.2 - Universal Actions & Macros",
+      title: "Latest: v0.3.0 - Enterprise & Observability",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "This major update focuses on production readiness and developer experience.",
+            "Introducing built-in logging, health checks, error boundaries, and three new powerful CLI commands.",
+          ].join(" "),
+        },
+      ],
+    },
+    {
+      type: "features",
+      items: [
+        { title: "irgen init", description: "Interactive project scaffolding.", icon: "Sparkles" },
+        { title: "irgen check", description: "Semantic DSL integrity validator.", icon: "Search" },
+        { title: "irgen studio", description: "Real-time visual dashboard.", icon: "Layout" },
+        { title: "Logging & Health", description: "Pino and Prometheus integration.", icon: "Activity" },
+      ],
+    },
+    {
+      type: "section",
+      title: "v0.2.2 - Universal Actions & Macros",
       blocks: [
         {
           type: "paragraph",

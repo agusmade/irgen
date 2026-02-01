@@ -20,8 +20,7 @@ export const policyReferenceSection: DocSection = {
         {
           type: "paragraph",
           text: [
-            "backend.core (generateId/loggerImpl/httpClient/formatter), backend.auth,",
-            "backend.interfaces, backend.pagination, backend.envelope.",
+            "backend.core, backend.auth, backend.logging, backend.health, backend.interfaces, backend.pagination, backend.envelope.",
           ].join(" "),
         },
         {
@@ -31,7 +30,12 @@ export const policyReferenceSection: DocSection = {
             "policies: {",
             "  backend: {",
             "    core: { generateId: \"uuid_v4\" },",
-            "    auth: { jwt: { enabled: true } }",
+            "    auth: { jwt: { enabled: true, secret: \"...\" } },",
+            "    logging: { enabled: true, level: \"info\" },",
+            "    health: { enabled: true, metrics: { enabled: true } },",
+            "    interfaces: { rest: { basePath: \"/api\" } },",
+            "    pagination: { type: \"page_limit\", defaults: { limit: 20 } },",
+            "    envelope: { type: \"standard_v1\", keys: { data: \"data\" } }",
             "  }",
             "}",
           ].join("\n"),
@@ -45,7 +49,7 @@ export const policyReferenceSection: DocSection = {
         {
           type: "paragraph",
           text: [
-            "frontend.framework (mode, prerender), frontend.auth (meOperationId, loginPath, hideLoginWhenAuthed), frontend.visual (navLayout, contentWidth, density, brand, topbarControls, navItems, footer, form, etc.).",
+            "frontend.framework, frontend.auth, frontend.errorBoundary, frontend.visual, frontend.styling, frontend.build.",
           ].join(" "),
         },
         {
@@ -54,9 +58,12 @@ export const policyReferenceSection: DocSection = {
           snippet: [
             "policies: {",
             "  frontend: {",
-            "    framework: { rendering: { mode: \"csr\" } },",
-            "    auth: { enabled: true, loginPath: \"/signin\" },",
-            "    visual: { navLayout: \"sidebar\", contentWidth: \"wide\" }",
+            "    framework: { rendering: { mode: \"csr\", basePath: \"/\" } },",
+            "    auth: { enabled: true, loginPath: \"/login\" },",
+            "    errorBoundary: { enabled: true, fallback: \"detailed\" },",
+            "    styling: { themePack: \"admin\", theme: { primaryColor: \"#0ea5e9\" } },",
+            "    visual: { navLayout: \"sidebar\", contentWidth: \"wide\" },",
+            "    build: { copyTo: { enabled: true, targetRoot: \"...\" } }",
             "  }",
             "}",
           ].join("\n"),

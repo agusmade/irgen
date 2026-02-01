@@ -130,15 +130,20 @@ export const quickStartSection: DocSection = {
           type: "paragraph",
           text: [
             "Run the CLI for the targets you need.",
-            "Static-site is a separate target, while React SSG is a rendering mode within the frontend target.",
+            "New in v0.3.0: use `irgen init` for scaffolding, `irgen check` for semantic validation, and `irgen studio` for real-time visualization.",
           ].join(" "),
         },
         {
           type: "code",
           language: "bash",
           snippet: [
-            "npx irgen examples/app.dsl.ts --targets=backend,frontend",
-            "npx irgen examples/docs.dsl.ts --targets=static-site --outDir=generated/static-docs",
+            "# Core generation:",
+            "irgen examples/app.dsl.ts --targets=backend,frontend",
+            "",
+            "# Specialized v0.3.0 commands:",
+            "irgen init my-project",
+            "irgen check examples/app.dsl.ts",
+            "irgen studio examples/app.dsl.ts",
           ].join("\n"),
         },
       ],
