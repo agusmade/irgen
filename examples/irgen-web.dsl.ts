@@ -20,6 +20,11 @@ frontend("irgen", {
   policies: {
     frontend: {
       styling: { theme: { primaryColor: "#0ea5e9", borderRadius: "lg" } },
+      visual: {
+        topbarControls: {
+          items: ["search", "themeToggle"]
+        }
+      }
     },
   },
 }, (app) => {
