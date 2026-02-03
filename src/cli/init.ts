@@ -5,11 +5,22 @@ import path from "node:path";
 import { execSync } from "node:child_process";
 
 export async function runInit(args: string[]) {
-    const defaultName = args[0] || "my-irgen-app";
+    const extFlags = args.filter(a => a.startsWith("--ext="));
+    const extModules = extFlags.flatMap(f => f.replace("--ext=", "").split(",")).filter(Boolean);
+
+    if (extModules.length > 0) {
+        const { loadExtensions } = await import("./extensions.js");
+        await loadExtensions(extModules);
+    }
+
+    const { templateRegistry } = await import("./template-registry.js");
+    const extTemplates = templateRegistry.getTemplates();
+
+    const defaultName = args.find(a => !a.startsWith("-")) || "my-irgen-app";
 
     const response = await prompts([
         {
-            type: args[0] ? null : "text",
+            type: (args.find(a => !a.startsWith("-"))) ? null : "text",
             name: "projectName",
             message: "Project name:",
             initial: defaultName
@@ -22,6 +33,7 @@ export async function runInit(args: string[]) {
                 { title: "Fullstack (Backend + Frontend)", value: "fullstack" },
                 { title: "Backend Only", value: "backend" },
                 { title: "Frontend Only", value: "frontend" },
+                ...extTemplates.map(t => ({ title: t.title, value: t.id }))
             ],
             initial: 0
         }
@@ -34,6 +46,16 @@ export async function runInit(args: string[]) {
     if (fs.existsSync(projectDir)) {
         console.error(`Error: Directory ${projectName} already exists.`);
         process.exit(1);
+    }
+
+    // Handle extension templates
+    const extTemplate = templateRegistry.getTemplate(template);
+    if (extTemplate) {
+        console.log(`\nScaffolding project in ${projectDir} using template ${extTemplate.title}...`);
+        fs.mkdirSync(projectDir, { recursive: true });
+        await extTemplate.generate(projectDir, response);
+        console.log("\nDone!");
+        return;
     }
 
     console.log(`\nScaffolding project in ${projectDir}...`);

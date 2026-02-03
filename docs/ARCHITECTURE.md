@@ -128,6 +128,7 @@ flowchart TB
 - **Developer Tools**:
   - **`irgen check`**: A semantic linker/validator that ensures cross-file referential integrity before emission.
   - **`irgen studio`**: A local web dashboard that consumes the IR-over-HTTP API to provide real-time architectural visualization.
+  - **Pluggable Extension Ecosystem (v0.3.1)**: Core commands like `init` and `check` are extensible, allowing plugins to provide custom project templates and semantic validators.
 
 
 **Implementation notes (current code)**

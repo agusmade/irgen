@@ -6,12 +6,18 @@
   - `registerPolicySchema(name, zodSchema)` — Validates policies passed to a transform
   - `registerEmitter(name, fn)` — Emitters for target IR
   - `registerTargetEmitter(target, emitterName)` — Map target → emitter
+  - `registerValidator(id, fn)` — Semantic bundle validator (runs during `irgen check`)
+  - `registerTemplate(templateDef)` — Project scaffolding template (available in `irgen init`)
   - `unregisterMapper`, `listMappers`
+  - `logger` — A namespaced logger (`info`, `warn`, `error`, `success`, `debug`)
   - `namespace(ns)` — returns a namespaced context that prefixes names with `ns:` to avoid collisions.
+  - `root` — access to the original, non-namespaced context (useful to escape namespacing).
 - **Order**: built-in mappers/transforms are registered first; extensions are applied afterward in the order they are loaded (CLI `--ext` order or `Codegen` options order).
 - **Namespacing/conflicts**:
   - Prefer namespaced registrations to avoid collisions (`ctx.namespace("myExt").registerMapper("frontend", ...)` → mapper name `myExt:frontend`).
   - If you register a name that already exists and `force` is not set, registration will throw; use namespacing instead of `force` where possible.
+- **Automatic Namespacing (v0.3.1+)**:  
+  The CLI automatically wraps your extension function in a namespaced context based on your extension's name (detected from `extensionMetadata` or filename). This means `ctx.registerMapper("foo", ...)` will automatically become `myExt:foo`. If you need to register something globally, use `ctx.root.registerMapper(...)`.
 - **CLI usage**: `npx irgen --targets=<...> --ext=path/to/ext1.ts,path/to/ext2.ts <dsl>`.  
   `.ts` extension files work because the CLI registers the tsx loader at runtime.  
   You can also pass an installed package name (e.g., `--ext=irgen-ext-php-shared-hosting`) as long as it exports a function (ESM default export or CJS `module.exports`).
@@ -50,6 +56,31 @@
   };
   ```
   Namespacing avoids accidental overrides and makes it clear which extension provided the emitter. Use `force` only when you intentionally replace a built-in and understand the impact.
+
+## Logging
+
+Extensions should use `ctx.logger` instead of `console.log`. This ensures logs are consistently formatted and prefixed with your extension's name.
+
+```ts
+export default (ctx) => {
+  ctx.logger.info("Initializing extension...");
+  ctx.logger.success("Ready to generate!");
+};
+```
+
+## Extension Metadata
+Export `extensionMetadata` to help `irgen` identify your extension and display its version in reports.
+
+```ts
+export const extensionMetadata = {
+  name: "my-cool-extension",
+  version: "1.0.0",
+};
+
+export default (ctx) => {
+  // ...
+};
+```
 
 ## Resolution rules (avoid ambiguity)
 - **Name collisions (mapper/transform/emitter)**: registering a name that already exists **throws** unless you pass `{ force: true }`. Prefer namespaced names instead of `force`.

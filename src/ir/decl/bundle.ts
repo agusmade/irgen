@@ -19,7 +19,8 @@ export function asBundle(
   apps: DeclApp[] | DeclFrontendApp[] | DeclCliApp[] | DeclApp | DeclFrontendApp | DeclCliApp,
   meta?: DeclBundleMeta,
 ): DeclBundle {
-  const bundle: DeclBundle = { apps: Array.isArray(apps) ? apps : [apps] };
+  const appsArr = Array.isArray(apps) ? apps : [apps];
+  const bundle: DeclBundle = { apps: appsArr.flat() as any };
   if (meta) bundle.meta = meta;
   return bundle;
 }

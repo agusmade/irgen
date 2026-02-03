@@ -15,7 +15,29 @@ export const releaseNotesSection: DocSection = {
     },
     {
       type: "section",
-      title: "Latest: v0.3.0 - Enterprise & Observability",
+      title: "Latest: v0.3.1 - The Hybrid App Platform",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "This release unifies the core and PHP extensions into a cohesive Hybrid App Platform.",
+            "Introducing the Multi-DSL pattern, improved extension developer experience with namespaced logging, and dynamic multi-SPA routing.",
+          ].join(" "),
+        },
+      ],
+    },
+    {
+      type: "features",
+      items: [
+        { title: "Hybrid App Engine", description: "Deploy blogs and custom apps simultaneously.", icon: "Layers" },
+        { title: "Split DSL", description: "Standardized pattern for logic and UI separation.", icon: "Scissors" },
+        { title: "Extension DX", description: "Namespaced loggers, root context usage, and auto-namespacing.", icon: "Wrench" },
+        { title: "Dynamic Routing", description: "Advanced multi-SPA .htaccess generation.", icon: "Shuffle" },
+      ],
+    },
+    {
+      type: "section",
+      title: "v0.3.0 - Enterprise & Observability",
       blocks: [
         {
           type: "paragraph",

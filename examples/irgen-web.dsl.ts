@@ -176,11 +176,11 @@ frontend("irgen", {
 
   app.component("HeroSection", (c) => {
     c.hero({
-      badge: "v0.3.0: Enterprise & Observability",
-      title: "Write domain and policy. Let irgen handle the rest.",
-      subtitle: "irgen is a compiler-style code generation toolchain that transforms system descriptions into high-quality, multi-target source code—now enhanced with built-in logging, health checks, and professional developer tools.",
+      badge: "v0.3.1: The Hybrid App Platform",
+      title: "Consolidate your Logic, UI, and Hosting.",
+      subtitle: "irgen is a compiler-style code generation toolchain that transforms system descriptions into production-ready source code—now featuring a unified platform for Hybrid PHP + React applications.",
       actions: [
-        { label: "Explore v0.3.0 Features", href: "/features", variant: "primary", icon: "Zap" },
+        { label: "Explore v0.3.1 Features", href: "/features", variant: "primary", icon: "Zap" },
         { label: "Read the Docs", href: "/docs", variant: "secondary", icon: "BookOpen" }
       ]
     });
@@ -203,8 +203,8 @@ frontend("irgen", {
       { title: "Compiler-Style IR", description: "Transform system descriptions through explicit IR stages—ensuring multi-target consistency and determinism.", icon: "Cpu" },
       { title: "Policy-Driven", description: "Control architectural rules and emitter behavior globally without touching manual implementation code.", icon: "ShieldCheck" },
       { title: "Generation Gap", description: "Hard separation between generated plumbing and your manual logic. Regenerate with zero conflicts.", icon: "Layers" },
-      { title: "Built-in Observability", description: "New in v0.3.0: Structured logging and Prometheus health endpoints generated automatically.", icon: "Activity" },
-      { title: "Studio Dashboard", description: "New in v0.3.0: Visualize your architecture in real-time with the `irgen studio` web dashboard.", icon: "Layout" }
+      { title: "Hybrid App Platform", description: "New in v0.3.1: Deploy blogs and custom React apps to any PHP shared hosting with the same DSL.", icon: "Globe" },
+      { title: "Studio Dashboard", description: "Visualize your architecture in real-time with the `irgen studio` web dashboard.", icon: "Layout" }
     ], { title: "Engineered for Architectural Clarity", subtitle: "Stop building scaffolds. Use a toolchain that handles complexity like a compiler.", align: "center" });
   });
 

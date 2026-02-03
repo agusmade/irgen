@@ -18,9 +18,12 @@ export const extensionsSection: DocSection = {
       language: "typescript",
       snippet: [
         "export default (ctx) => {",
-        "  const ns = ctx.namespace(\"myExt\");",
-        "  ns.registerEmitter(\"frontend\", myEmitter);",
-        "  ctx.registerTargetEmitter(\"frontend\", \"myExt:frontend\");",
+        "  // v0.3.1+: automatically namespaced context",
+        "  ctx.logger.info(\"Setting up frontend...\");",
+        "  ctx.registerEmitter(\"frontend\", myEmitter);",
+        "  ",
+        "  // Need to register globally?",
+        "  ctx.root.registerTargetEmitter(\"frontend\", \"myExt:frontend\");",
         "};",
       ].join("\n"),
     },
@@ -52,13 +55,40 @@ export const extensionsSection: DocSection = {
     },
     {
       type: "section",
-      title: "Namespacing",
+      title: "Automatic Namespacing",
       blocks: [
         {
           type: "paragraph",
           text: [
-            "Use ctx.namespace(\"yourExt\") to avoid collisions and accidental overrides.",
-            "Prefer namespaced emitters and explicit target mappings.",
+            "Since v0.3.1, the CLI automatically wraps your extension function in a",
+            "namespaced context. This prevents accidental collisions between different",
+            "extensions. A mapper registered as 'foo' in 'my-ext' becomes 'my-ext:foo'.",
+          ].join(" "),
+        },
+      ],
+    },
+    {
+      type: "section",
+      title: "The Unified Logger",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "Use `ctx.logger` instead of `console.log`. It provides consistent,",
+            "color-coded, and namespaced output (`info`, `success`, `warn`, `error`).",
+          ].join(" "),
+        },
+      ],
+    },
+    {
+      type: "section",
+      title: "Root Access",
+      blocks: [
+        {
+          type: "paragraph",
+          text: [
+            "If your extension absolutely needs to register a target globally or",
+            "access core registries without a namespace prefix, use `ctx.root`.",
           ].join(" "),
         },
       ],

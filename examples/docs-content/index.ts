@@ -10,6 +10,7 @@ import { extensionsSection } from "./extensions.js";
 import { frontendSection } from "./frontend.js";
 import { installCliSection } from "./install-cli.js";
 import { outputStructureSection } from "./output-structure.js";
+import { phpSharedHostingSection } from "./php-shared-hosting.js";
 import { policyReferenceSection } from "./policy-reference.js";
 import { policiesSection } from "./policies.js";
 import { quickStartSection } from "./quick-start.js";
@@ -37,6 +38,7 @@ const ALL_SECTIONS: DocSection[] = [
   reactSsgSection,
   electronSection,
   emitterGuideSection,
+  phpSharedHostingSection,
   extensionsSection,
   outputStructureSection,
   troubleshootingSection,
@@ -70,6 +72,7 @@ const BASE_DOCS_SIDEBAR_GROUPS: DocSidebarGroup[] = [
       "static-site",
       "react-ssg",
       "electron",
+      "php-shared-hosting",
       "emitter-development",
       "extensions",
       "output-structure",

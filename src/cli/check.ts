@@ -12,6 +12,13 @@ export async function runCheck(args: string[]) {
     console.log(`Checking semantic integrity for: ${dslFiles.join(", ")}...`);
 
     try {
+        const extFlags = args.filter(a => a.startsWith("--ext="));
+        const extModules = extFlags.flatMap(f => f.replace("--ext=", "").split(",")).filter(Boolean);
+        if (extModules.length > 0) {
+            const { loadExtensions } = await import("./extensions.js");
+            await loadExtensions(extModules);
+        }
+
         const decl = await aggregateDecls(dslFiles);
         const messages = validateSemantics(decl);
 

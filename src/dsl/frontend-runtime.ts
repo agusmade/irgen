@@ -4,6 +4,7 @@ import { DeclFrontendApp, DeclComponent, DeclPage, DeclFrontendAppSchema } from 
 
 // Use globalThis to share state across multiple module instances (e.g., src vs dist)
 const _global = globalThis as any;
+_global.__IR_FRONTEND_APPS = _global.__IR_FRONTEND_APPS || [];
 _global.__IR_CURRENT_FRONTEND = _global.__IR_CURRENT_FRONTEND || null;
 
 function assert(cond: unknown, msg: string): asserts cond {
@@ -274,6 +275,7 @@ export function frontend(
 
   const parsed = DeclFrontendAppSchema.parse(_global.__IR_CURRENT_FRONTEND);
   _global.__IR_CURRENT_FRONTEND = parsed;
+  _global.__IR_FRONTEND_APPS.push(parsed);
   return parsed;
 }
 
@@ -282,6 +284,7 @@ export async function loadFrontendDsl(entry: string): Promise<DeclFrontendApp> {
   const url = pathToFileURL(abs).href;
 
   // reset
+  _global.__IR_FRONTEND_APPS = [];
   _global.__IR_CURRENT_FRONTEND = null;
 
   try {
@@ -308,7 +311,6 @@ export async function loadFrontendDsl(entry: string): Promise<DeclFrontendApp> {
     }
   }
 
-  if (!_global.__IR_CURRENT_FRONTEND) throw new Error(`Frontend DSL did not call frontend(...)`);
-  const parsed = DeclFrontendAppSchema.parse(_global.__IR_CURRENT_FRONTEND);
-  return parsed;
+  if (_global.__IR_FRONTEND_APPS.length === 0) throw new Error(`Frontend DSL did not call frontend(...)`);
+  return _global.__IR_FRONTEND_APPS.length === 1 ? _global.__IR_FRONTEND_APPS[0] : _global.__IR_FRONTEND_APPS;
 }

@@ -2,6 +2,21 @@
 
 All notable changes to the `irgen` project will be documented in this file.
 
+## [0.3.1] - 2026-02-03
+
+### New Features
+- **🐘 PHP Hybrid App Platform**: Major enhancement to the `php-shared-hosting` extension, transforming it into a full-stack platform for shared hosting.
+    - **Multi-App Support**: Host any number of React SPAs (Admin, Portal, User App) on a single shared hosting account with automatic dynamic routing.
+    - **MySQL/REST Engine**: DSL `entity()` declarations automatically generate secure PHP REST controllers using a shared PDO-based storage engine.
+    - **Aesthetic Blogging**: Premium flat-file blogging system with refined typography, dark mode, RSS, and Sitemap.
+- **Extension CLI Contributions**: Extensions can now contribute custom logic to core CLI commands.
+- **Pluggable Validators**: Use `ctx.registerValidator` to add custom semantic checks to `irgen check`.
+- **Pluggable Templates**: Use `ctx.registerTemplate` for project starters in `irgen init`.
+
+### Enhancements
+- **Improved Extension Loading**: Unified extension loader with robust path resolution for local files and npm packages.
+- **Improved Multi-DSL Aggragation**: Core now supports flattening and merging applications from multiple DSL files into a single IR bundle.
+
 ## [0.3.0] - 2026-02-01
 
 ### New Features

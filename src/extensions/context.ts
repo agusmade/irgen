@@ -3,6 +3,9 @@ import { engine as loweringEngine } from "../lowering/engine.js";
 import { emitterEngine } from "../emit/engine.js";
 import { registerTargetEmitter } from "../emit/registry.js";
 import * as frontendRegistry from "../emit/frontend/registry.js";
+import { validatorRegistry, ValidatorFn } from "../dsl/validator-registry.js";
+import { templateRegistry, TemplateDefinition } from "../cli/template-registry.js";
+import { Logger, logger as baseLogger } from "../utils/logger.js";
 
 export type ExtensionContext = {
   registerMapper: typeof registerMapper;
@@ -12,13 +15,16 @@ export type ExtensionContext = {
   registerPolicySchema: typeof loweringEngine.registerPolicySchema;
   registerEmitter: typeof emitterEngine.registerEmitter;
   registerTargetEmitter: typeof registerTargetEmitter;
-  // Frontend registries
   registerAuthStrategy: typeof frontendRegistry.authStrategies.register;
   registerCsrfStrategy: typeof frontendRegistry.csrfStrategies.register;
   registerEnvelopeAdapter: typeof frontendRegistry.envelopeAdapters.register;
   registerPaginationAdapter: typeof frontendRegistry.paginationAdapters.register;
   registerUIComponent: typeof frontendRegistry.uiComponents.register;
+  registerValidator: (id: string, fn: ValidatorFn) => void;
+  registerTemplate: (template: TemplateDefinition) => void;
+  logger: Logger;
   namespace: (ns: string) => ExtensionContext;
+  root: ExtensionContext;
 };
 
 function namespaced(ctx: ExtensionContext, ns: string): ExtensionContext {
@@ -37,12 +43,17 @@ function namespaced(ctx: ExtensionContext, ns: string): ExtensionContext {
     registerEnvelopeAdapter: (id: string, item: any, options?: any) => ctx.registerEnvelopeAdapter(prefix(id), item, options),
     registerPaginationAdapter: (id: string, item: any, options?: any) => ctx.registerPaginationAdapter(prefix(id), item, options),
     registerUIComponent: (id: string, item: any, options?: any) => ctx.registerUIComponent(prefix(id), item, options),
+    registerValidator: (id: string, fn: ValidatorFn) => ctx.registerValidator(prefix(id), fn),
+    registerTemplate: (template: TemplateDefinition) => ctx.registerTemplate({ ...template, id: prefix(template.id) }),
+    logger: ctx.logger.child(ns),
     namespace: (child: string) => namespaced(ctx, `${ns}:${child}`),
+    root: ctx.root,
   };
 }
 
 export function createExtensionContext(): ExtensionContext {
-  const base: ExtensionContext = {
+  const base = {} as ExtensionContext;
+  return Object.assign(base, {
     registerMapper,
     unregisterMapper,
     listMappers,
@@ -55,9 +66,12 @@ export function createExtensionContext(): ExtensionContext {
     registerEnvelopeAdapter: frontendRegistry.envelopeAdapters.register.bind(frontendRegistry.envelopeAdapters),
     registerPaginationAdapter: frontendRegistry.paginationAdapters.register.bind(frontendRegistry.paginationAdapters),
     registerUIComponent: frontendRegistry.uiComponents.register.bind(frontendRegistry.uiComponents),
+    registerValidator: (id: string, fn: ValidatorFn) => validatorRegistry.register(id, fn),
+    registerTemplate: (template: TemplateDefinition) => templateRegistry.register(template),
+    logger: baseLogger,
     namespace: (ns: string) => namespaced(base, ns),
-  };
-  return base;
+    root: base,
+  });
 }
 
 export type { MapperFn } from "../types/extension.js";

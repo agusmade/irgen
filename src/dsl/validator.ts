@@ -1,5 +1,6 @@
 
 import { DeclBundle } from "../ir/decl/index.js";
+import { validatorRegistry } from "./validator-registry.js";
 
 export interface ValidationMessage {
     type: "error" | "warning";
@@ -82,5 +83,20 @@ export function validateSemantics(bundle: DeclBundle): ValidationMessage[] {
             }
         }
     }
+
+    // 4. Extension Validators (New in v0.3.1)
+    const extValidators = validatorRegistry.getValidators();
+    for (const v of extValidators) {
+        try {
+            const extMessages = v(bundle);
+            messages.push(...extMessages);
+        } catch (err: any) {
+            messages.push({
+                type: "warning",
+                message: `Extension validator failed: ${err.message}`
+            });
+        }
+    }
+
     return messages;
 }
