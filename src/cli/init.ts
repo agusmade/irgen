@@ -5,12 +5,30 @@ import path from "node:path";
 import { execSync } from "node:child_process";
 
 export async function runInit(args: string[]) {
-    const extFlags = args.filter(a => a.startsWith("--ext="));
-    const extModules = extFlags.flatMap(f => f.replace("--ext=", "").split(",")).filter(Boolean);
+    if (args.includes("--help") || args.includes("-h")) {
+        const { templateRegistry } = await import("./template-registry.js");
+        const extTemplates = templateRegistry.getTemplates();
 
-    if (extModules.length > 0) {
-        const { loadExtensions } = await import("./extensions.js");
-        await loadExtensions(extModules);
+        console.log(`
+irgen init — Scaffold a new irgen project
+
+Usage:
+  irgen init <projectName> [options]
+
+Options:
+  --ext=<path>         Load extensions (provides extra templates)
+  --help, -h           Show this help message
+
+Available Templates:
+  - fullstack          Standard Backend + Frontend (React)
+  - backend            Node.js/Prisma backend only
+  - frontend           React/Vite frontend only
+${extTemplates.map(t => `  - ${t.id.padEnd(18)} ${t.title}`).join("\n")}
+
+Example:
+  npx irgen init my-blog --ext=irgen-ext-php-shared-hosting --template=php-blog
+        `);
+        return;
     }
 
     const { templateRegistry } = await import("./template-registry.js");

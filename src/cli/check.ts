@@ -3,6 +3,23 @@ import { aggregateDecls } from "../dsl/aggregator.js";
 import { validateSemantics } from "../dsl/validator.js";
 
 export async function runCheck(args: string[]) {
+    if (args.includes("--help") || args.includes("-h")) {
+        console.log(`
+irgen check — Semantic validation for irgen DSL files
+
+Usage:
+  irgen check <dsl-file>... [options]
+
+Options:
+  --ext=<path>         Load extensions (for extension-specific validation)
+  --help, -h           Show this help message
+
+Example:
+  npx irgen check app.dsl.ts ui.dsl.ts --ext=irgen-ext-php-shared-hosting
+        `);
+        return;
+    }
+
     const dslFiles = args.filter(a => a.endsWith(".dsl.ts"));
     if (dslFiles.length === 0) {
         console.error("Usage: irgen check <dsl-file>...");
@@ -12,13 +29,6 @@ export async function runCheck(args: string[]) {
     console.log(`Checking semantic integrity for: ${dslFiles.join(", ")}...`);
 
     try {
-        const extFlags = args.filter(a => a.startsWith("--ext="));
-        const extModules = extFlags.flatMap(f => f.replace("--ext=", "").split(",")).filter(Boolean);
-        if (extModules.length > 0) {
-            const { loadExtensions } = await import("./extensions.js");
-            await loadExtensions(extModules);
-        }
-
         const decl = await aggregateDecls(dslFiles);
         const messages = validateSemantics(decl);
 

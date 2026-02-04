@@ -51,6 +51,18 @@ Examples:
     process.exit(0);
   }
 
+  try {
+    const { register } = await import("tsx/esm/api");
+    register();
+  } catch (err) {
+    console.warn("tsx loader unavailable; falling back to manual TS transpile where supported.", err instanceof Error ? err.message : err);
+  }
+
+  const rawArgs = process.argv.slice(2);
+  const extFlags = rawArgs.filter(a => a.startsWith("--ext="));
+  const extModules = extFlags.flatMap(f => f.replace("--ext=", "").split(",")).filter(Boolean);
+  await loadExtensions(extModules);
+
   if (process.argv[2] === "check") {
     const { runCheck } = await import("./cli/check.js");
     await runCheck(process.argv.slice(3));
@@ -69,12 +81,6 @@ Examples:
     process.exit(0);
   }
 
-  try {
-    const { register } = await import("tsx/esm/api");
-    register();
-  } catch (err) {
-    console.warn("tsx loader unavailable; falling back to manual TS transpile where supported.", err instanceof Error ? err.message : err);
-  }
   const modeFlag = process.argv.find(a => a.startsWith("--mode=")) ?? "--mode=backend";
   const mode = modeFlag.split("=")[1];
 
@@ -84,9 +90,6 @@ Examples:
   const emitterName = emitterFlag ? emitterFlag.split("=")[1] : null;
 
   // parse positional args: first DSL entry and optional outDir
-  const rawArgs = process.argv.slice(2);
-  const extFlags = rawArgs.filter(a => a.startsWith("--ext="));
-  const extModules = extFlags.flatMap(f => f.replace("--ext=", "").split(",")).filter(Boolean);
   const outDirFlag = process.argv.find(a => a.startsWith("--outDir=")) ?? null;
   const entries = rawArgs.filter(a => a.endsWith(".dsl.ts"));
   const entry = entries[0];

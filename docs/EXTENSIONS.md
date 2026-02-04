@@ -18,9 +18,10 @@
   - If you register a name that already exists and `force` is not set, registration will throw; use namespacing instead of `force` where possible.
 - **Automatic Namespacing (v0.3.1+)**:  
   The CLI automatically wraps your extension function in a namespaced context based on your extension's name (detected from `extensionMetadata` or filename). This means `ctx.registerMapper("foo", ...)` will automatically become `myExt:foo`. If you need to register something globally, use `ctx.root.registerMapper(...)`.
-- **CLI usage**: `npx irgen --targets=<...> --ext=path/to/ext1.ts,path/to/ext2.ts <dsl>`.  
-  `.ts` extension files work because the CLI registers the tsx loader at runtime.  
-  You can also pass an installed package name (e.g., `--ext=irgen-ext-php-shared-hosting`) as long as it exports a function (ESM default export or CJS `module.exports`).
+   You can also pass an installed package name (e.g., `--ext=irgen-ext-php-shared-hosting`) as long as it exports a function (ESM default export or CJS `module.exports`).
+
+> [!CAUTION]
+> **CLI Entry Files**: Although the CLI accepts multiple DSL files, the second positional argument is always interpreted as the `outDir`. To avoid file swallowing, always use a **single main entry file** that imports others, or use the explicit `--outDir` flag.
 - **Programmatic usage**:
   ```ts
   import { Codegen } from "irgen";

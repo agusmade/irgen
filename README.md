@@ -92,6 +92,9 @@ npx irgen examples/app.dsl.ts --targets=backend,frontend --outDir=generated/full
 # Static-site (HTML-first)
 npx irgen examples/docs.dsl.ts --targets=static-site --outDir=generated/static-docs
 
+> [!TIP]
+> **Working with multiple DSL files?** Instead of passing multiple files to the CLI, use a **single entry point** and `import` your other DSL files. This ensures your project structure remains clean and prevents CLI ambiguity.
+
 ## Specialized Commands
 
 ### Project Scaffolding

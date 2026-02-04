@@ -2,6 +2,16 @@
 
 All notable changes to the `irgen` project will be documented in this file.
 
+## [0.3.2] - 2026-02-04
+
+### Enhancements
+- **CLI Execution Order**: Refactored the core entry point to ensure TypeScript support (`tsx`) and extensions (`--ext`) are fully loaded before subcommands (`init`, `studio`, `check`) are executed.
+- **Detailed CLI Help**: Added specialized help messages for `init`, `studio`, and `check` commands, providing better guidance on parameters and extension usage.
+- **Resilient Studio Dashboard**: Updated the Studio UI to be more robust when visualizing complex Hybrid applications (Backend + Frontend) and added better error handling for malformed IR.
+
+### Bug Fixes
+- **Studio Data Loading**: Fixed an issue where the Studio dashboard would appear empty when using extension-specific DSLs due to late extension loading.
+
 ## [0.3.1] - 2026-02-03
 
 ### New Features

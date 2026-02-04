@@ -7,6 +7,26 @@ import fs from "node:fs";
 import type { Request, Response } from "express";
 
 export async function runStudio(args: string[]) {
+    if (args.includes("--help") || args.includes("-h")) {
+        console.log(`
+irgen studio — Interactive DSL Dashboard
+
+Usage:
+  irgen studio <dsl-file>... [options]
+
+Options:
+  --ext=<path>         Load extensions (to visualize custom mappers/emitters)
+  --help, -h           Show this help message
+
+The Studio provides a real-time visual representation of your system's
+entities, pages, and components as defined in your DSL.
+
+Example:
+  npx irgen studio app.dsl.ts ui.dsl.ts --ext=irgen-ext-php-shared-hosting
+        `);
+        return;
+    }
+
     const dslFiles = args.filter(a => a.endsWith(".dsl.ts"));
     if (dslFiles.length === 0) {
         console.error("Usage: irgen studio <dsl-file>...");
@@ -48,7 +68,6 @@ export async function runStudio(args: string[]) {
     });
 
     // Static UI
-    // For now, let's embed a simple but beautiful HTML
     app.get("/", (req: Request, res: Response) => {
         res.send(getStudioHtml());
     });
@@ -288,14 +307,17 @@ function getStudioHtml() {
             document.getElementById('header-content').innerHTML = '<h2>Project Overview</h2><p>Summary of discovered resources</p>';
             let totalEntities = 0;
             let totalPages = 0;
-            ir.apps.forEach(a => { totalEntities += (a.entities?.length || 0); totalPages += (a.pages?.length || 0); });
+            ir.apps.forEach(a => { 
+                if (a.entities) totalEntities += a.entities.length;
+                if (a.pages) totalPages += a.pages.length;
+            });
 
             const content = document.getElementById('content');
             content.innerHTML = \`
                 <div class="stats-row">
                     <div class="stat-card">
                         <div class="stat-value">\${ir.apps.length}</div>
-                        <div class="stat-label">Applications</div>
+                        <div class="stat-label">Applications / Modules</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-value">\${totalEntities}</div>
@@ -307,14 +329,22 @@ function getStudioHtml() {
                     </div>
                 </div>
                 <div class="card">
-                    <h3>Metadata</h3>
+                    <h3>Metadata & Configuration</h3>
                     <table class="mono">
-                        \${Object.entries(ir.apps[0]?.meta || {}).map(([k,v]) => \`
+                        \${Object.entries(ir.meta || {}).map(([k,v]) => \`
                             <tr>
-                                <td style="color: var(--accent)">\${k}</td>
-                                <td>\${JSON.stringify(v)}</td>
+                                <td style="color: var(--accent); width: 200px">\${k}</td>
+                                <td><pre style="margin:0; white-space: pre-wrap">\${JSON.stringify(v, null, 2)}</pre></td>
                             </tr>
                         \`).join('')}
+                        \${ir.apps.map(app => 
+                            Object.entries(app.meta || {}).map(([k,v]) => \`
+                                <tr>
+                                    <td style="color: var(--text-dim)">[\${app.name}] \${k}</td>
+                                    <td><pre style="margin:0; white-space: pre-wrap">\${JSON.stringify(v, null, 2)}</pre></td>
+                                </tr>
+                            \`).join('')
+                        ).join('')}
                     </table>
                 </div>
             \`;
@@ -362,7 +392,7 @@ function getStudioHtml() {
                                     <strong>\${comp.name}</strong>
                                     \${comp.entityRef ? '<span class="badge">Bound</span>' : ''}
                                 </div>
-                                \${comp.entityRef ? \`<div class="stat-label">Entity: \${comp.entityRef}</div>\` : ''}
+                                \${comp.entityRef ? \\\`<div class="stat-label">Entity: \\\${comp.entityRef}</div>\\\` : ''}
                             </div>
                         \`).join('')}
                     </div>
